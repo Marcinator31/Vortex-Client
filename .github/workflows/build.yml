@@ -1,6 +1,6 @@
 name: build
 
-# Laeuft bei jedem Push und Pull Request -- genau wie bei deinem Plugin.
+# Laeuft bei jedem Push und Pull Request.
 on:
   push:
     branches: [ "main", "master" ]
@@ -17,24 +17,57 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # WICHTIG: JDK 21, weil 1.21.11 Java 21 braucht.
+      # JDK 21 -- Minecraft 1.21.11 setzt Java 21 voraus.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
+      # Zwischenspeicher fuer Gradle und die heruntergeladenen Minecraft-Dateien.
+      #
+      # Zweck ist nicht nur Geschwindigkeit: Liegt Minecraft bereits im Cache,
+      # scheitert ein Build nicht mehr daran, dass eine Download-Quelle gerade
+      # nicht erreichbar ist. Genau daran ist der letzte Lauf gescheitert.
+      - name: Gradle-Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', 'gradle.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
       - name: Gradle ausfuehrbar machen
         run: chmod +x ./gradlew
 
+      # Bis zu drei Versuche.
+      #
+      # Das Einrichten laedt Minecraft, Mappings und Loader von externen Servern
+      # (Mojang und FabricMC). Sind die kurz nicht erreichbar, bricht der Build
+      # ab, obwohl am Code nichts falsch ist -- ein erneuter Versuch genuegt.
+      # Bei einem echten Fehler im Code scheitern alle drei Versuche gleich,
+      # und --stacktrace zeigt dann die genaue Ursache samt Adresse.
       - name: Build
-        run: ./gradlew build --no-daemon
+        run: |
+          set -e
+          for versuch in 1 2 3; do
+            echo "=== Build-Versuch $versuch von 3 ==="
+            if ./gradlew build --no-daemon --stacktrace; then
+              echo "Build erfolgreich."
+              exit 0
+            fi
+            if [ "$versuch" -lt 3 ]; then
+              echo "Fehlgeschlagen -- 20 Sekunden warten, dann erneut."
+              sleep 20
+            fi
+          done
+          echo "Alle drei Versuche fehlgeschlagen."
+          exit 1
 
-      # Die fertige .jar als Artifact hochladen -- so kommst du im
-      # Actions-Tab an die Datei, genau wie bei deinem Plugin.
       - name: JAR hochladen
         uses: actions/upload-artifact@v4
         with:
-          name: pvpclient-jar
-          # Loom legt zwei Jars an. Die OHNE "-sources" ist die echte Mod.
+          name: vortexclient-jar
+          # Loom legt mehrere Jars an. Die ohne "-sources" ist die eigentliche Mod.
           path: build/libs/*.jar
