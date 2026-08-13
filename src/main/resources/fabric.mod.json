@@ -1,0 +1,43 @@
+{
+	"schemaVersion": 1,
+	"id": "pvpclient",
+	"version": "${version}",
+
+	"name": "PvP Client",
+	"description": "PvP-fokussierter Fabric-Client: HUD-Module (CPS, ArmorHUD ...), Account-Switcher und gebuendelte Performance-Mods.",
+	"authors": [],
+	"contact": {},
+
+	"license": "MIT",
+	"icon": "assets/pvpclient/icon/icon.png",
+
+	"environment": "client",
+
+	"entrypoints": {
+		"main": [
+			"com.example.pvpclient.PvpClient"
+		],
+		"client": [
+			"com.example.pvpclient.PvpClientClient"
+		]
+	},
+
+	"mixins": [
+		{
+			"config": "pvpclient.client.mixins.json",
+			"environment": "client"
+		}
+	],
+
+	"depends": {
+		"fabricloader": ">=0.18.1",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+
+	"suggests": {
+		"sodium": "*",
+		"lithium": "*"
+	}
+}

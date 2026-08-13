@@ -1,0 +1,33 @@
+package com.example.pvpclient.module.modules;
+
+import com.example.pvpclient.core.setting.NumberSetting;
+import com.example.pvpclient.module.Module;
+
+/**
+ * No Fall: verhindert Fallschaden.
+ *
+ * Funktionsweise: Der Server berechnet Fallschaden aus der Fallhoehe, die er aus
+ * den Bewegungspaketen des Clients ableitet. Meldet der Client waehrend des Falls
+ * "ich stehe auf dem Boden", setzt der Server die Fallhoehe immer wieder zurueck
+ * -- am Ende kommt kein Schaden an. Genau das macht dieses Modul: es setzt
+ * waehrend eines Falls die Bodenmarkierung und die gezaehlte Fallhoehe zurueck.
+ *
+ * ACHTUNG: Das ist ein klassisches Cheat-Merkmal. Anticheats pruefen genau diesen
+ * Widerspruch (Spieler faellt, meldet aber Bodenkontakt) und erkennen es sehr
+ * zuverlaessig. Auf Servern mit Anticheat ist das ein hohes Bann-Risiko.
+ */
+public class NoFallModule extends Module {
+
+    /**
+     * Ab welcher Fallhoehe (in Bloecken) eingegriffen wird. Etwas Abstand ist
+     * besser als sofort ab dem ersten Block: normales Huepfen und kleine Stufen
+     * bleiben dadurch voellig unauffaellig.
+     */
+    public final NumberSetting minHeight =
+            new NumberSetting("Ab Hoehe", 3.0, 1.0, 10.0, 0.5);
+
+    public NoFallModule() {
+        super("No Fall", Category.MISC);
+        addSetting(minHeight);
+    }
+}

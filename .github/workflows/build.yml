@@ -1,0 +1,40 @@
+name: build
+
+# Laeuft bei jedem Push und Pull Request -- genau wie bei deinem Plugin.
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:   # erlaubt manuelles Starten ueber den Actions-Tab
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # WICHTIG: JDK 21, weil 1.21.11 Java 21 braucht.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Gradle ausfuehrbar machen
+        run: chmod +x ./gradlew
+
+      - name: Build
+        run: ./gradlew build --no-daemon
+
+      # Die fertige .jar als Artifact hochladen -- so kommst du im
+      # Actions-Tab an die Datei, genau wie bei deinem Plugin.
+      - name: JAR hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: pvpclient-jar
+          # Loom legt zwei Jars an. Die OHNE "-sources" ist die echte Mod.
+          path: build/libs/*.jar

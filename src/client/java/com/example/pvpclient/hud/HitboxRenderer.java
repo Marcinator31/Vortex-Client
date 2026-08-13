@@ -1,0 +1,132 @@
+package com.example.pvpclient.hud;
+
+import com.example.pvpclient.module.Module;
+import com.example.pvpclient.module.ModuleManager;
+import com.example.pvpclient.module.modules.HitboxModule;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexRendering;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.Monster;
+import net.minecraft.entity.passive.AnimalEntity;
+import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+
+/**
+ * Zeichnet die Hitboxen aller Entities in der Welt (wie F3+B), aber
+ * eingefaerbt nach Kategorie und einzeln im ClickGUI schaltbar.
+ *
+ * Verifiziert gegen die ECHTEN 1.21.11-Yarn-Mappings (build.4):
+ *   - WorldRenderEvents liegt jetzt im Paket ...rendering.v1.world
+ *   - Lines-RenderLayer: RenderLayers.lines() (frueher RenderLayer.getLines())
+ *   - VertexRendering.drawOutline(MatrixStack, VertexConsumer, VoxelShape,
+ *       double offsetX, offsetY, offsetZ, int color, float lineWidth)
+ *     (frueher drawBox mit r,g,b,a -- in 1.21.11 ein gepackter int + lineWidth)
+ *   - VoxelShapes.cuboid(Box) wandelt die Entity-Box in eine VoxelShape
+ *   - Koordinaten relativ zur Kamera -> Kamera-Pos als Offset uebergeben
+ */
+public final class HitboxRenderer {
+
+    public static void register() {
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+            HitboxModule mod = (HitboxModule) find(HitboxModule.class);
+            if (mod == null || !mod.isEnabled()) return;
+
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.world == null || client.player == null) return;
+
+            MatrixStack matrices = context.matrices();
+            VertexConsumerProvider consumers = context.consumers();
+            if (matrices == null || consumers == null) return;
+
+            try {
+                // WICHTIG fuer ruckelfreie Hitboxen: denselben tickDelta fuer
+                // Kamera UND Entity-Position verwenden. Sonst ruckelt die Box
+                // zwischen Tick-Positionen, waehrend die Kamera smooth laeuft.
+                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
+
+                // Kamera-Position (interpoliert) als Bezugspunkt.
+                Vec3d cam = client.player.getCameraPosVec(tickDelta);
+                // Bei aktiver Freecam ist die echte Kamera woanders -> deren
+                // Position als Offset nutzen, sonst stehen die Boxen falsch.
+                if (com.example.pvpclient.freecam.Freecam.isActive()) {
+                    cam = com.example.pvpclient.freecam.Freecam.getPos();
+                }
+
+                // Linien-Buffer (1.21.11: RenderLayers.lines()).
+                VertexConsumer lines = consumers.getBuffer(RenderLayers.lines());
+
+                float lineWidth = mod.lineWidth.getFloat();
+
+                // Alle Entities im Umkreis (getEntitiesByClass ist garantiert da).
+                double range = 128.0;
+                Box query = new Box(
+                        client.player.getX() - range, client.player.getY() - range, client.player.getZ() - range,
+                        client.player.getX() + range, client.player.getY() + range, client.player.getZ() + range);
+
+                for (Entity entity : client.world.getEntitiesByClass(
+                        Entity.class, query, e -> e != client.player)) {
+                    // Kategorie + Farbe bestimmen.
+                    // Reihenfolge wichtig: erst Spieler, dann Monster, dann Tiere.
+                    // 'Monster' ist ein Interface, das ALLE feindlichen Mobs
+                    // markiert -- auch solche, die nicht von HostileEntity erben
+                    // (z.B. Slimes, Magma-Wuerfel). Das war vorher der Grund,
+                    // warum Slimes als "Sonstige" gezaehlt wurden.
+                    int color;
+                    if (entity instanceof PlayerEntity) {
+                        if (!mod.showPlayers.get()) continue;
+                        color = mod.playerColor.get();
+                    } else if (entity instanceof Monster) {
+                        if (!mod.showHostiles.get()) continue;
+                        color = mod.hostileColor.get();
+                    } else if (entity instanceof AnimalEntity || entity instanceof PassiveEntity) {
+                        // AnimalEntity deckt klassische Tiere ab; PassiveEntity
+                        // zusaetzlich friedliche Mobs wie z.B. Dorfbewohner.
+                        if (!mod.showAnimals.get()) continue;
+                        color = mod.animalColor.get();
+                    } else {
+                        if (!mod.showMisc.get()) continue;
+                        color = mod.miscColor.get();
+                    }
+
+                    // Sicherstellen, dass Alpha gesetzt ist (sonst unsichtbar).
+                    if ((color >>> 24) == 0) {
+                        color = 0xFF000000 | color;
+                    }
+
+                    // Hitbox aus der INTERPOLIERTEN Position bauen (smooth),
+                    // nicht aus getBoundingBox() (die nur pro Tick aktualisiert
+                    // und deshalb bei Bewegung ruckelt).
+                    Vec3d pos = entity.getLerpedPos(tickDelta);
+                    double hw = entity.getWidth() / 2.0;   // halbe Breite
+                    double h = entity.getHeight();         // Hoehe
+                    Box box = new Box(
+                            pos.x - hw, pos.y, pos.z - hw,
+                            pos.x + hw, pos.y + h, pos.z + hw);
+                    VoxelShape shape = VoxelShapes.cuboid(box);
+
+                    // Box bleibt in Welt-Koords; Kamera-Pos als Offset.
+                    VertexRendering.drawOutline(matrices, lines, shape,
+                            -cam.x, -cam.y, -cam.z,
+                            color, lineWidth);
+                }
+            } catch (Throwable ignored) {
+                // Falls eine Render-Methode in dieser Version doch abweicht:
+                // Hitboxen still ausfallen lassen, NICHT das Spiel crashen.
+            }
+        });
+    }
+
+    private static Module find(Class<? extends Module> type) {
+        // Konstante Laufzeit statt die ganze Liste zu durchlaufen.
+        return ModuleManager.INSTANCE.get(type);
+    }
+}
