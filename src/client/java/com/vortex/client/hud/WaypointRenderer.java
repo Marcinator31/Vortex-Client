@@ -66,6 +66,14 @@ public final class WaypointRenderer {
     }
 
     private static String buildWorldKey(MinecraftClient client) {
+        // Hat der Spieler ein Profil gesetzt, gilt das -- es ist auf Netzwerken
+        // die einzige verlaessliche Angabe (siehe WorldProfiles).
+        String profile = com.vortex.client.waypoint.WorldProfiles.getActive();
+        if (profile != null) {
+            String d = currentDimension(client);
+            return "pr:" + profile + "|" + (d == null ? "?" : d);
+        }
+
         String place = "?";
         try {
             if (client.isInSingleplayer()) {

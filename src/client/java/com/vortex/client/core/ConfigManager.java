@@ -275,6 +275,10 @@ public final class ConfigManager {
                 lines.add("__wpsettings__\t" + ws.getName() + "\t" + ws.serialize());
             }
 
+            // Weltprofile (fuer Netzwerke mit Proxy).
+            lines.add("__wpprofiles__\tdaten\t"
+                    + com.vortex.client.waypoint.WorldProfiles.serialize());
+
             // Waypoints mitspeichern (gehoeren zum jeweiligen Preset).
             lines.add("__waypoints__\tliste\t"
                     + com.vortex.client.waypoint.WaypointManager.serialize());
@@ -342,6 +346,12 @@ public final class ConfigManager {
                             break;
                         }
                     }
+                    continue;
+                }
+
+                // Sonderfall: Weltprofile.
+                if (modName.equals("__wpprofiles__")) {
+                    com.vortex.client.waypoint.WorldProfiles.deserialize(value);
                     continue;
                 }
 

@@ -54,10 +54,19 @@ public final class WaypointSettings {
     // ---- Aussehen der Punkte ---------------------------------------------
 
     /** Kantenlaenge des Punktes in Pixeln. */
-    public final NumberSetting dotSize = new NumberSetting("Punktgroesse", 9, 4, 24, 1);
+    public final NumberSetting dotSize = new NumberSetting("Ringgroesse", 6, 4, 24, 1);
 
-    /** Rand um den Punkt -- 0 schaltet ihn ab. */
-    public final NumberSetting borderWidth = new NumberSetting("Randbreite", 1, 0, 3, 1);
+    /** Dicke des Rings in Pixeln. */
+    public final NumberSetting borderWidth = new NumberSetting("Ringdicke", 1, 1, 4, 1);
+
+    /**
+     * Deckkraft der Marker (1.0 = voll, 0.2 = stark durchsichtig).
+     *
+     * Beim Anvisieren wird automatisch zur vollen Deckkraft aufgeblendet -- im
+     * Ruhezustand bleibt die Anzeige dezent, beim Anpeilen ist sie klar da.
+     */
+    public final NumberSetting markerOpacity =
+            new NumberSetting("Deckkraft", 0.7, 0.2, 1.0, 0.05);
     public final ColorSetting borderColor = new ColorSetting("Randfarbe", 0xC0000000);
 
     /** Farbe des Buchstabens. Bei 0 wird automatisch hell/dunkel gewaehlt. */
@@ -121,7 +130,8 @@ public final class WaypointSettings {
     private WaypointSettings() {
         settings = List.of(enabled, lineWidth, maxDistance,
                 labels, edgeArrows, tracers,
-                dotSize, borderWidth, borderColor, letterColor, showLetter, useActionBar,
+                dotSize, borderWidth, markerOpacity, borderColor, letterColor,
+                showLetter, useActionBar,
                 blockRadius, blockLineWidth, blockColor, hideNear, showNearest,
                 deathWaypoint,
                 keyAddHere, keyMarkBlock, keyMarkArea, keyToggle, keyManage);

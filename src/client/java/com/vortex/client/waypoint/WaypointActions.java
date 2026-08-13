@@ -40,6 +40,16 @@ public final class WaypointActions {
      */
     private static WaypointManager.Waypoint blockGroup = null;
 
+    /** Laeuft gerade eine Bereichsauswahl? (fuer den Hinweis im Bild) */
+    public static boolean hasPendingCorner() {
+        return areaCorner != null;
+    }
+
+    /** Aktive Block-Gruppe -- fuer den Hinweis im Bild. */
+    public static String activeGroupName() {
+        return (blockGroup == null) ? null : blockGroup.name;
+    }
+
     public static void setBlockGroup(WaypointManager.Waypoint w) {
         blockGroup = w;
     }
@@ -63,6 +73,11 @@ public final class WaypointActions {
     private static void tick(MinecraftClient client) {
         if (client.player == null || client.world == null) {
             wasAlive = true;
+            // Beim Verlassen der Welt die gemerkte Ecke und die aktive Gruppe
+            // vergessen -- sonst wuerde die naechste Markierung auf einem
+            // anderen Server an eine Ecke von hier anknuepfen.
+            areaCorner = null;
+            blockGroup = null;
             return;
         }
         WaypointSettings cfg = WaypointSettings.INSTANCE;
@@ -71,6 +86,16 @@ public final class WaypointActions {
         // --- Todespunkt: Uebergang lebendig -> tot ---
         boolean alive = self.isAlive();
         if (cfg.deathWaypoint.get() && wasAlive && !alive) {
+            // Alte Todespunkte aufraeumen: bei haeufigem Sterben sammeln sich
+            // sonst dutzende an, die niemand mehr braucht. Nur die letzten drei
+            // bleiben stehen.
+            var alte = new java.util.ArrayList<WaypointManager.Waypoint>();
+            for (WaypointManager.Waypoint w : WaypointManager.all()) {
+                if (w.kind == WaypointManager.Kind.TOD) alte.add(w);
+            }
+            while (alte.size() >= 3) {
+                WaypointManager.remove(alte.remove(alte.size() - 1));
+            }
             addWaypoint(client, self.getBlockX(), self.getBlockY(), self.getBlockZ(),
                     "Tod " + timeStamp(), WaypointManager.Kind.TOD, true);
         }

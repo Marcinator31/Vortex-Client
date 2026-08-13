@@ -89,6 +89,13 @@ public final class WaypointHud {
         float dt = (lastNano == 0L) ? 0.016f : (now - lastNano) / 1_000_000_000.0f;
         lastNano = now;
         if (dt > 0.1f) dt = 0.1f;
+
+        // Aufraeumen: die Tabelle merkt sich einen Wert je Marker. Ohne dieses
+        // Entfernen bleiben geloeschte Marker fuer immer darin stehen -- ein
+        // langsam wachsendes Speicherleck ueber die gesamte Spielzeit.
+        if (AIM_ANIM.size() > WaypointManager.all().size()) {
+            AIM_ANIM.keySet().retainAll(WaypointManager.all());
+        }
         WaypointSettings mod = WaypointSettings.INSTANCE;
         if (!mod.isEnabled()) return;
         if (client.player == null || client.world == null) return;
@@ -124,6 +131,23 @@ public final class WaypointHud {
         double maxDist = mod.maxDistance.get();
 
         String dim = WaypointRenderer.currentWorldKey(client);
+
+        // Hinweis, solange eine Bereichsauswahl laeuft oder eine Block-Gruppe
+        // aktiv ist -- sonst vergisst man, dass die erste Ecke noch offen ist.
+        if (com.vortex.client.waypoint.WaypointActions.hasPendingCorner()) {
+            String hint = "Bereich: zweite Ecke waehlen";
+            int hw = client.textRenderer.getWidth(hint);
+            ctx.drawTextWithShadow(client.textRenderer, Text.literal(hint),
+                    (w - hw) / 2, h - 70, 0xFFFFD070);
+        } else {
+            String grp = com.vortex.client.waypoint.WaypointActions.activeGroupName();
+            if (grp != null) {
+                String hint = "Blockgruppe: " + grp;
+                int hw = client.textRenderer.getWidth(hint);
+                ctx.drawText(client.textRenderer, Text.literal(hint),
+                        (w - hw) / 2, h - 70, 0x90FFFFFF, false);
+            }
+        }
 
         // Zeile mit dem naechstgelegenen Marker -- praktisch beim Zurueckfinden.
         if (mod.showNearest.get()) {
@@ -172,46 +196,47 @@ public final class WaypointHud {
                 a = a + ((aimed ? 1f : 0f) - a) * Math.min(1f, 10f * dt);
                 AIM_ANIM.put(wp, a);
 
-                // Position EINMAL auf ganze Pixel runden.
-                //
-                // Das ist der Grund, warum der Buchstabe vorher gezappelt hat:
-                // Die berechnete Position aendert sich bei jeder kleinsten
-                // Bewegung um Bruchteile eines Pixels. Wird erst beim Zeichnen
-                // gerundet, springt der Text staendig um einen Pixel hin und her.
-                // Einmal vorher runden -- und alles sitzt ruhig.
+                // Position EINMAL auf ganze Pixel runden -- sonst zittert alles,
+                // weil sie sich bei jeder Bewegung um Bruchteile aendert.
                 int cxI = Math.round((float) s.x);
                 int cyI = Math.round((float) s.y);
 
-                // Feste Bildschirmgroesse, unabhaengig von der Entfernung.
-                // Beim Anvisieren waechst der Punkt sanft.
-                int size = baseSize + Math.round(a * 2f);
+                // Ring: klein im Ruhezustand, waechst beim Anvisieren.
+                int rBase = Math.max(2, mod.dotSize.getInt() / 2);
+                int r = rBase + Math.round(a * 4f);
 
-                drawDot(ctx, cxI, cyI, size, color, mod, a);
+                // Deckkraft: im Ruhezustand die eingestellte, beim Anvisieren
+                // zur vollen hin aufblenden.
+                float base = (float) mod.markerOpacity.get();
+                float alpha = base + (1f - base) * a;
 
-                if (mod.showLetter.get() && size >= 9) {
+                drawRing(ctx, cxI, cyI, r, fadeA(color, alpha), mod, a);
+
+                // Buchstabe immer sichtbar -- neben dem Ring, damit er auch bei
+                // sehr kleinen Ringen lesbar bleibt und nichts verdeckt.
+                if (mod.showLetter.get()) {
                     String letter = initial(wp.name);
                     int lc = mod.letterColor.get();
-                    if ((lc >>> 24) == 0) {
-                        lc = isBright(color) ? 0xFF101014 : 0xFFFFFFFF;
-                    }
-                    // Ohne Skalierung zeichnen -- Skalieren um einen wandernden
-                    // Punkt herum erzeugt genau dieses Zittern.
-                    int lw = client.textRenderer.getWidth(letter);
+                    if ((lc >>> 24) == 0) lc = color;
+                    lc = fadeA(lc, alpha);
+                    int lx = cxI + r + 3;
+                    int ly = cyI - 3;
+                    pushScale(ctx, lx, ly, 0.8f);
+                    // Zarter Schatten fuer Lesbarkeit auf hellem Untergrund.
                     ctx.drawText(client.textRenderer, Text.literal(letter),
-                            cxI - lw / 2 + 1, cyI - 3, lc, false);
+                            lx + 1, ly + 1, fadeA(0xFF000000, alpha * 0.75f), false);
+                    ctx.drawText(client.textRenderer, Text.literal(letter),
+                            lx, ly, lc, false);
+                    popScale(ctx);
                 }
 
-                // --- Beschriftung: klein, ohne Kasten, weich eingeblendet ---
+                // --- Beim Anvisieren: voller Name und Entfernung darunter ---
                 if (a > 0.02f && mod.labels.get()) {
                     String label = wp.name + "  " + (int) dist + "m";
-                    float ts = 0.8f;
-                    // Auch hier ganze Pixel, sonst flimmert die Schrift.
-                    int ty = cyI + size / 2 + 4 + Math.round((1f - a) * 3f);
-
-                    pushScale(ctx, cxI, ty, ts);
+                    int ty = cyI + r + 5 + Math.round((1f - a) * 3f);
+                    pushScale(ctx, cxI, ty, 0.8f);
                     int tw = client.textRenderer.getWidth(label);
                     int tx = cxI - tw / 2;
-                    // Nur ein zarter Schatten statt eines harten Kastens.
                     ctx.drawText(client.textRenderer, Text.literal(label),
                             tx + 1, ty + 1, fadeA(0xFF000000, a * 0.7f), false);
                     ctx.drawText(client.textRenderer, Text.literal(label),
@@ -233,42 +258,48 @@ public final class WaypointHud {
      * waere. Aussen liegt ein zarter Rand, damit der Punkt auf jedem Untergrund
      * ablesbar bleibt.
      */
-    private static void drawDot(DrawContext ctx, int cx, int cy, int size,
-                                int color, com.vortex.client.waypoint.WaypointSettings mod,
-                                float aim) {
-        int r = Math.max(2, size / 2);
-        int bw = mod.borderWidth.getInt();
-        int border = mod.borderColor.get();
+    /**
+     * Zeichnet einen hohlen Ring.
+     *
+     * Nur der Rand ist gefaerbt, die Mitte bleibt frei -- dadurch verdeckt der
+     * Marker nichts und wirkt deutlich leichter als ein gefuellter Punkt.
+     *
+     * Der Ring entsteht aus waagerechten Streifen: je Zeile werden nur die
+     * beiden Randstuecke gesetzt, deren Breite sich aus dem Kreisradius ergibt.
+     * Innen wird nichts gezeichnet.
+     */
+    private static void drawRing(DrawContext ctx, int cx, int cy, int r,
+                                 int color, com.vortex.client.waypoint.WaypointSettings mod,
+                                 float aim) {
+        int thickness = Math.max(1, mod.borderWidth.getInt());
+        int inner = Math.max(1, r - thickness);
 
-        // Kreis aus waagerechten Streifen. Die Breite je Zeile folgt dem
-        // Kreisradius, dadurch wirkt der Rand gerundet statt eckig.
-        //
-        // Zwei Durchgaenge: erst der dunkle Rand (etwas groesser), dann die
-        // Fuellung. So bleibt der Punkt auf hellem wie dunklem Untergrund
-        // ablesbar, ohne dass ein harter Kasten entsteht.
-        if (bw > 0) {
-            int ro = r + bw;
-            for (int dy = -ro; dy <= ro; dy++) {
-                int half = rowHalf(dy, ro);
-                if (half <= 0) continue;
-                ctx.fill(cx - half, cy + dy, cx + half, cy + dy + 1, border);
+        for (int dy = -r; dy <= r; dy++) {
+            int outerHalf = rowHalf(dy, r);
+            if (outerHalf <= 0) continue;
+            int innerHalf = rowHalf(dy, inner);
+
+            int y = cy + dy;
+            if (innerHalf <= 0) {
+                // Oben und unten: durchgehender Streifen (Ringschluss).
+                ctx.fill(cx - outerHalf, y, cx + outerHalf, y + 1, color);
+            } else {
+                // Dazwischen: nur die beiden Seitenstuecke.
+                ctx.fill(cx - outerHalf, y, cx - innerHalf, y + 1, color);
+                ctx.fill(cx + innerHalf, y, cx + outerHalf, y + 1, color);
             }
         }
-        for (int dy = -r; dy <= r; dy++) {
-            int half = rowHalf(dy, r);
-            if (half <= 0) continue;
-            ctx.fill(cx - half, cy + dy, cx + half, cy + dy + 1, color);
-        }
 
-        // Beim Anvisieren ein zarter Ring in etwas Abstand.
+        // Beim Anvisieren ein zweiter, zarter Ring aussen herum.
         if (aim > 0.02f) {
-            int rr = r + 3 + Math.round(aim * 2f);
-            int ringC = fadeA(0xFFFFFFFF, aim * 0.45f);
+            int rr = r + 3;
+            int glow = fadeA(color, aim * 0.45f);
             for (int dy = -rr; dy <= rr; dy++) {
                 int half = rowHalf(dy, rr);
                 if (half <= 0) continue;
-                ctx.fill(cx - half, cy + dy, cx - half + 1, cy + dy + 1, ringC);
-                ctx.fill(cx + half - 1, cy + dy, cx + half, cy + dy + 1, ringC);
+                int y = cy + dy;
+                ctx.fill(cx - half, y, cx - half + 1, y + 1, glow);
+                ctx.fill(cx + half - 1, y, cx + half, y + 1, glow);
             }
         }
     }
@@ -298,7 +329,11 @@ public final class WaypointHud {
     private static int fadeA(int argb, float f) {
         if (f >= 1f) return argb;
         if (f <= 0f) return argb & 0x00FFFFFF;
+        // Vorhandene Deckkraft wird MULTIPLIZIERT, nicht ersetzt -- sonst wuerde
+        // ein bereits halbdurchsichtiger Farbwert wieder voll deckend werden.
         int a = (int) (((argb >>> 24) & 0xFF) * f);
+        if (a < 0) a = 0;
+        if (a > 255) a = 255;
         return (a << 24) | (argb & 0x00FFFFFF);
     }
 

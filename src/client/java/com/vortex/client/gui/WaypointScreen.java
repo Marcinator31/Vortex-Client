@@ -1,6 +1,7 @@
 package com.vortex.client.gui;
 
 import com.vortex.client.waypoint.WaypointManager;
+import com.vortex.client.waypoint.WorldProfiles;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -40,6 +41,12 @@ public class WaypointScreen extends Screen {
     private final Screen parent;
     private TextFieldWidget nameField;
     private TextFieldWidget coordField;
+    private TextFieldWidget renameField;
+    private TextFieldWidget profileField;
+    private WaypointManager.Waypoint renaming = null;
+
+    /** Marker, dessen Loeschung bestaetigt werden muss. */
+    private WaypointManager.Waypoint pendingDelete = null;
 
     private float openAnim = 0f;
     private long lastNano = 0L;
@@ -84,6 +91,20 @@ public class WaypointScreen extends Screen {
         coordField.setMaxLength(32);
         coordField.setVisible(false);
         this.addDrawableChild(coordField);
+
+        renameField = new TextFieldWidget(this.textRenderer,
+                winX + 90, winY + winH - 18, 150, 14, Text.literal(""));
+        renameField.setDrawsBackground(false);
+        renameField.setMaxLength(32);
+        renameField.setVisible(false);
+        this.addDrawableChild(renameField);
+
+        profileField = new TextFieldWidget(this.textRenderer,
+                winX + 90, winY + winH - 18, 150, 14, Text.literal(""));
+        profileField.setDrawsBackground(false);
+        profileField.setMaxLength(24);
+        profileField.setVisible(false);
+        this.addDrawableChild(profileField);
 
         nameField = new TextFieldWidget(this.textRenderer,
                 winX + 12, winY + 34, 200, 14, Text.literal(""));
@@ -142,6 +163,18 @@ public class WaypointScreen extends Screen {
         ctx.drawText(this.textRenderer, Text.literal(dl),
                 dlx + 8, winY + 62, 0xFFD0D0DA, false);
 
+        // Profil-Umschalter -- entscheidend auf Netzwerken, wo alle Server
+        // dieselbe Adresse haben und sich sonst nicht unterscheiden lassen.
+        String pl = "Profil: " + (WorldProfiles.getActive() == null
+                ? "auto" : WorldProfiles.getActive());
+        int plw = this.textRenderer.getWidth(pl) + 16;
+        int plx = dlx + dlw + 8;
+        boolean plHov = inRect(plx, winY + 56, plw, 20);
+        roundRect(ctx, plx, winY + 56, plw, 20,
+                plHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
+        ctx.drawText(this.textRenderer, Text.literal(pl),
+                plx + 8, winY + 62, 0xFFD0D0DA, false);
+
         String count = list.size() + " Marker";
         int cw = this.textRenderer.getWidth(count);
         ctx.drawText(this.textRenderer, Text.literal(count),
@@ -194,6 +227,9 @@ public class WaypointScreen extends Screen {
 
                 String pos = w.x + ", " + w.y + ", " + w.z;
                 if (!w.blocks.isEmpty()) pos += "   " + w.blocks.size() + " Bloecke";
+                // Bei mehreren Welten dazuschreiben, wohin der Marker gehoert --
+                // sonst sieht man nur Koordinaten ohne Zusammenhang.
+                if ("*".equals(worldFilter)) pos += "   " + shortWorld(w.dimension);
                 if (client.player != null) {
                     double dx = w.x - client.player.getX();
                     double dz = w.z - client.player.getZ();
@@ -208,7 +244,8 @@ public class WaypointScreen extends Screen {
                 ctx.drawText(this.textRenderer, Text.literal(w.visible ? "o" : "-"),
                         bx - 20, y + 8, 0xFFB4B4C0, false);
                 ctx.drawText(this.textRenderer, Text.literal("x"),
-                        bx - 40, y + 8, 0xFFFF7A7A, false);
+                        bx - 40, y + 8,
+                        pendingDelete == w ? 0xFFFF3030 : 0xFFFF7A7A, false);
                 // Weitere Aktionen -- kurze Kuerzel, damit die Zeile schmal bleibt.
                 ctx.drawText(this.textRenderer, Text.literal("B"),
                         bx - 58, y + 8,
@@ -218,6 +255,12 @@ public class WaypointScreen extends Screen {
                         bx - 74, y + 8, 0xFF9A9AA6, false);
                 ctx.drawText(this.textRenderer, Text.literal("K"),
                         bx - 90, y + 8, 0xFF9A9AA6, false);
+                ctx.drawText(this.textRenderer, Text.literal("G"),
+                        bx - 154, y + 8, 0xFF9AFF9A, false);
+                ctx.drawText(this.textRenderer, Text.literal("R"),
+                        bx - 138, y + 8,
+                        renaming == w ? (Theme.INSTANCE.accent.get() | 0xFF000000)
+                                      : 0xFF9A9AA6, false);
                 ctx.drawText(this.textRenderer, Text.literal("C"),
                         bx - 122, y + 8,
                         editing == w ? (Theme.INSTANCE.accent.get() | 0xFF000000)
@@ -242,7 +285,17 @@ public class WaypointScreen extends Screen {
         int fy = winY + winH - FOOTER_H;
         ctx.fill(winX, fy, winX + WIN_W, winY + winH, fade(C_BAR, openAnim));
         ctx.fill(winX, fy, winX + WIN_W, fy + 1, fade(C_LINE, openAnim));
-        if (editing != null) {
+        if (renaming != null) {
+            ctx.drawText(this.textRenderer, Text.literal("Name:"),
+                    winX + 12, fy + 6, 0xFFD0D0DA, false);
+            roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
+            drawApply(ctx, fy, accent);
+        } else if (profileField != null && profileField.isVisible()) {
+            ctx.drawText(this.textRenderer, Text.literal("Profil:"),
+                    winX + 12, fy + 6, 0xFFD0D0DA, false);
+            roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
+            drawApply(ctx, fy, accent);
+        } else if (editing != null) {
             ctx.drawText(this.textRenderer, Text.literal("X Y Z:"),
                     winX + 12, fy + 6, 0xFFD0D0DA, false);
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
@@ -255,7 +308,7 @@ public class WaypointScreen extends Screen {
                     winX + 257, fy + 6, 0xFFFFFFFF, false);
         } else {
             String hint = status.isEmpty()
-                    ? "C Koordinaten  T Tracer  B Blockziel  N Nether  K Kopieren"
+                    ? "G gehe zu  R umbenennen  C Koordinaten  T Tracer  B Blockziel  N Nether  K kopieren"
                     : status;
             ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 10, fy + 6,
@@ -303,7 +356,9 @@ public class WaypointScreen extends Screen {
             String ok = "Uebernehmen";
             int okw = this.textRenderer.getWidth(ok) + 14;
             if (inRect(winX + 250, fy2 + 2, okw, 16)) {
-                applyCoords(editing);
+                if (renaming != null) applyRename(renaming);
+                else if (profileField != null && profileField.isVisible()) applyProfile();
+                else applyCoords(editing);
                 return true;
             }
         }
@@ -316,6 +371,28 @@ public class WaypointScreen extends Screen {
             dimFilter = nextDim(dimFilter);
             scrollTarget = 0f;
             scroll = 0f;
+            return true;
+        }
+
+        // Profil: Linksklick schaltet durch, Rechtsklick oeffnet die Eingabe.
+        String pl2 = "Profil: " + (WorldProfiles.getActive() == null
+                ? "auto" : WorldProfiles.getActive());
+        int plw2 = this.textRenderer.getWidth(pl2) + 16;
+        int plx2 = dlx + dlw + 8;
+        if (inRect(plx2, winY + 56, plw2, 20)) {
+            if (click.button() == 1) {
+                hideAllInputs();
+                if (profileField != null) {
+                    profileField.setText(WorldProfiles.getActive() == null
+                            ? "" : WorldProfiles.getActive());
+                    profileField.setVisible(true);
+                    this.setFocused(profileField);
+                }
+            } else {
+                WorldProfiles.setActive(WorldProfiles.next());
+                com.vortex.client.hud.WaypointRenderer.invalidateWorldKey();
+                com.vortex.client.core.ConfigManager.save();
+            }
             return true;
         }
 
@@ -346,14 +423,32 @@ public class WaypointScreen extends Screen {
                     return true;
                 }
                 if (inRect(bx - 42, y + 6, 14, 12)) {
+                    // Zweimal klicken zum Loeschen -- ein Fehlklick soll nicht
+                    // stillschweigend einen Marker vernichten.
+                    if (pendingDelete != w) {
+                        pendingDelete = w;
+                        status = "Nochmal auf x klicken, um \"" + w.name + "\" zu loeschen.";
+                        return true;
+                    }
                     if (com.vortex.client.waypoint.WaypointActions.getBlockGroup() == w) {
                         com.vortex.client.waypoint.WaypointActions.setBlockGroup(null);
                     }
                     WaypointManager.remove(w);
+                    com.vortex.client.core.ConfigManager.save();
+                    pendingDelete = null;
+                    status = "Geloescht.";
                     return true;
                 }
-                // B: diesen Marker als Ziel fuer markierte Bloecke waehlen
+                // B: Ziel fuer markierte Bloecke waehlen.
+                //    Rechtsklick leert die Bloecke dieser Gruppe.
                 if (inRect(bx - 60, y + 6, 14, 12)) {
+                    if (click.button() == 1) {
+                        int n = w.blocks.size();
+                        w.blocks.clear();
+                        com.vortex.client.core.ConfigManager.save();
+                        status = n + " Bloecke entfernt.";
+                        return true;
+                    }
                     var cur = com.vortex.client.waypoint.WaypointActions.getBlockGroup();
                     com.vortex.client.waypoint.WaypointActions
                             .setBlockGroup(cur == w ? null : w);
@@ -365,11 +460,32 @@ public class WaypointScreen extends Screen {
                             .createCounterpart(MinecraftClient.getInstance(), w);
                     return true;
                 }
+                // G: hingehen
+                if (inRect(bx - 156, y + 6, 14, 12)) {
+                    goTo(w);
+                    return true;
+                }
+                // R: umbenennen
+                if (inRect(bx - 140, y + 6, 14, 12)) {
+                    if (renaming == w) {
+                        applyRename(w);
+                    } else {
+                        hideAllInputs();
+                        renaming = w;
+                        if (renameField != null) {
+                            renameField.setText(w.name);
+                            renameField.setVisible(true);
+                            this.setFocused(renameField);
+                        }
+                    }
+                    return true;
+                }
                 // C: Koordinaten bearbeiten
                 if (inRect(bx - 124, y + 6, 14, 12)) {
                     if (editing == w) {
                         applyCoords(w);
                     } else {
+                        hideAllInputs();
                         editing = w;
                         if (coordField != null) {
                             coordField.setText(w.x + " " + w.y + " " + w.z);
@@ -395,6 +511,66 @@ public class WaypointScreen extends Screen {
             y += ROW_H + 4;
         }
         return false;
+    }
+
+    /**
+     * Zum Marker gehen.
+     *
+     * EHRLICH: Ein Client kann nicht teleportieren -- das entscheidet der
+     * Server. Hier wird nur der passende Befehl geschickt. Fehlen die Rechte,
+     * lehnt der Server ab; dann bleiben die kopierten Koordinaten.
+     */
+    private void goTo(WaypointManager.Waypoint w) {
+        var client = MinecraftClient.getInstance();
+        if (client.player == null || client.getNetworkHandler() == null) return;
+        try {
+            String cmd = "tp " + w.x + " " + w.y + " " + w.z;
+            client.getNetworkHandler().sendChatCommand(cmd);
+            status = "Befehl gesendet: /" + cmd;
+        } catch (Throwable pvpErr) {
+            com.vortex.client.waypoint.WaypointActions.copyToClipboard(client, w);
+            status = "Teleport nicht moeglich -- Koordinaten kopiert.";
+        }
+    }
+
+    /**
+     * Blendet alle Eingabefelder der Fusszeile aus.
+     *
+     * Die drei Felder (Name, Profil, Koordinaten) liegen an derselben Stelle --
+     * es darf immer nur eines sichtbar sein, sonst tippt man ins falsche.
+     */
+    private void hideAllInputs() {
+        renaming = null;
+        editing = null;
+        if (renameField != null) renameField.setVisible(false);
+        if (profileField != null) profileField.setVisible(false);
+        if (coordField != null) coordField.setVisible(false);
+    }
+
+    /** Neuen Namen uebernehmen. */
+    private void applyRename(WaypointManager.Waypoint w) {
+        if (renameField == null) return;
+        String n = renameField.getText().trim();
+        if (n.isEmpty()) {
+            status = "Name darf nicht leer sein.";
+            return;
+        }
+        w.name = n.replace('|', ' ').replace(';', ' ');
+        com.vortex.client.core.ConfigManager.save();
+        renaming = null;
+        renameField.setVisible(false);
+        status = "Umbenannt.";
+    }
+
+    /** Profil aus dem Eingabefeld uebernehmen (leer = automatisch). */
+    private void applyProfile() {
+        if (profileField == null) return;
+        String n = profileField.getText().trim();
+        WorldProfiles.setActive(n.isEmpty() ? null : n);
+        com.vortex.client.hud.WaypointRenderer.invalidateWorldKey();
+        com.vortex.client.core.ConfigManager.save();
+        profileField.setVisible(false);
+        status = n.isEmpty() ? "Profil: automatisch" : ("Profil: " + n);
     }
 
     /** Eingegebene Koordinaten uebernehmen ("x y z" oder "x, y, z"). */
@@ -452,6 +628,7 @@ public class WaypointScreen extends Screen {
                 : com.vortex.client.hud.WaypointRenderer.currentWorldKey(
                         MinecraftClient.getInstance());
         List<WaypointManager.Waypoint> out = new java.util.ArrayList<>();
+        var me = MinecraftClient.getInstance().player;
         for (var w : all) {
             if (!"*".equals(worldFilter) && !WaypointManager.matches(w, key)) continue;
             if (dimFilter != null) {
@@ -460,7 +637,19 @@ public class WaypointScreen extends Screen {
             }
             out.add(w);
         }
+        // Naechste zuerst -- so steht oben, was gerade relevant ist.
+        if (me != null) {
+            final double mx0 = me.getX(), my0 = me.getY(), mz0 = me.getZ();
+            out.sort((a, b) -> Double.compare(distSq(a, mx0, my0, mz0),
+                                              distSq(b, mx0, my0, mz0)));
+        }
         return out;
+    }
+
+    private static double distSq(WaypointManager.Waypoint w,
+                                 double x, double y, double z) {
+        double dx = w.x - x, dy = w.y - y, dz = w.z - z;
+        return dx * dx + dy * dy + dz * dz;
     }
 
     /** Naechster Dimensions-Filter beim Durchklicken. */
@@ -476,6 +665,17 @@ public class WaypointScreen extends Screen {
         if (cur.equals("overworld")) return "Oberwelt";
         if (cur.equals("the_nether")) return "Nether";
         return "End";
+    }
+
+    /** Gemeinsamer Uebernehmen-Knopf der Fusszeile. */
+    private void drawApply(DrawContext ctx, int fy, int accent) {
+        String ok = "Uebernehmen";
+        int okw = this.textRenderer.getWidth(ok) + 14;
+        boolean hov = inRect(winX + 250, fy + 2, okw, 16);
+        roundRect(ctx, winX + 250, fy + 2, okw, 16,
+                hov ? mix(C_INNER, accent, 0.45f) : C_INNER);
+        ctx.drawText(this.textRenderer, Text.literal(ok),
+                winX + 257, fy + 6, 0xFFFFFFFF, false);
     }
 
     /** Kurzform einer Welt-Kennung fuer die Anzeige. */
