@@ -106,7 +106,6 @@ public final class WaypointRenderer {
                 org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
 
                 float lw = mod.lineWidth.getFloat();
-                double half = mod.beamHeight.get() / 2.0;
                 double maxDist = mod.maxDistance.get();
 
                 // Startpunkt immer berechnen -- einzelne Marker koennen einen
@@ -149,7 +148,12 @@ public final class WaypointRenderer {
                                     new net.minecraft.util.math.Box(
                                             bp.getX(), bp.getY(), bp.getZ(),
                                             bp.getX() + 1.0, bp.getY() + 1.0, bp.getZ() + 1.0);
-                            EspRender.drawBox(matrices, lines, box, cam, color, lw);
+                            // Eigene Farbe und Breite fuer Block-Umrandungen;
+                            // bei Farbe 0 die des Markers verwenden.
+                            int bc = mod.blockColor.get();
+                            if ((bc >>> 24) == 0) bc = color;
+                            EspRender.drawBox(matrices, lines, box, cam, bc,
+                                    mod.blockLineWidth.getFloat());
                         }
                     }
 

@@ -26,9 +26,20 @@ public final class WaypointSettings {
     /** Waypoints ueberhaupt anzeigen. */
     public final BooleanSetting enabled = new BooleanSetting("Anzeigen", true);
 
-    /** Hoehe der Saeule ueber und unter dem Markerpunkt. */
-    public final NumberSetting beamHeight = new NumberSetting("Saeulenhoehe", 48, 8, 256, 8);
-    public final NumberSetting lineWidth = new NumberSetting("Linienbreite", 2.0, 0.5, 5.0, 0.5);
+    /** Linienbreite der Tracer. */
+    public final NumberSetting lineWidth = new NumberSetting("Tracer-Breite", 2.0, 0.5, 5.0, 0.5);
+
+    // ---- Markierte Bloecke -------------------------------------------------
+
+    /** Linienbreite der Block-Umrandungen. */
+    public final NumberSetting blockLineWidth =
+            new NumberSetting("Block-Linienbreite", 2.0, 0.5, 6.0, 0.5);
+
+    /**
+     * Farbe der Block-Umrandungen. Bei 0 wird die Farbe des jeweiligen Markers
+     * benutzt -- so bleiben mehrere Gruppen auseinanderzuhalten.
+     */
+    public final ColorSetting blockColor = new ColorSetting("Block-Farbe", 0x00000000);
 
     /** Ab welcher Entfernung nicht mehr gezeichnet wird (0 = unbegrenzt). */
     public final NumberSetting maxDistance = new NumberSetting("Max. Distanz", 0, 0, 2000, 50);
@@ -108,10 +119,10 @@ public final class WaypointSettings {
     private final List<Setting> settings;
 
     private WaypointSettings() {
-        settings = List.of(enabled, beamHeight, lineWidth, maxDistance,
+        settings = List.of(enabled, lineWidth, maxDistance,
                 labels, edgeArrows, tracers,
                 dotSize, borderWidth, borderColor, letterColor, showLetter, useActionBar,
-                blockRadius, hideNear, showNearest,
+                blockRadius, blockLineWidth, blockColor, hideNear, showNearest,
                 deathWaypoint,
                 keyAddHere, keyMarkBlock, keyMarkArea, keyToggle, keyManage);
         // Ausgangswerte festhalten, damit ein frisches Preset zurueck kann.

@@ -146,8 +146,18 @@ public final class WaypointActions {
         }
         BlockPos pos = bhr.getBlockPos();
 
-        // Noch keine Gruppe gewaehlt -> neue anlegen, benannt nach dem Block.
+        // Keine Gruppe aktiv? Dann die naechstgelegene Block-Gruppe in der Naehe
+        // benutzen, statt jedes Mal eine neue anzulegen.
+        //
+        // Vorher musste man die Gruppe erst umstaendlich in der Verwaltung
+        // waehlen. Jetzt genuegt es, in der Naehe zu stehen -- was man markiert,
+        // landet automatisch bei der Gruppe, zu der es offensichtlich gehoert.
         if (blockGroup == null || !WaypointManager.all().contains(blockGroup)) {
+            blockGroup = findNearbyGroup(client, pos, 24);
+        }
+
+        // Immer noch keine? Dann eine neue anlegen.
+        if (blockGroup == null) {
             String blockName;
             try {
                 blockName = client.world.getBlockState(pos)
@@ -178,6 +188,33 @@ public final class WaypointActions {
     }
 
     /**
+     * Sucht eine Block-Gruppe in der Naehe, damit man nicht jedes Mal manuell
+     * eine auswaehlen muss.
+     */
+    private static WaypointManager.Waypoint findNearbyGroup(MinecraftClient client,
+                                                            BlockPos pos, int radius) {
+        String dim = com.vortex.client.hud.WaypointRenderer.currentWorldKey(client);
+        WaypointManager.Waypoint best = null;
+        double bestSq = (double) radius * radius;
+        for (WaypointManager.Waypoint w : WaypointManager.all()) {
+            if (w.kind != WaypointManager.Kind.BLOCK) continue;
+            if (!WaypointManager.matches(w, dim)) continue;
+            // Abstand zum naechsten Block dieser Gruppe.
+            for (BlockPos b : w.blocks) {
+                double dx = b.getX() - pos.getX();
+                double dy = b.getY() - pos.getY();
+                double dz = b.getZ() - pos.getZ();
+                double sq = dx * dx + dy * dy + dz * dz;
+                if (sq < bestSq) {
+                    bestSq = sq;
+                    best = w;
+                }
+            }
+        }
+        return best;
+    }
+
+    /**
      * Bereichsmarkierung: erster Druck merkt die Ecke, zweiter fuellt den
      * gesamten Quader dazwischen in die Gruppe.
      *
@@ -200,8 +237,11 @@ public final class WaypointActions {
             return;
         }
 
-        // Gruppe sicherstellen.
+        // Gruppe sicherstellen -- erst in der Naehe suchen, sonst neu anlegen.
         if (blockGroup == null || !WaypointManager.all().contains(blockGroup)) {
+            blockGroup = findNearbyGroup(client, pos, 24);
+        }
+        if (blockGroup == null) {
             blockGroup = addWaypoint(client, pos.getX(), pos.getY(), pos.getZ(),
                     "Bereich", WaypointManager.Kind.BLOCK, false);
         }
