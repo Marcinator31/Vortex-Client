@@ -28,9 +28,9 @@ import net.minecraft.client.option.SimpleOption;
 public class PotatoModeModule extends Module {
 
     public final ModeSetting strength =
-        new ModeSetting("Staerke", 0, "Ausgewogen", "Aggressiv");
+        new ModeSetting("Strength", 0, "Ausgewogen", "Aggressiv");
     public final NumberSetting renderDistance =
-        new NumberSetting("Render-Distanz", 6, 2, 32, 1);
+        new NumberSetting("Render Distance", 6, 2, 32, 1);
 
     // Gespeicherte Originalwerte (als Object, weil SimpleOption generisch ist).
     private boolean saved = false;

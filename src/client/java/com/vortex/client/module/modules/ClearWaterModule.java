@@ -10,6 +10,6 @@ import com.vortex.client.module.Module;
  */
 public class ClearWaterModule extends Module {
     public ClearWaterModule() {
-        super("Klarsicht Wasser", Category.MISC);
+        super("Clear Water", Category.MISC);
     }
 }

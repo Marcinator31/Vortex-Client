@@ -29,23 +29,23 @@ public class CrystalMacroModule extends Module {
      * 0 bedeutet: so schnell das Spiel es zulaesst. Genau das faellt allerdings
      * am staerksten auf -- ein Mensch schafft solche Abstaende nicht.
      */
-    public final NumberSetting delay = new NumberSetting("Verzoegerung", 0, 0, 10, 1);
+    public final NumberSetting delay = new NumberSetting("Delay", 0, 0, 10, 1);
 
     /** Nach dem Setzen wieder auf den vorherigen Hotbar-Platz zurueck. */
-    public final BooleanSetting switchBack = new BooleanSetting("Zurueckwechseln", true);
+    public final BooleanSetting switchBack = new BooleanSetting("Switch Back", true);
 
     /** Auch auf Grundgestein setzen (im Nether ueblich). */
-    public final BooleanSetting bedrock = new BooleanSetting("Auch Grundgestein", true);
+    public final BooleanSetting bedrock = new BooleanSetting("Include Bedrock", true);
 
     /** Gesetzte Kristalle sofort wieder zerschlagen. */
-    public final BooleanSetting breakThem = new BooleanSetting("Sofort sprengen", true);
+    public final BooleanSetting breakThem = new BooleanSetting("Break Instantly", true);
 
     /** Reichweite, in der Kristalle zum Sprengen gesucht werden. */
-    public final NumberSetting breakRange = new NumberSetting("Spreng-Reichweite", 4.5, 2.0, 6.0, 0.5);
+    public final NumberSetting breakRange = new NumberSetting("Break Range", 4.5, 2.0, 6.0, 0.5);
 
     /** Nur setzen, solange die Angriffstaste gehalten wird. */
     public final BooleanSetting onlyWhenHolding =
-            new BooleanSetting("Nur bei gedrueckter Taste", true);
+            new BooleanSetting("Only While Key Held", true);
 
     public CrystalMacroModule() {
         super("Crystal Macro", Category.PVP);

@@ -34,7 +34,7 @@ public final class GameRestarter {
         List<String> command = buildCommand();
         if (command.isEmpty()) {
             throw new IllegalStateException(
-                    "Kommandozeile konnte nicht ermittelt werden");
+                    "Could not determine the command line");
         }
 
         ProcessBuilder pb = new ProcessBuilder(command);

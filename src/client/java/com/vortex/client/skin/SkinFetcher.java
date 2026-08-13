@@ -56,7 +56,7 @@ public final class SkinFetcher {
     /** Sucht den Skin eines Spielernamens. Wirft mit klarer Meldung, wenn nichts geht. */
     public static Result lookup(String userName) throws Exception {
         if (userName == null || userName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Kein Name angegeben.");
+            throw new IllegalArgumentException("No name given.");
         }
         String name = userName.trim();
 
@@ -64,7 +64,7 @@ public final class SkinFetcher {
         JsonObject profile = getJson(
                 "https://api.mojang.com/users/profiles/minecraft/" + enc(name));
         if (profile == null || !profile.has("id")) {
-            throw new RuntimeException("Spieler \"" + name + "\" nicht gefunden.");
+            throw new RuntimeException("Player \"" + name + "\" not found.");
         }
         String uuid = profile.get("id").getAsString();
         String realName = profile.has("name") ? profile.get("name").getAsString() : name;
@@ -73,7 +73,7 @@ public final class SkinFetcher {
         JsonObject session = getJson(
                 "https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
         if (session == null || !session.has("properties")) {
-            throw new RuntimeException("Profil konnte nicht geladen werden.");
+            throw new RuntimeException("Could not load the profile.");
         }
 
         JsonArray props = session.getAsJsonArray("properties");
@@ -86,7 +86,7 @@ public final class SkinFetcher {
             }
         }
         if (encoded == null) {
-            throw new RuntimeException("Dieser Spieler hat keinen eigenen Skin.");
+            throw new RuntimeException("This player has no custom skin.");
         }
 
         // 3) Base64-Block auswerten
@@ -94,7 +94,7 @@ public final class SkinFetcher {
         JsonObject tex = JsonParser.parseString(json).getAsJsonObject()
                 .getAsJsonObject("textures");
         if (tex == null || !tex.has("SKIN")) {
-            throw new RuntimeException("Dieser Spieler hat keinen eigenen Skin.");
+            throw new RuntimeException("This player has no custom skin.");
         }
         JsonObject skin = tex.getAsJsonObject("SKIN");
         String url = skin.get("url").getAsString();
@@ -116,16 +116,16 @@ public final class SkinFetcher {
                 .build();
         HttpResponse<byte[]> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofByteArray());
         if (resp.statusCode() / 100 != 2) {
-            throw new RuntimeException("Download fehlgeschlagen (HTTP "
+            throw new RuntimeException("Download failed (HTTP "
                     + resp.statusCode() + ").");
         }
         byte[] data = resp.body();
         if (data == null || data.length < 8) {
-            throw new RuntimeException("Leere Skin-Datei erhalten.");
+            throw new RuntimeException("Received an empty skin file.");
         }
         // Kurze Plausibilitaetspruefung: PNG beginnt immer mit derselben Kennung.
         if (!(data[0] == (byte) 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G')) {
-            throw new RuntimeException("Die geladene Datei ist kein PNG.");
+            throw new RuntimeException("The downloaded file is not a PNG.");
         }
 
         Files.createDirectories(SkinWardrobe.skinDir());
@@ -148,10 +148,10 @@ public final class SkinFetcher {
             return null;   // Name existiert nicht
         }
         if (resp.statusCode() == 429) {
-            throw new RuntimeException("Zu viele Anfragen -- kurz warten.");
+            throw new RuntimeException("Too many requests \u2014 wait a moment.");
         }
         if (resp.statusCode() / 100 != 2) {
-            throw new RuntimeException("Mojang antwortete mit HTTP " + resp.statusCode() + ".");
+            throw new RuntimeException("Mojang replied with HTTP " + resp.statusCode() + ".");
         }
         String body = resp.body();
         if (body == null || body.isEmpty()) return null;

@@ -24,14 +24,14 @@ import com.vortex.client.module.Module;
 public class HealthIndicatorModule extends Module {
 
     public final ModeSetting mode =
-        new ModeSetting("Anzeige", 0, "Herzen", "Zahl+Herz", "Zahl");
-    public final NumberSetting scale = new NumberSetting("Skalierung", 1.0, 0.5, 3.0, 0.1);
-    public final ColorSetting color = new ColorSetting("Farbe", 0xFFFF5555);
+        new ModeSetting("Display", 0, "Herzen", "Zahl+Herz", "Zahl");
+    public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
+    public final ColorSetting color = new ColorSetting("Color", 0xFFFF5555);
 
     // Fuer welche Entity-Arten anzeigen.
-    public final BooleanSetting showPlayers  = new BooleanSetting("Spieler", true);
-    public final BooleanSetting showMonsters = new BooleanSetting("Monster", true);
-    public final BooleanSetting showAnimals  = new BooleanSetting("Tiere", false);
+    public final BooleanSetting showPlayers  = new BooleanSetting("Players", true);
+    public final BooleanSetting showMonsters = new BooleanSetting("Monsters", true);
+    public final BooleanSetting showAnimals  = new BooleanSetting("Animals", false);
 
     public HealthIndicatorModule() {
         super("Health Indicator", Category.PVP);

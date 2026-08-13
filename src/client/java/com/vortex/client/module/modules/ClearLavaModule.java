@@ -10,6 +10,6 @@ import com.vortex.client.module.Module;
  */
 public class ClearLavaModule extends Module {
     public ClearLavaModule() {
-        super("Klarsicht Lava", Category.MISC);
+        super("Clear Lava", Category.MISC);
     }
 }

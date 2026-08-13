@@ -21,11 +21,11 @@ public class FlyModule extends Module {
 
     // Multiplikator auf die normale Kreativ-Fluggeschwindigkeit (0.05).
     public final NumberSetting speed =
-            new NumberSetting("Geschwindigkeit", 1.0, 0.1, 10.0, 0.1);
+            new NumberSetting("Speed", 1.0, 0.1, 10.0, 0.1);
 
     // Beim Ausschalten sanft absetzen statt sofort zu fallen.
     public final BooleanSetting keepAllowFlying =
-            new BooleanSetting("Schweben nach Aus", false);
+            new BooleanSetting("Hover After Disable", false);
 
     public FlyModule() {
         super("Fly", Category.PVP);

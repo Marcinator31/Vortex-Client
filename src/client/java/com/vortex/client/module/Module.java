@@ -29,7 +29,7 @@ public abstract class Module {
     private final Category category;
     private final List<Setting> settings = new ArrayList<>();
 
-    private final BooleanSetting enabled = new BooleanSetting("Aktiviert", false);
+    private final BooleanSetting enabled = new BooleanSetting("Enabled", false);
 
     protected Module(String name, Category category) {
         this.name = name;

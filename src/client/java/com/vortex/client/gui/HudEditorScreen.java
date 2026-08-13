@@ -57,7 +57,7 @@ public class HudEditorScreen extends Screen {
     private final List<int[]> guidesH = new ArrayList<>(); // {y, x1, x2}
 
     public HudEditorScreen() {
-        super(Text.literal("HUD-Editor"));
+        super(Text.literal("HUD Editor"));
     }
 
     private List<HudElement> elements() {
@@ -160,10 +160,10 @@ public class HudEditorScreen extends Screen {
         ctx.fill(0, 0, this.width, h, C_BAR);
         ctx.fill(0, h, this.width, h + 1, 0xFF31313A);
 
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("HUD-Editor"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("HUD Editor"),
                 8, 9, 0xFFFFFFFF);
         ctx.drawText(this.textRenderer,
-                Text.literal("Ziehen zum Verschieben  \u00B7  ESC schliesst und speichert"),
+                Text.literal("Drag to move  \u00B7  ESC saves and closes"),
                 74, 9, 0xFF74747F, false);
 
         // Umschalter rechts.

@@ -18,17 +18,17 @@ public class KeystrokesModule extends Module implements HudElement {
 
     public final NumberSetting x = new NumberSetting("X", 4, 0, 1920, 1);
     public final NumberSetting y = new NumberSetting("Y", 120, 0, 1080, 1);
-    public final ColorSetting color = new ColorSetting("Textfarbe", 0xFFFFFFFF);
-    public final NumberSetting scale = new NumberSetting("Skalierung", 1.0, 0.5, 3.0, 0.1);
+    public final ColorSetting color = new ColorSetting("Text Color", 0xFFFFFFFF);
+    public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
 
     /** Farbe der Tasten im Ruhezustand und beim Druecken. */
-    public final ColorSetting idleColor = new ColorSetting("Taste normal", 0x80000000);
-    public final ColorSetting pressColor = new ColorSetting("Taste gedrueckt", 0xC0FFFFFF);
+    public final ColorSetting idleColor = new ColorSetting("Key Idle", 0x80000000);
+    public final ColorSetting pressColor = new ColorSetting("Key Pressed", 0xC0FFFFFF);
 
     /** Maustasten mit anzeigen (inkl. Klicks pro Sekunde). */
-    public final BooleanSetting showMouse = new BooleanSetting("Maustasten", true);
+    public final BooleanSetting showMouse = new BooleanSetting("Mouse Buttons", true);
     /** Leertaste als breiten Balken darunter anzeigen. */
-    public final BooleanSetting showSpace = new BooleanSetting("Leertaste", true);
+    public final BooleanSetting showSpace = new BooleanSetting("Spacebar", true);
 
     public KeystrokesModule() {
         super("Keystrokes", Category.HUD);

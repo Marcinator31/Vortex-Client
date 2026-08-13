@@ -21,9 +21,9 @@ import com.vortex.client.module.Module;
 public class SaturationModule extends Module {
 
     public final BooleanSetting foodPreview =
-        new BooleanSetting("Food-Vorschau", true);
+        new BooleanSetting("Food Preview", true);
     public final BooleanSetting healthPreview =
-        new BooleanSetting("Health-Vorschau", true);
+        new BooleanSetting("Health Preview", true);
 
     public SaturationModule() {
         super("AppleSkin", Category.HUD);

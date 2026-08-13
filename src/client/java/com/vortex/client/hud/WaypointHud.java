@@ -135,14 +135,14 @@ public final class WaypointHud {
         // Hinweis, solange eine Bereichsauswahl laeuft oder eine Block-Gruppe
         // aktiv ist -- sonst vergisst man, dass die erste Ecke noch offen ist.
         if (com.vortex.client.waypoint.WaypointActions.hasPendingCorner()) {
-            String hint = "Bereich: zweite Ecke waehlen";
+            String hint = "Area: pick the second corner";
             int hw = client.textRenderer.getWidth(hint);
             ctx.drawTextWithShadow(client.textRenderer, Text.literal(hint),
                     (w - hw) / 2, h - 70, 0xFFFFD070);
         } else {
             String grp = com.vortex.client.waypoint.WaypointActions.activeGroupName();
             if (grp != null) {
-                String hint = "Blockgruppe: " + grp;
+                String hint = "Block group: " + grp;
                 int hw = client.textRenderer.getWidth(hint);
                 ctx.drawText(client.textRenderer, Text.literal(hint),
                         (w - hw) / 2, h - 70, 0x90FFFFFF, false);

@@ -29,7 +29,7 @@ public final class SkinWardrobe {
     public static final class Skin {
         public String name;          // frei waehlbarer Anzeigename
         public String fileName;      // Dateiname im skins-Ordner
-        public String source;        // Spielername oder "eigene Datei"
+        public String source;        // Spielername oder "own file"
         public boolean slim;         // schlankes Modell (Alex) statt klassisch
         public long added;           // Zeitpunkt des Hinzufuegens
 
@@ -188,7 +188,7 @@ public final class SkinWardrobe {
                     boolean known = LIST.stream().anyMatch(s -> s.fileName.equalsIgnoreCase(fn));
                     if (known) continue;
                     String base = fn.substring(0, fn.length() - 4);
-                    LIST.add(0, new Skin(base, fn, "eigene Datei", false,
+                    LIST.add(0, new Skin(base, fn, "own file", false,
                             System.currentTimeMillis()));
                     added++;
                 }

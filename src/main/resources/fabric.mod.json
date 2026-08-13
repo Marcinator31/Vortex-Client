@@ -4,7 +4,7 @@
 	"version": "${version}",
 
 	"name": "Vortex Client",
-	"description": "Vortex Client -- Fabric-Client mit HUD-Modulen, ESP, Waypoint-System, Skin-Garderobe und Performance-Werkzeugen.",
+	"description": "Vortex Client -- a Fabric client with HUD modules, ESP, a waypoint system, a skin wardrobe and performance tools.",
 	"authors": [],
 	"contact": {},
 

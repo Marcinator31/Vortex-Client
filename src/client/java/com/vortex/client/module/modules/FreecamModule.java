@@ -16,14 +16,14 @@ import org.lwjgl.glfw.GLFW;
  */
 public class FreecamModule extends Module {
 
-    public final KeySetting key = new KeySetting("Taste", GLFW.GLFW_KEY_F4);
+    public final KeySetting key = new KeySetting("Key", GLFW.GLFW_KEY_F4);
 
     // Fluggeschwindigkeit (Bloecke pro Sekunde) und Multiplikator, solange die
     // Sprint-Taste gehalten wird.
     public final NumberSetting speed =
-            new NumberSetting("Geschwindigkeit", 10.0, 1.0, 50.0, 1.0);
+            new NumberSetting("Speed", 10.0, 1.0, 50.0, 1.0);
     public final NumberSetting sprintMult =
-            new NumberSetting("Sprint-Faktor", 3.0, 1.0, 10.0, 0.5);
+            new NumberSetting("Sprint Multiplier", 3.0, 1.0, 10.0, 0.5);
 
     /**
      * Render-Anker: spawnt eine unsichtbare Kamera-Entity und macht sie zur
@@ -36,7 +36,7 @@ public class FreecamModule extends Module {
      * ohnehin die automatische Helligkeit in der Freecam.
      */
     public final BooleanSetting renderAnchor =
-            new BooleanSetting("Render-Anker", false);
+            new BooleanSetting("Render Anchor", false);
 
     public FreecamModule() {
         super("Freecam", Category.MISC);

@@ -19,7 +19,7 @@ import net.minecraft.util.Identifier;
 public class EspScreen extends SelectionScreen {
 
     public EspScreen(Screen parent) {
-        super(parent, "Mobs auswaehlen");
+        super(parent, "Select mobs");
     }
 
     @Override
@@ -58,6 +58,6 @@ public class EspScreen extends SelectionScreen {
 
     @Override
     protected String hint() {
-        return "werden hervorgehoben";
+        return "highlighted";
     }
 }

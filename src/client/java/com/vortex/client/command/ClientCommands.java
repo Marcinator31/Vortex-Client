@@ -19,12 +19,12 @@ public final class ClientCommands {
             dispatcher.register(ClientCommandManager.literal("relaunch")
                     .executes(ctx -> {
                         ctx.getSource().sendFeedback(
-                                Text.literal("Starte Spiel neu ..."));
+                                Text.literal("Restarting game..."));
                         try {
                             GameRestarter.restart();
                         } catch (Throwable t) {
                             ctx.getSource().sendError(Text.literal(
-                                    "Neustart fehlgeschlagen: " + t));
+                                    "Restart failed: " + t));
                         }
                         return 1;
                     }));
@@ -40,10 +40,10 @@ public final class ClientCommands {
                                 com.vortex.client.core.ConfigManager.exportPreset(name);
                         if (p != null) {
                             ctx.getSource().sendFeedback(
-                                    Text.literal("Gespeichert: " + p));
+                                    Text.literal("Saved: " + p));
                         } else {
                             ctx.getSource().sendError(
-                                    Text.literal("Export fehlgeschlagen."));
+                                    Text.literal("Export failed."));
                         }
                         return 1;
                     })));
@@ -57,10 +57,10 @@ public final class ClientCommands {
                                 .getString(ctx, "name");
                         if (com.vortex.client.core.ConfigManager.importPreset(name)) {
                             ctx.getSource().sendFeedback(
-                                    Text.literal("Geladen: " + name));
+                                    Text.literal("Loaded: " + name));
                         } else {
                             ctx.getSource().sendError(
-                                    Text.literal("Nicht gefunden. Vorhanden: "
+                                    Text.literal("Not found. Available: "
                                         + String.join(", ",
                                             com.vortex.client.core.ConfigManager.listExports())));
                         }
@@ -84,7 +84,7 @@ public final class ClientCommands {
                                     mc.player.getBlockZ(), dim);
                             com.vortex.client.core.ConfigManager.save();
                             ctx.getSource().sendFeedback(
-                                    Text.literal("Marker gesetzt: " + name));
+                                    Text.literal("Marker added: " + name));
                             return 1;
                         })))
                     .then(ClientCommandManager.literal("del")
@@ -98,10 +98,10 @@ public final class ClientCommands {
                             com.vortex.client.core.ConfigManager.save();
                             if (ok) {
                                 ctx.getSource().sendFeedback(
-                                        Text.literal("Entfernt: " + name));
+                                        Text.literal("Removed: " + name));
                             } else {
                                 ctx.getSource().sendError(
-                                        Text.literal("Kein Marker mit diesem Namen."));
+                                        Text.literal("No marker with that name."));
                             }
                             return 1;
                         })))
@@ -110,10 +110,10 @@ public final class ClientCommands {
                             var all = com.vortex.client.waypoint.WaypointManager.all();
                             if (all.isEmpty()) {
                                 ctx.getSource().sendFeedback(
-                                        Text.literal("Keine Marker gesetzt."));
+                                        Text.literal("No markers yet."));
                                 return 1;
                             }
-                            StringBuilder sb = new StringBuilder("Marker:");
+                            StringBuilder sb = new StringBuilder("Markers:");
                             for (var w : all) {
                                 sb.append("\n  ").append(w.name).append("  ")
                                   .append(w.x).append(", ").append(w.y)
@@ -134,7 +134,7 @@ public final class ClientCommands {
                         .executes(ctx -> {
                             com.vortex.client.core.Profiler.reset();
                             ctx.getSource().sendFeedback(
-                                    Text.literal("Messwerte zurueckgesetzt."));
+                                    Text.literal("Measurements reset."));
                             return 1;
                         })));
 
@@ -151,8 +151,8 @@ public final class ClientCommands {
                     .executes(ctx -> {
                         var list = com.vortex.client.core.ConfigManager.listExports();
                         ctx.getSource().sendFeedback(Text.literal(
-                                list.isEmpty() ? "Keine Exporte vorhanden."
-                                               : "Exporte: " + String.join(", ", list)));
+                                list.isEmpty() ? "No exports found."
+                                               : "Exports: " + String.join(", ", list)));
                         return 1;
                     }));
         });

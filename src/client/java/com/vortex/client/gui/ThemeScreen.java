@@ -52,7 +52,7 @@ public class ThemeScreen extends Screen {
     private int moodX, moodY, moodCell;
 
     public ThemeScreen(Screen parent) {
-        super(Text.literal("Design"));
+        super(Text.literal("Theme"));
         this.parent = parent;
     }
 
@@ -91,11 +91,11 @@ public class ThemeScreen extends Screen {
         boolean backHov = inRect(mx, my, winX + 8, winY + 8, 16, 16);
         ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
                 winX + 12, winY + 12, fade(backHov ? accent : 0xFF9A9AA6, openAnim));
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Design"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Theme"),
                 winX + 30, winY + 11, fade(0xFFFFFFFF, openAnim));
 
         // Farbstimmungen
-        ctx.drawText(this.textRenderer, Text.literal("Akzent"),
+        ctx.drawText(this.textRenderer, Text.literal("Accent"),
                 winX + 10, winY + 32, fade(0xFF74747F, openAnim), false);
         moodCell = 16;
         moodX = winX + 52;
@@ -135,14 +135,14 @@ public class ThemeScreen extends Screen {
         int fy = winY + winH - FOOTER_H;
         ctx.fill(winX, fy, winX + WIN_W, winY + winH, fade(C_BAR, openAnim));
         ctx.fill(winX, fy, winX + WIN_W, fy + 1, fade(C_LINE, openAnim));
-        String reset = "Zuruecksetzen";
+        String reset = "Reset";
         int rw = this.textRenderer.getWidth(reset) + 16;
         boolean rHov = inRect(mx, my, winX + 10, fy + 4, rw, 17);
         roundRect(ctx, winX + 10, fy + 4, rw, 17, rHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.drawText(this.textRenderer, Text.literal(reset),
                 winX + 18, fy + 9, 0xFFD0D0DA, false);
 
-        ctx.drawText(this.textRenderer, Text.literal("Klick auf eine Zeile oeffnet den Farbwaehler"),
+        ctx.drawText(this.textRenderer, Text.literal("Click a row to open the colour picker"),
                 winX + 20 + rw, fy + 9, 0xFF5A5A66, false);
 
         super.render(ctx, mouseX, mouseY, delta);
@@ -167,7 +167,7 @@ public class ThemeScreen extends Screen {
         }
         // Zuruecksetzen
         int fy = winY + winH - FOOTER_H;
-        String reset = "Zuruecksetzen";
+        String reset = "Reset";
         int rw = this.textRenderer.getWidth(reset) + 16;
         if (inRect(mx, my, winX + 10, fy + 4, rw, 17)) {
             Theme.INSTANCE.resetDefaults();

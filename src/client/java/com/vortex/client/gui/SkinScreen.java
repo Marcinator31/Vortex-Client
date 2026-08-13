@@ -106,7 +106,7 @@ public class SkinScreen extends Screen {
 
         // Beim Oeffnen lose PNG-Dateien uebernehmen -- bequemer als ein Knopf.
         int found = SkinWardrobe.importLooseFiles();
-        if (found > 0) status = found + " Datei(en) aus dem Ordner uebernommen.";
+        if (found > 0) status = found + " file(s) imported from the folder.";
     }
 
     @Override
@@ -152,7 +152,7 @@ public class SkinScreen extends Screen {
                 winX + 12, winY + 12, backHov ? accent : 0xFF9A9AA6);
         hits.add(new Hit(winX + 8, winY + 8, 16, 16, Act.BACK, null));
 
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Skin-Garderobe"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Skin Wardrobe"),
                 winX + 30, winY + 11, 0xFFFFFFFF);
 
         int count = SkinWardrobe.all().size();
@@ -164,12 +164,12 @@ public class SkinScreen extends Screen {
         // Suchfeld
         roundRect(ctx, winX + 14, winY + 34, 192, 20, C_INNER);
         if (searchField != null && searchField.getText().isEmpty()) {
-            ctx.drawText(this.textRenderer, Text.literal("Spielername eingeben ..."),
+            ctx.drawText(this.textRenderer, Text.literal("Enter a player name..."),
                     winX + 20, winY + 40, 0xFF6A6A76, false);
         }
 
         // Knopf: holen
-        String lbl = busy ? "..." : "Skin holen";
+        String lbl = busy ? "..." : "Fetch skin";
         int bw = this.textRenderer.getWidth(lbl) + 18;
         boolean hov = in(winX + 212, winY + 34, bw, 20);
         roundRect(ctx, winX + 212, winY + 34, bw, 20,
@@ -179,7 +179,7 @@ public class SkinScreen extends Screen {
         if (!busy) hits.add(new Hit(winX + 212, winY + 34, bw, 20, Act.SEARCH, null));
 
         // Knopf: Ordner oeffnen
-        String ol = "Ordner";
+        String ol = "Folder";
         int ow = this.textRenderer.getWidth(ol) + 18;
         int ox = winX + winW - ow - 12;
         boolean ohov = in(ox, winY + 34, ow, 20);
@@ -188,7 +188,7 @@ public class SkinScreen extends Screen {
         hits.add(new Hit(ox, winY + 34, ow, 20, Act.OPEN_FOLDER, null));
 
         // Knopf: Ordner einlesen
-        String il = "Einlesen";
+        String il = "Scan";
         int iw = this.textRenderer.getWidth(il) + 18;
         int ix = ox - iw - 6;
         boolean ihov = in(ix, winY + 34, iw, 20);
@@ -244,12 +244,12 @@ public class SkinScreen extends Screen {
                 // Werkzeug-Reihe oberhalb des Hochladen-Knopfes, damit sich
                 // die Klickflaechen nicht ueberlappen.
                 int bx = cx + 4, by = cy + CELL_H - 40;
-                ctx.drawText(this.textRenderer, Text.literal("umbenennen"),
+                ctx.drawText(this.textRenderer, Text.literal("rename"),
                         bx, by, 0xFF9AD8FF, false);
-                hits.add(new Hit(bx, by, this.textRenderer.getWidth("umbenennen"), 9,
+                hits.add(new Hit(bx, by, this.textRenderer.getWidth("rename"), 9,
                         Act.RENAME, skin));
 
-                String ml = skin.slim ? "klassisch" : "schlank";
+                String ml = skin.slim ? "classic" : "slim";
                 int mxp = cx + CELL_W - 10 - this.textRenderer.getWidth(ml) - 12;
                 ctx.drawText(this.textRenderer, Text.literal(ml), mxp, by, 0xFFB4B4C0, false);
                 hits.add(new Hit(mxp, by, this.textRenderer.getWidth(ml), 9, Act.MODEL, skin));
@@ -271,7 +271,7 @@ public class SkinScreen extends Screen {
             boolean ubHov = can && in(ubX, ubY, ubW, 14);
             roundRect(ctx, ubX, ubY, ubW, 14,
                     can ? (ubHov ? mix(C_INNER, 0xFF55FF7A, 0.5f) : C_INNER) : 0xFF202027);
-            String up = can ? "Fuer alle sichtbar" : "Anmeldung fehlt";
+            String up = can ? "Visible to everyone" : "Anmeldung fehlt";
             String upShort = shorten(up, ubW - 8);
             int uw2 = this.textRenderer.getWidth(upShort);
             ctx.drawText(this.textRenderer, Text.literal(upShort),
@@ -301,7 +301,7 @@ public class SkinScreen extends Screen {
         }
 
         if (list.isEmpty()) {
-            String msg = "Noch keine Skins -- oben einen Spielernamen suchen";
+            String msg = "No skins yet — search for a player name above";
             ctx.drawText(this.textRenderer, Text.literal(msg),
                     winX + (winW - this.textRenderer.getWidth(msg)) / 2,
                     winY + HEADER_H + listH / 2 - 4, 0xFF6A6A76, false);
@@ -346,10 +346,10 @@ public class SkinScreen extends Screen {
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
 
         if (renaming != null) {
-            ctx.drawText(this.textRenderer, Text.literal("Neuer Name:"),
+            ctx.drawText(this.textRenderer, Text.literal("New name:"),
                     winX + 12, fy + 7, 0xFFD0D0DA, false);
             roundRect(ctx, winX + 72, fy + 3, 188, 16, C_INNER);
-            String ok = "Speichern";
+            String ok = "Save";
             int okw = this.textRenderer.getWidth(ok) + 14;
             boolean hov = in(winX + 266, fy + 3, okw, 16);
             roundRect(ctx, winX + 266, fy + 3, okw, 16,
@@ -364,7 +364,7 @@ public class SkinScreen extends Screen {
         // Skin aktiv ist. Hilft, wenn der Skin pink-schwarz erscheint.
         var actNow = com.vortex.client.skin.ActiveSkin.get();
         if (actNow != null) {
-            String vl = "Variante " + com.vortex.client.skin.ActiveSkin.getVariant();
+            String vl = "Variant " + com.vortex.client.skin.ActiveSkin.getVariant();
             int vw = this.textRenderer.getWidth(vl) + 14;
             int vx = winX + winW - vw - 10;
             boolean vhov = in(vx, fy + 3, vw, 16);
@@ -381,8 +381,8 @@ public class SkinScreen extends Screen {
         } else {
             var act = com.vortex.client.skin.ActiveSkin.get();
             msg = (act == null)
-                    ? "Klick auf einen Skin wendet ihn an (nur fuer dich sichtbar)"
-                    : ("Aktiv: " + act.name + "  --  nochmal klicken fuer eigenen Skin");
+                    ? "Click a skin to apply it (visible only to you)"
+                    : ("Active: " + act.name + "  \u2014  click again for your own skin");
         }
         ctx.drawText(this.textRenderer, Text.literal(shorten(msg, winW - 24)),
                 winX + 12, fy + 7, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
@@ -409,8 +409,8 @@ public class SkinScreen extends Screen {
                     return true;
                 case IMPORT: {
                     int n = SkinWardrobe.importLooseFiles();
-                    status = (n > 0) ? (n + " Datei(en) uebernommen.")
-                                     : "Keine neuen Dateien gefunden.";
+                    status = (n > 0) ? (n + " file(s) imported.")
+                                     : "No new files found.";
                     return true;
                 }
                 case RENAME:
@@ -418,7 +418,7 @@ public class SkinScreen extends Screen {
                         SkinWardrobe.rename(h.skin, renameField.getText());
                         renaming = null;
                         renameField.setVisible(false);
-                        status = "Umbenannt.";
+                        status = "Renamed.";
                     } else {
                         renaming = h.skin;
                         if (renameField != null) {
@@ -432,7 +432,7 @@ public class SkinScreen extends Screen {
                     h.skin.slim = !h.skin.slim;
                     SkinWardrobe.save();
                     status = h.skin.name + ": Modell "
-                            + (h.skin.slim ? "schlank" : "klassisch");
+                            + (h.skin.slim ? "slim" : "classic");
                     return true;
                 case DELETE:
                     if (com.vortex.client.skin.ActiveSkin.get() == h.skin) {
@@ -444,12 +444,12 @@ public class SkinScreen extends Screen {
                         renaming = null;
                         if (renameField != null) renameField.setVisible(false);
                     }
-                    status = "Geloescht.";
+                    status = "Deleted.";
                     return true;
                 case VARIANT:
                     com.vortex.client.skin.ActiveSkin.toggleVariant();
-                    status = "Variante " + com.vortex.client.skin.ActiveSkin.getVariant()
-                            + " -- kurz wegschauen und zurueck, um es zu sehen.";
+                    status = "Variant " + com.vortex.client.skin.ActiveSkin.getVariant()
+                            + " \u2014 look away and back to see it.";
                     return true;
                 case UPLOAD:
                     startUpload(h.skin);
@@ -458,10 +458,10 @@ public class SkinScreen extends Screen {
                     // Nochmal auf denselben Skin klicken -> wieder eigener Skin.
                     if (com.vortex.client.skin.ActiveSkin.get() == h.skin) {
                         com.vortex.client.skin.ActiveSkin.clear();
-                        status = "Wieder eigener Skin.";
+                        status = "Back to your own skin.";
                     } else {
                         com.vortex.client.skin.ActiveSkin.set(h.skin);
-                        status = h.skin.name + " angewendet (nur fuer dich sichtbar).";
+                        status = h.skin.name + " applied (visible only to you).";
                     }
                     return true;
                 default:
@@ -476,11 +476,11 @@ public class SkinScreen extends Screen {
         if (busy || searchField == null) return;
         String name = searchField.getText().trim();
         if (name.isEmpty()) {
-            status = "Bitte einen Spielernamen eingeben.";
+            status = "Enter a player name.";
             return;
         }
         busy = true;
-        status = "Suche " + name + " ...";
+        status = "Searching " + name + " ...";
 
         Thread t = new Thread(() -> {
             try {
@@ -488,19 +488,19 @@ public class SkinScreen extends Screen {
                 String file = SkinWardrobe.freeFileName(r.userName);
                 SkinFetcher.download(r.textureUrl, file);
                 SkinWardrobe.add(r.userName, file, r.userName, r.slim);
-                status = r.userName + " hinzugefuegt.";
+                status = r.userName + " added.";
                 MinecraftClient.getInstance().execute(() -> {
                     if (searchField != null) searchField.setText("");
                 });
             } catch (Throwable e) {
                 String m = e.getMessage();
                 status = (m == null || m.isEmpty())
-                        ? ("Fehler: " + e.getClass().getSimpleName()) : m;
+                        ? ("Error: " + e.getClass().getSimpleName()) : m;
                 com.vortex.client.core.Errors.report("SkinScreen.search", e);
             } finally {
                 busy = false;
             }
-        }, "pvpclient-skin-fetch");
+        }, "vortexclient-skin-fetch");
         t.setDaemon(true);
         t.start();
     }
@@ -512,25 +512,25 @@ public class SkinScreen extends Screen {
     private void startUpload(SkinWardrobe.Skin skin) {
         if (busy) return;
         if (!com.vortex.client.skin.SkinUploader.canUpload()) {
-            status = "Keine gueltige Anmeldung -- Hochladen nicht moeglich.";
+            status = "Not signed in \u2014 upload unavailable.";
             return;
         }
         busy = true;
-        status = "Lade " + skin.name + " auf dein Konto ...";
+        status = "Uploading " + skin.name + " to your account...";
 
         Thread t = new Thread(() -> {
             try {
                 com.vortex.client.skin.SkinUploader.upload(skin.path(), skin.slim);
-                status = skin.name + " ist jetzt dein Konto-Skin -- fuer alle sichtbar.";
+                status = skin.name + " is now your account skin \u2014 visible to everyone.";
             } catch (Throwable e) {
                 String m = e.getMessage();
                 status = (m == null || m.isEmpty())
-                        ? ("Fehler: " + e.getClass().getSimpleName()) : m;
+                        ? ("Error: " + e.getClass().getSimpleName()) : m;
                 com.vortex.client.core.Errors.report("SkinScreen.upload", e);
             } finally {
                 busy = false;
             }
-        }, "pvpclient-skin-upload");
+        }, "vortexclient-skin-upload");
         t.setDaemon(true);
         t.start();
     }
@@ -539,9 +539,9 @@ public class SkinScreen extends Screen {
         try {
             java.nio.file.Files.createDirectories(SkinWardrobe.skinDir());
             Util.getOperatingSystem().open(SkinWardrobe.skinDir().toUri());
-            status = "Ordner geoeffnet -- PNG hineinkopieren, dann 'Einlesen'.";
+            status = "Folder opened \u2014 copy PNGs in, then press Scan.";
         } catch (Throwable pvpErr) {
-            status = "Ordner: " + SkinWardrobe.skinDir();
+            status = "Folder: " + SkinWardrobe.skinDir();
             com.vortex.client.core.Errors.report("SkinScreen.openFolder", pvpErr);
         }
     }

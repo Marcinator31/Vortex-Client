@@ -14,10 +14,10 @@ import com.vortex.client.module.Module;
  */
 public class HandItemScaleModule extends Module {
 
-    public final NumberSetting size = new NumberSetting("Groesse", 0.7, 0.3, 1.0, 0.05);
+    public final NumberSetting size = new NumberSetting("Size", 0.7, 0.3, 1.0, 0.05);
 
     public HandItemScaleModule() {
-        super("Item-Groesse Hand", Category.MISC);
+        super("Hand Item Size", Category.MISC);
         addSetting(size);
     }
 }

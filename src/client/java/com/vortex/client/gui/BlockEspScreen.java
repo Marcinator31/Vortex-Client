@@ -19,7 +19,7 @@ import net.minecraft.util.Identifier;
 public class BlockEspScreen extends SelectionScreen {
 
     public BlockEspScreen(Screen parent) {
-        super(parent, "Bloecke auswaehlen");
+        super(parent, "Select blocks");
     }
 
     @Override
@@ -57,6 +57,6 @@ public class BlockEspScreen extends SelectionScreen {
 
     @Override
     protected String hint() {
-        return "werden durch Waende gezeigt";
+        return "shown through walls";
     }
 }

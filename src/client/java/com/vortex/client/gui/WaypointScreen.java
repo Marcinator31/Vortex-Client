@@ -165,7 +165,7 @@ public class WaypointScreen extends Screen {
 
         // Profil-Umschalter -- entscheidend auf Netzwerken, wo alle Server
         // dieselbe Adresse haben und sich sonst nicht unterscheiden lassen.
-        String pl = "Profil: " + (WorldProfiles.getActive() == null
+        String pl = "Profile: " + (WorldProfiles.getActive() == null
                 ? "auto" : WorldProfiles.getActive());
         int plw = this.textRenderer.getWidth(pl) + 16;
         int plx = dlx + dlw + 8;
@@ -180,15 +180,15 @@ public class WaypointScreen extends Screen {
         ctx.drawText(this.textRenderer, Text.literal(count),
                 winX + WIN_W - cw - 12, winY + 12, 0xFF74747F, false);
 
-        // Eingabefeld-Rahmen + Knopf "Hier setzen"
+        // Eingabefeld-Rahmen + Knopf "Add here"
         roundRect(ctx, winX + 8, winY + 30, 208, 20, C_INNER);
         if (nameField != null && nameField.getText().isEmpty()) {
-            ctx.drawText(this.textRenderer, Text.literal("Name des Markers ..."),
+            ctx.drawText(this.textRenderer, Text.literal("Marker name..."),
                     winX + 12, winY + 36, 0xFF6A6A76, false);
         }
-        // "Hier setzen" direkt hinter dem Eingabefeld, die beiden Filter
+        // "Add here" direkt hinter dem Eingabefeld, die beiden Filter
         // rechts aussen -- so ueberlappt nichts mehr.
-        String addLbl = "Hier setzen";
+        String addLbl = "Add here";
         int aw = this.textRenderer.getWidth(addLbl) + 16;
         int ax = winX + 224;
         boolean addHov = inRect(ax, winY + 30, aw, 20);
@@ -226,7 +226,7 @@ public class WaypointScreen extends Screen {
                 }
 
                 String pos = w.x + ", " + w.y + ", " + w.z;
-                if (!w.blocks.isEmpty()) pos += "   " + w.blocks.size() + " Bloecke";
+                if (!w.blocks.isEmpty()) pos += "   " + w.blocks.size() + " blocks";
                 // Bei mehreren Welten dazuschreiben, wohin der Marker gehoert --
                 // sonst sieht man nur Koordinaten ohne Zusammenhang.
                 if ("*".equals(worldFilter)) pos += "   " + shortWorld(w.dimension);
@@ -255,6 +255,8 @@ public class WaypointScreen extends Screen {
                         bx - 74, y + 8, 0xFF9A9AA6, false);
                 ctx.drawText(this.textRenderer, Text.literal("K"),
                         bx - 90, y + 8, 0xFF9A9AA6, false);
+                ctx.drawText(this.textRenderer, Text.literal("W"),
+                        bx - 170, y + 8, 0xFF9AD8FF, false);
                 ctx.drawText(this.textRenderer, Text.literal("G"),
                         bx - 154, y + 8, 0xFF9AFF9A, false);
                 ctx.drawText(this.textRenderer, Text.literal("R"),
@@ -275,7 +277,7 @@ public class WaypointScreen extends Screen {
         ctx.disableScissor();
 
         if (list.isEmpty()) {
-            String msg = "Noch keine Marker gesetzt";
+            String msg = "No markers yet";
             ctx.drawText(this.textRenderer, Text.literal(msg),
                     winX + (WIN_W - this.textRenderer.getWidth(msg)) / 2,
                     winY + HEADER_H + listH / 2 - 4, 0xFF6A6A76, false);
@@ -291,7 +293,7 @@ public class WaypointScreen extends Screen {
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
             drawApply(ctx, fy, accent);
         } else if (profileField != null && profileField.isVisible()) {
-            ctx.drawText(this.textRenderer, Text.literal("Profil:"),
+            ctx.drawText(this.textRenderer, Text.literal("Profile:"),
                     winX + 12, fy + 6, 0xFFD0D0DA, false);
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
             drawApply(ctx, fy, accent);
@@ -299,7 +301,7 @@ public class WaypointScreen extends Screen {
             ctx.drawText(this.textRenderer, Text.literal("X Y Z:"),
                     winX + 12, fy + 6, 0xFFD0D0DA, false);
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
-            String ok = "Uebernehmen";
+            String ok = "Apply";
             int okw = this.textRenderer.getWidth(ok) + 14;
             boolean hov = inRect(winX + 250, fy + 2, okw, 16);
             roundRect(ctx, winX + 250, fy + 2, okw, 16,
@@ -308,7 +310,7 @@ public class WaypointScreen extends Screen {
                     winX + 257, fy + 6, 0xFFFFFFFF, false);
         } else {
             String hint = status.isEmpty()
-                    ? "G gehe zu  R umbenennen  C Koordinaten  T Tracer  B Blockziel  N Nether  K kopieren"
+                    ? "W world   G go to   R rename   C coords   T tracer   B blocks   N nether   K copy"
                     : status;
             ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 10, fy + 6,
@@ -350,10 +352,10 @@ public class WaypointScreen extends Screen {
             return true;
         }
 
-        // "Uebernehmen" bei der Koordinaten-Bearbeitung
+        // "Apply" bei der Koordinaten-Bearbeitung
         if (editing != null) {
             int fy2 = winY + winH - FOOTER_H;
-            String ok = "Uebernehmen";
+            String ok = "Apply";
             int okw = this.textRenderer.getWidth(ok) + 14;
             if (inRect(winX + 250, fy2 + 2, okw, 16)) {
                 if (renaming != null) applyRename(renaming);
@@ -375,7 +377,7 @@ public class WaypointScreen extends Screen {
         }
 
         // Profil: Linksklick schaltet durch, Rechtsklick oeffnet die Eingabe.
-        String pl2 = "Profil: " + (WorldProfiles.getActive() == null
+        String pl2 = "Profile: " + (WorldProfiles.getActive() == null
                 ? "auto" : WorldProfiles.getActive());
         int plw2 = this.textRenderer.getWidth(pl2) + 16;
         int plx2 = dlx + dlw + 8;
@@ -396,8 +398,8 @@ public class WaypointScreen extends Screen {
             return true;
         }
 
-        // "Hier setzen"
-        String addLbl = "Hier setzen";
+        // "Add here"
+        String addLbl = "Add here";
         int aw = this.textRenderer.getWidth(addLbl) + 16;
         if (inRect(winX + 224, winY + 30, aw, 20)) {
             addHere();
@@ -413,7 +415,7 @@ public class WaypointScreen extends Screen {
                 int bx = winX + WIN_W - 26;
                 if (inRect(bx, y + 6, 12, 12)) {
                     // Farbe aendern -- ueber ein kurzlebiges ColorSetting.
-                    var cs = new com.vortex.client.core.setting.ColorSetting("Markerfarbe", w.color);
+                    var cs = new com.vortex.client.core.setting.ColorSetting("Marker Colour", w.color);
                     MinecraftClient.getInstance().setScreen(
                             new ColorPickerScreen(this, cs, () -> w.color = cs.get()));
                     return true;
@@ -427,7 +429,7 @@ public class WaypointScreen extends Screen {
                     // stillschweigend einen Marker vernichten.
                     if (pendingDelete != w) {
                         pendingDelete = w;
-                        status = "Nochmal auf x klicken, um \"" + w.name + "\" zu loeschen.";
+                        status = "Click x again to delete \"" + w.name + "\".";
                         return true;
                     }
                     if (com.vortex.client.waypoint.WaypointActions.getBlockGroup() == w) {
@@ -436,7 +438,7 @@ public class WaypointScreen extends Screen {
                     WaypointManager.remove(w);
                     com.vortex.client.core.ConfigManager.save();
                     pendingDelete = null;
-                    status = "Geloescht.";
+                    status = "Deleted.";
                     return true;
                 }
                 // B: Ziel fuer markierte Bloecke waehlen.
@@ -446,7 +448,7 @@ public class WaypointScreen extends Screen {
                         int n = w.blocks.size();
                         w.blocks.clear();
                         com.vortex.client.core.ConfigManager.save();
-                        status = n + " Bloecke entfernt.";
+                        status = n + " blocks removed.";
                         return true;
                     }
                     var cur = com.vortex.client.waypoint.WaypointActions.getBlockGroup();
@@ -458,6 +460,21 @@ public class WaypointScreen extends Screen {
                 if (inRect(bx - 76, y + 6, 14, 12)) {
                     com.vortex.client.waypoint.WaypointActions
                             .createCounterpart(MinecraftClient.getInstance(), w);
+                    return true;
+                }
+                // W: Welt des Markers aendern.
+                //    Linksklick schaltet durch die bekannten Welten,
+                //    Rechtsklick setzt ihn auf die Welt, in der man gerade ist.
+                if (inRect(bx - 172, y + 6, 14, 12)) {
+                    if (click.button() == 1) {
+                        w.dimension = com.vortex.client.hud.WaypointRenderer
+                                .currentWorldKey(MinecraftClient.getInstance());
+                        status = "Moved to: " + shortWorld(w.dimension);
+                    } else {
+                        w.dimension = nextWorldFor(w.dimension);
+                        status = "World: " + shortWorld(w.dimension);
+                    }
+                    com.vortex.client.core.ConfigManager.save();
                     return true;
                 }
                 // G: hingehen
@@ -526,10 +543,10 @@ public class WaypointScreen extends Screen {
         try {
             String cmd = "tp " + w.x + " " + w.y + " " + w.z;
             client.getNetworkHandler().sendChatCommand(cmd);
-            status = "Befehl gesendet: /" + cmd;
+            status = "Command sent: /" + cmd;
         } catch (Throwable pvpErr) {
             com.vortex.client.waypoint.WaypointActions.copyToClipboard(client, w);
-            status = "Teleport nicht moeglich -- Koordinaten kopiert.";
+            status = "Teleport not possible \u2014 coordinates copied.";
         }
     }
 
@@ -552,14 +569,14 @@ public class WaypointScreen extends Screen {
         if (renameField == null) return;
         String n = renameField.getText().trim();
         if (n.isEmpty()) {
-            status = "Name darf nicht leer sein.";
+            status = "Name cannot be empty.";
             return;
         }
         w.name = n.replace('|', ' ').replace(';', ' ');
         com.vortex.client.core.ConfigManager.save();
         renaming = null;
         renameField.setVisible(false);
-        status = "Umbenannt.";
+        status = "Renamed.";
     }
 
     /** Profil aus dem Eingabefeld uebernehmen (leer = automatisch). */
@@ -570,7 +587,7 @@ public class WaypointScreen extends Screen {
         com.vortex.client.hud.WaypointRenderer.invalidateWorldKey();
         com.vortex.client.core.ConfigManager.save();
         profileField.setVisible(false);
-        status = n.isEmpty() ? "Profil: automatisch" : ("Profil: " + n);
+        status = n.isEmpty() ? "Profile: automatic" : ("Profile: " + n);
     }
 
     /** Eingegebene Koordinaten uebernehmen ("x y z" oder "x, y, z"). */
@@ -579,7 +596,7 @@ public class WaypointScreen extends Screen {
         String txt = coordField.getText().replace(',', ' ').trim();
         String[] parts = txt.split("\\s+");
         if (parts.length != 3) {
-            status = "Bitte drei Zahlen eingeben, z.B. 120 64 -300";
+            status = "Enter three numbers, e.g. 120 64 -300";
             return;
         }
         try {
@@ -587,9 +604,9 @@ public class WaypointScreen extends Screen {
             w.y = Integer.parseInt(parts[1]);
             w.z = Integer.parseInt(parts[2]);
             com.vortex.client.core.ConfigManager.save();
-            status = "Koordinaten uebernommen.";
+            status = "Coordinates applied.";
         } catch (Throwable pvpErr) {
-            status = "Das waren keine gueltigen Zahlen.";
+            status = "Those were not valid numbers.";
             return;
         }
         editing = null;
@@ -661,15 +678,15 @@ public class WaypointScreen extends Screen {
     }
 
     private String dimLabel(String cur) {
-        if (cur == null) return "alle Dimensionen";
-        if (cur.equals("overworld")) return "Oberwelt";
+        if (cur == null) return "all dimensions";
+        if (cur.equals("overworld")) return "Overworld";
         if (cur.equals("the_nether")) return "Nether";
         return "End";
     }
 
     /** Gemeinsamer Uebernehmen-Knopf der Fusszeile. */
     private void drawApply(DrawContext ctx, int fy, int accent) {
-        String ok = "Uebernehmen";
+        String ok = "Apply";
         int okw = this.textRenderer.getWidth(ok) + 14;
         boolean hov = inRect(winX + 250, fy + 2, okw, 16);
         roundRect(ctx, winX + 250, fy + 2, okw, 16,
@@ -678,10 +695,30 @@ public class WaypointScreen extends Screen {
                 winX + 257, fy + 6, 0xFFFFFFFF, false);
     }
 
+    /**
+     * Naechste Welt beim Durchschalten.
+     *
+     * Die Reihe besteht aus der aktuellen Welt und allen, in denen bereits
+     * Marker liegen -- damit kommt man ohne Tipparbeit ueberall hin, auch wenn
+     * die Kennung technisch aussieht.
+     */
+    private String nextWorldFor(String current) {
+        java.util.List<String> welten = new java.util.ArrayList<>();
+        String hier = com.vortex.client.hud.WaypointRenderer
+                .currentWorldKey(MinecraftClient.getInstance());
+        welten.add(hier);
+        for (String k : WaypointManager.knownWorlds()) {
+            if (!welten.contains(k)) welten.add(k);
+        }
+        if (welten.isEmpty()) return current;
+        int i = welten.indexOf(current);
+        return welten.get((i + 1) % welten.size());
+    }
+
     /** Kurzform einer Welt-Kennung fuer die Anzeige. */
     private String shortWorld(String key) {
-        if (key == null) return "aktuelle Welt";
-        if ("*".equals(key)) return "alle Welten";
+        if (key == null) return "current world";
+        if ("*".equals(key)) return "all worlds";
         String s = key;
         int bar = s.indexOf('|');
         String place = (bar > 0) ? s.substring(0, bar) : s;

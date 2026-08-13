@@ -99,12 +99,12 @@ public class LivingEntityRendererMixin {
 
             if (!pvpclient$logged) {
                 pvpclient$logged = true;
-                System.out.println("[pvpclient] HealthIndicator aktiv, modus=" + mode);
+                System.out.println("[vortexclient] HealthIndicator active, mode=" + mode);
             }
         } catch (Throwable t) {
             if (!pvpclient$logged) {
                 pvpclient$logged = true;
-                System.out.println("[pvpclient] HealthIndicator Render-Fehler: " + t);
+                System.out.println("[vortexclient] HealthIndicator render error: " + t);
                 t.printStackTrace();
             }
         }

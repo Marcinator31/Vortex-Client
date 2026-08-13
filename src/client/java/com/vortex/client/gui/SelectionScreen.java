@@ -192,9 +192,9 @@ public abstract class SelectionScreen extends Screen {
                 Text.literal(on + " ausgewaehlt  \u00B7  " + hint()),
                 x + PAD + 22, y + 28, fade(t.textDim.get(), openAnim), false);
 
-        // "Auswahl leeren" -- nur wenn es etwas zu leeren gibt.
+        // "Clear selection" -- nur wenn es etwas zu leeren gibt.
         if (on > 0) {
-            String lbl = "Auswahl leeren";
+            String lbl = "Clear selection";
             int lw = this.textRenderer.getWidth(lbl) + 12;
             int bx = x + w - lw - PAD;
             int by = y + 7;
@@ -212,7 +212,7 @@ public abstract class SelectionScreen extends Screen {
             ctx.drawText(this.textRenderer, Text.literal("Q"),
                     sx + 6, sy + 6, fade(0xFF6A6A76, openAnim), false);
             if (search.getText().isEmpty()) {
-                ctx.drawText(this.textRenderer, Text.literal("Suchen ..."),
+                ctx.drawText(this.textRenderer, Text.literal("Search..."),
                         sx + 18, sy + 6, fade(0xFF6A6A76, openAnim), false);
             }
         }
@@ -293,7 +293,7 @@ public abstract class SelectionScreen extends Screen {
         }
 
         if (list.isEmpty()) {
-            String msg = "Nichts gefunden";
+            String msg = "No results";
             ctx.drawText(this.textRenderer, Text.literal(msg),
                     x + (w - this.textRenderer.getWidth(msg)) / 2, y + h / 2 - 4,
                     0xFF6A6A76, false);
@@ -304,7 +304,7 @@ public abstract class SelectionScreen extends Screen {
         ctx.fill(x, y, x + w, y + FOOTER_H, fade(C_BAR, openAnim));
         ctx.fill(x, y, x + w, y + 1, fade(C_LINE, openAnim));
         ctx.drawText(this.textRenderer,
-                Text.literal("Klick = aus/abwaehlen   Tippen = suchen   ESC = zurueck"),
+                Text.literal("Click to toggle   ·   Type to search   ·   ESC to go back"),
                 x + PAD, y + 6, fade(0xFF74747F, openAnim), false);
     }
 

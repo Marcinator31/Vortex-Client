@@ -31,11 +31,11 @@ public class ShieldStatusModule extends Module {
     // Default-Werte bewusst passend zu ShieldStatus' eigenen Defaults gewaehlt,
     // damit beim Ein-/Ausschalten nichts ueberraschend umspringt.
     public final BooleanSetting grayscaleBroken =
-        new BooleanSetting("Gebrochen ausgrauen", false);
+        new BooleanSetting("Grey Out Broken", false);
     public final BooleanSetting opponentShields =
-        new BooleanSetting("Gegner-Schilde", true);
+        new BooleanSetting("Enemy Shields", true);
     public final BooleanSetting smoothColor =
-        new BooleanSetting("Weicher Farbverlauf", false);
+        new BooleanSetting("Smooth Gradient", false);
 
     public ShieldStatusModule() {
         super("Shield Status", Category.PVP);

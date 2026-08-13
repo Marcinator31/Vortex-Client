@@ -97,7 +97,7 @@ public final class WaypointActions {
                 WaypointManager.remove(alte.remove(alte.size() - 1));
             }
             addWaypoint(client, self.getBlockX(), self.getBlockY(), self.getBlockZ(),
-                    "Tod " + timeStamp(), WaypointManager.Kind.TOD, true);
+                    "Death " + timeStamp(), WaypointManager.Kind.TOD, true);
         }
         wasAlive = alive;
 
@@ -133,7 +133,7 @@ public final class WaypointActions {
         d = pressed(client, cfg.keyToggle.getKeyCode());
         if (d && !toggleDown) {
             cfg.enabled.toggle();
-            info(client, cfg.enabled.get() ? "Waypoints an" : "Waypoints aus");
+            info(client, cfg.enabled.get() ? "Waypoints on" : "Waypoints off");
             ConfigManager.save();
         }
         toggleDown = d;
@@ -166,7 +166,7 @@ public final class WaypointActions {
         HitResult hit = client.crosshairTarget;
         if (hit == null || hit.getType() != HitResult.Type.BLOCK
                 || !(hit instanceof BlockHitResult bhr)) {
-            info(client, "Kein Block im Visier.");
+            info(client, "No block in view.");
             return;
         }
         BlockPos pos = bhr.getBlockPos();
@@ -188,27 +188,27 @@ public final class WaypointActions {
                 blockName = client.world.getBlockState(pos)
                         .getBlock().getName().getString();
             } catch (Throwable pvpErr) {
-                blockName = "Bloecke";
+                blockName = "Blocks";
             }
             blockGroup = addWaypoint(client, pos.getX(), pos.getY(), pos.getZ(),
                     blockName, WaypointManager.Kind.BLOCK, false);
             blockGroup.blocks.add(pos);
             ConfigManager.save();
-            info(client, "Neue Block-Gruppe \"" + blockGroup.name
-                    + "\" -- weitere Bloecke landen hier. Umbenennen in der Verwaltung.");
+            info(client, "New block group \"" + blockGroup.name
+                    + "\" \u2014 further blocks go here. Rename it in the manager.");
             return;
         }
 
         // Bereits enthalten -> wieder entfernen (dieselbe Taste schaltet um).
         if (blockGroup.blocks.remove(pos)) {
             ConfigManager.save();
-            info(client, "Block entfernt (" + blockGroup.blocks.size()
+            info(client, "Block removed (" + blockGroup.blocks.size()
                     + " in \"" + blockGroup.name + "\")");
             return;
         }
         blockGroup.blocks.add(pos);
         ConfigManager.save();
-        info(client, "Block markiert (" + blockGroup.blocks.size()
+        info(client, "Block marked (" + blockGroup.blocks.size()
                 + " in \"" + blockGroup.name + "\")");
     }
 
@@ -266,15 +266,15 @@ public final class WaypointActions {
         HitResult hit = client.crosshairTarget;
         if (hit == null || hit.getType() != HitResult.Type.BLOCK
                 || !(hit instanceof BlockHitResult bhr)) {
-            info(client, "Kein Block im Visier.");
+            info(client, "No block in view.");
             return;
         }
         BlockPos pos = bhr.getBlockPos();
 
         if (areaCorner == null) {
             areaCorner = pos;
-            info(client, "Erste Ecke gesetzt (" + pos.getX() + ", " + pos.getY()
-                    + ", " + pos.getZ() + ") -- jetzt die zweite waehlen.");
+            info(client, "First corner set (" + pos.getX() + ", " + pos.getY()
+                    + ", " + pos.getZ() + ") \u2014 now pick the second one.");
             return;
         }
 
@@ -284,7 +284,7 @@ public final class WaypointActions {
         }
         if (blockGroup == null) {
             blockGroup = addWaypoint(client, pos.getX(), pos.getY(), pos.getZ(),
-                    "Bereich", WaypointManager.Kind.BLOCK, false);
+                    "Area", WaypointManager.Kind.BLOCK, false);
         }
 
         int x1 = Math.min(areaCorner.getX(), pos.getX());
@@ -298,7 +298,7 @@ public final class WaypointActions {
         // (und den Speicher) zumuellt.
         long total = (long) (x2 - x1 + 1) * (y2 - y1 + 1) * (z2 - z1 + 1);
         if (total > 512) {
-            info(client, "Bereich zu gross (" + total + " Bloecke, hoechstens 512).");
+            info(client, "Area too large (" + total + " blocks, 512 max).");
             areaCorner = null;
             return;
         }
@@ -317,7 +317,7 @@ public final class WaypointActions {
         }
         areaCorner = null;
         ConfigManager.save();
-        info(client, added + " Bloecke markiert (" + blockGroup.blocks.size()
+        info(client, added + " blocks marked (" + blockGroup.blocks.size()
                 + " in \"" + blockGroup.name + "\")");
     }
 
@@ -335,7 +335,7 @@ public final class WaypointActions {
                 WaypointManager.add(finalName, x, y, z, dim, kind);
         ConfigManager.save();
         if (announce) {
-            info(client, "Marker gesetzt: " + finalName + "  ("
+            info(client, "Marker added: " + finalName + "  ("
                     + x + ", " + y + ", " + z + ")");
         }
         return w;
@@ -366,7 +366,7 @@ public final class WaypointActions {
                 w.name + (fromNether ? " (Oberwelt)" : " (Nether)"),
                 nx, w.y, nz, targetDim, WaypointManager.Kind.PORTAL);
         ConfigManager.save();
-        info(client, "Gegenstueck angelegt: " + nx + ", " + w.y + ", " + nz);
+        info(client, "Counterpart created: " + nx + ", " + w.y + ", " + nz);
         return c;
     }
 
@@ -375,7 +375,7 @@ public final class WaypointActions {
                                        WaypointManager.Waypoint w) {
         try {
             client.keyboard.setClipboard(w.x + " " + w.y + " " + w.z);
-            info(client, "Koordinaten kopiert.");
+            info(client, "Coordinates copied.");
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("WaypointActions.clipboard", pvpErr);
         }

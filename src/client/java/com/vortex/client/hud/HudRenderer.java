@@ -313,13 +313,13 @@ public final class HudRenderer {
         int ly = by;
         if (mod.showTime.get()) {
             ctx.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Zeit: " + com.vortex.client.hud.SessionStats.playtime()),
+                    Text.literal("Time: " + com.vortex.client.hud.SessionStats.playtime()),
                     bx, ly, col);
             ly += 10;
         }
         if (mod.showDeaths.get()) {
             ctx.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Tode: " + com.vortex.client.hud.SessionStats.getDeaths()),
+                    Text.literal("Deaths: " + com.vortex.client.hud.SessionStats.getDeaths()),
                     bx, ly, col);
             ly += 10;
         }

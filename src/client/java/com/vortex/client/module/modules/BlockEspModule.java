@@ -22,17 +22,17 @@ import java.util.Set;
  */
 public class BlockEspModule extends Module {
 
-    public final ColorSetting color = new ColorSetting("Farbe", 0xFF00FFFF);
-    public final NumberSetting range = new NumberSetting("Reichweite", 64, 16, 512, 16);
-    public final NumberSetting lineWidth = new NumberSetting("Linienbreite", 2.0, 0.5, 5.0, 0.5);
+    public final ColorSetting color = new ColorSetting("Color", 0xFF00FFFF);
+    public final NumberSetting range = new NumberSetting("Range", 64, 16, 512, 16);
+    public final NumberSetting lineWidth = new NumberSetting("Line Width", 2.0, 0.5, 5.0, 0.5);
     // Tracer: Linien von der Sicht zu den Bloecken.
     /**
      * Hoehenbereich der Suche. Sehr nuetzlich beim gezielten Suchen: fuer Diamanten
      * z.B. -59 bis 16, statt den gesamten Bereich abzusuchen. Das beschleunigt die
      * Suche stark, weil das abzusuchende Volumen direkt kleiner wird.
      */
-    public final NumberSetting minY = new NumberSetting("Von Hoehe", -64, -64, 320, 8);
-    public final NumberSetting maxY = new NumberSetting("Bis Hoehe", 320, -64, 320, 8);
+    public final NumberSetting minY = new NumberSetting("Min Height", -64, -64, 320, 8);
+    public final NumberSetting maxY = new NumberSetting("Max Height", 320, -64, 320, 8);
 
     /**
      * Nur Bloecke zeigen, die an mindestens einer Seite frei liegen. Blendet
@@ -40,14 +40,14 @@ public class BlockEspModule extends Module {
      * um das Bild aufzuraeumen. Beim Erzsuchen ausgeschaltet lassen, sonst fehlen
      * die im Stein eingeschlossenen Adern.
      */
-    public final BooleanSetting onlyExposed = new BooleanSetting("Nur freiliegende", false);
+    public final BooleanSetting onlyExposed = new BooleanSetting("Exposed Only", false);
 
     /** Ab welcher Entfernung nicht mehr gezeichnet wird (schont die Bildrate). */
     public final NumberSetting drawDistance =
-            new NumberSetting("Zeichen-Reichweite", 96, 32, 256, 16);
+            new NumberSetting("Draw Distance", 96, 32, 256, 16);
 
-    public final BooleanSetting tracers = new BooleanSetting("Tracer", false);
-    public final ColorSetting tracerColor = new ColorSetting("Tracer-Farbe", 0xFFFFFF00);
+    public final BooleanSetting tracers = new BooleanSetting("Tracers", false);
+    public final ColorSetting tracerColor = new ColorSetting("Tracer Color", 0xFFFFFF00);
 
     // Aktive Block-Typen (z.B. "minecraft:diamond_ore").
     private final Set<String> enabledBlocks = new HashSet<>();

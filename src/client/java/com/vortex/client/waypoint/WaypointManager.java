@@ -181,18 +181,46 @@ public final class WaypointManager {
         StringBuilder sb = new StringBuilder();
         for (Waypoint w : LIST) {
             if (sb.length() > 0) sb.append(';');
-            // Trennzeichen aus dem Namen entfernen, damit das Format heil bleibt.
-            String safe = w.name.replace('|', ' ').replace(';', ' ').replace(',', ' ');
+            // Trennzeichen in ALLEN Textwerten maskieren.
+            //
+            // Hier steckte ein boeser Fehler: Die Welt-Kennung enthaelt selbst
+            // ein "|" (z.B. "mp:server.net|minecraft:overworld") -- also genau
+            // das Zeichen, das die Felder trennt. Beim Laden verschob sich
+            // dadurch alles um eine Stelle: die Sichtbarkeit las die Dimension,
+            // die Art las die Sichtbarkeit, und so weiter. Genau das war der
+            // Grund, warum Marker nach einem Neustart "vertauscht" wirkten.
+            String safe = esc(w.name);
             sb.append(safe).append('|')
               .append(w.x).append('|').append(w.y).append('|').append(w.z).append('|')
               .append(w.color).append('|')
-              .append(w.dimension == null ? "" : w.dimension).append('|')
+              .append(w.dimension == null ? "" : esc(w.dimension)).append('|')
               .append(w.visible ? '1' : '0').append('|')
               .append(w.kind.name()).append('|')
               .append(serializeBlocks(w)).append('|')
               .append(w.tracer ? '1' : '0');
         }
         return sb.toString();
+    }
+
+    /**
+     * Maskiert die Zeichen, die als Trenner dienen.
+     *
+     * Bewusst eine Ersetzung, die sich eindeutig rueckgaengig machen laesst --
+     * anders als das frueher verwendete Ersetzen durch Leerzeichen, bei dem der
+     * Originaltext verloren ging.
+     */
+    private static String esc(String v) {
+        if (v == null) return "";
+        return v.replace("%", "%25")
+                .replace("|", "%7C")
+                .replace(";", "%3B");
+    }
+
+    private static String unesc(String v) {
+        if (v == null) return "";
+        return v.replace("%7C", "|")
+                .replace("%3B", ";")
+                .replace("%25", "%");
     }
 
     /** Bloecke als "x,y,z x,y,z ..." (Leerzeichen trennt, Komma innerhalb). */
@@ -227,13 +255,34 @@ public final class WaypointManager {
         for (String entry : data.split(";")) {
             String[] p = entry.split("\\|");
             if (p.length < 7) continue;
+
+            // RETTUNG ALTER DATEN: Frueher wurde die Welt-Kennung unmaskiert
+            // geschrieben, wodurch ein zusaetzliches Feld entstand. Ist die
+            // Zeile laenger als erwartet, gehoeren die ueberzaehligen Stuecke
+            // zur Dimension und werden wieder zusammengefuegt.
+            final int ERWARTET = 10;
+            if (p.length > ERWARTET) {
+                int zuviel = p.length - ERWARTET;
+                StringBuilder dim = new StringBuilder(p[5]);
+                for (int k = 1; k <= zuviel; k++) {
+                    dim.append('|').append(p[5 + k]);
+                }
+                String[] fixed = new String[ERWARTET];
+                System.arraycopy(p, 0, fixed, 0, 5);
+                fixed[5] = dim.toString();
+                for (int k = 6; k < ERWARTET; k++) {
+                    fixed[k] = p[k + zuviel];
+                }
+                p = fixed;
+            }
+
             try {
-                Waypoint w = new Waypoint(p[0],
+                Waypoint w = new Waypoint(unesc(p[0]),
                         Integer.parseInt(p[1].trim()),
                         Integer.parseInt(p[2].trim()),
                         Integer.parseInt(p[3].trim()),
                         Integer.parseInt(p[4].trim()),
-                        p[5]);
+                        unesc(p[5]));
                 w.visible = "1".equals(p[6].trim());
                 // Feld 8 (Art) kam spaeter dazu -- aeltere Dateien haben es nicht.
                 if (p.length > 7) {

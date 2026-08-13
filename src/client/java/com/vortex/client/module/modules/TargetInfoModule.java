@@ -20,21 +20,21 @@ import com.vortex.client.module.Module;
 public class TargetInfoModule extends Module {
 
     /** Ausruestung der Gegner ueber ihrem Kopf anzeigen. */
-    public final BooleanSetting armor = new BooleanSetting("Ruestung zeigen", true);
+    public final BooleanSetting armor = new BooleanSetting("Show Armor", true);
 
     /** Haltbarkeit der Ruestungsteile in Prozent dazuschreiben. */
-    public final BooleanSetting durability = new BooleanSetting("Haltbarkeit", true);
+    public final BooleanSetting durability = new BooleanSetting("Durability", true);
 
     /** Reichweiten-Anzeige: faerbt den Namen je nach Erreichbarkeit. */
-    public final BooleanSetting range = new BooleanSetting("Reichweite", true);
-    public final ColorSetting inRangeColor = new ColorSetting("In Reichweite", 0xFF55FF7A);
-    public final ColorSetting outRangeColor = new ColorSetting("Ausser Reichweite", 0xFFFF5555);
+    public final BooleanSetting range = new BooleanSetting("Range", true);
+    public final ColorSetting inRangeColor = new ColorSetting("In Range", 0xFF55FF7A);
+    public final ColorSetting outRangeColor = new ColorSetting("Out of Range", 0xFFFF5555);
 
     /** Bis zu welcher Entfernung die Anzeige ueberhaupt erscheint. */
-    public final NumberSetting maxDistance = new NumberSetting("Max. Distanz", 24, 4, 64, 4);
+    public final NumberSetting maxDistance = new NumberSetting("Max Distance", 24, 4, 64, 4);
 
     public TargetInfoModule() {
-        super("Ziel-Info", Category.PVP);
+        super("Target Info", Category.PVP);
         addSetting(armor);
         addSetting(durability);
         addSetting(range);

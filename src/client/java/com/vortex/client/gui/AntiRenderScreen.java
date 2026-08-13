@@ -65,6 +65,6 @@ public class AntiRenderScreen extends SelectionScreen {
 
     @Override
     protected String hint() {
-        return "werden nicht gezeichnet";
+        return "hidden from view";
     }
 }

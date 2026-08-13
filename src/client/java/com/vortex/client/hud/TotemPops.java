@@ -41,7 +41,7 @@ public final class TotemPops {
         if (!logged) {
             logged = true;
             // Einmalige Meldung: zeigt im Log, dass die Erkennung greift.
-            System.out.println("[pvpclient] Totem-Erkennung laeuft (erster Treffer: "
+            System.out.println("[vortexclient] Totem detection is working (first hit: "
                     + player + ")");
         }
     }

@@ -19,10 +19,10 @@ public class AutoHitModule extends Module {
     // Ab welcher Aufladung geschlagen wird (1.0 = voll). Etwas unter 1.0 kann
     // minimal frueher zuschlagen, kostet aber Schaden -> Standard 1.0.
     public final NumberSetting minCharge =
-            new NumberSetting("Min. Aufladung", 1.0, 0.5, 1.0, 0.05);
+            new NumberSetting("Min Charge", 1.0, 0.5, 1.0, 0.05);
     // Nur Spieler angreifen (keine Mobs/andere Entities)?
     public final BooleanSetting playersOnly =
-            new BooleanSetting("Nur Spieler", true);
+            new BooleanSetting("Players Only", true);
 
     public AutoHitModule() {
         super("Auto Hit", Category.PVP);

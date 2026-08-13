@@ -10,7 +10,7 @@ import com.vortex.client.module.Module;
  */
 public class PlayerListEspModule extends Module {
 
-    public final ColorSetting color = new ColorSetting("Textfarbe", 0xFFFFFFFF);
+    public final ColorSetting color = new ColorSetting("Text Color", 0xFFFFFFFF);
 
     public PlayerListEspModule() {
         super("Player List", Category.HUD);

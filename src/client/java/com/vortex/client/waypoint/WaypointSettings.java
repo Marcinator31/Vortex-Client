@@ -24,40 +24,40 @@ public final class WaypointSettings {
     public static final WaypointSettings INSTANCE = new WaypointSettings();
 
     /** Waypoints ueberhaupt anzeigen. */
-    public final BooleanSetting enabled = new BooleanSetting("Anzeigen", true);
+    public final BooleanSetting enabled = new BooleanSetting("Show", true);
 
     /** Linienbreite der Tracer. */
-    public final NumberSetting lineWidth = new NumberSetting("Tracer-Breite", 2.0, 0.5, 5.0, 0.5);
+    public final NumberSetting lineWidth = new NumberSetting("Tracer Width", 2.0, 0.5, 5.0, 0.5);
 
     // ---- Markierte Bloecke -------------------------------------------------
 
     /** Linienbreite der Block-Umrandungen. */
     public final NumberSetting blockLineWidth =
-            new NumberSetting("Block-Linienbreite", 2.0, 0.5, 6.0, 0.5);
+            new NumberSetting("Block Line Width", 2.0, 0.5, 6.0, 0.5);
 
     /**
      * Farbe der Block-Umrandungen. Bei 0 wird die Farbe des jeweiligen Markers
      * benutzt -- so bleiben mehrere Gruppen auseinanderzuhalten.
      */
-    public final ColorSetting blockColor = new ColorSetting("Block-Farbe", 0x00000000);
+    public final ColorSetting blockColor = new ColorSetting("Block Color", 0x00000000);
 
     /** Ab welcher Entfernung nicht mehr gezeichnet wird (0 = unbegrenzt). */
-    public final NumberSetting maxDistance = new NumberSetting("Max. Distanz", 0, 0, 2000, 50);
+    public final NumberSetting maxDistance = new NumberSetting("Max Distance", 0, 0, 2000, 50);
 
     /** Beschriftung mit Name und Entfernung am Bildschirm. */
-    public final BooleanSetting labels = new BooleanSetting("Beschriftung", true);
+    public final BooleanSetting labels = new BooleanSetting("Labels", true);
     /** Pfeile am Bildschirmrand fuer Marker ausserhalb des Blickfelds. */
-    public final BooleanSetting edgeArrows = new BooleanSetting("Randpfeile", true);
+    public final BooleanSetting edgeArrows = new BooleanSetting("Edge Arrows", true);
     /** Linie vom Fadenkreuz zum Marker. */
-    public final BooleanSetting tracers = new BooleanSetting("Tracer", false);
+    public final BooleanSetting tracers = new BooleanSetting("Tracers", false);
 
     // ---- Aussehen der Punkte ---------------------------------------------
 
     /** Kantenlaenge des Punktes in Pixeln. */
-    public final NumberSetting dotSize = new NumberSetting("Ringgroesse", 6, 4, 24, 1);
+    public final NumberSetting dotSize = new NumberSetting("Ring Size", 6, 4, 24, 1);
 
     /** Dicke des Rings in Pixeln. */
-    public final NumberSetting borderWidth = new NumberSetting("Ringdicke", 1, 1, 4, 1);
+    public final NumberSetting borderWidth = new NumberSetting("Ring Thickness", 1, 1, 4, 1);
 
     /**
      * Deckkraft der Marker (1.0 = voll, 0.2 = stark durchsichtig).
@@ -66,31 +66,31 @@ public final class WaypointSettings {
      * Ruhezustand bleibt die Anzeige dezent, beim Anpeilen ist sie klar da.
      */
     public final NumberSetting markerOpacity =
-            new NumberSetting("Deckkraft", 0.7, 0.2, 1.0, 0.05);
-    public final ColorSetting borderColor = new ColorSetting("Randfarbe", 0xC0000000);
+            new NumberSetting("Opacity", 0.7, 0.2, 1.0, 0.05);
+    public final ColorSetting borderColor = new ColorSetting("Border Color", 0xC0000000);
 
 
     /** Buchstaben ueberhaupt anzeigen. */
-    public final BooleanSetting showLetter = new BooleanSetting("Buchstabe", true);
+    public final BooleanSetting showLetter = new BooleanSetting("Letter", true);
 
     /**
      * Name und Entfernung in der Aktionsleiste ueber dem Inventar anzeigen,
      * statt als Text neben dem Punkt. Ruhiger und besser lesbar.
      */
-    public final BooleanSetting useActionBar = new BooleanSetting("Info in Aktionsleiste", true);
+    public final BooleanSetting useActionBar = new BooleanSetting("Info in Action Bar", true);
 
     /** Ab welcher Entfernung markierte Bloecke eingeblendet werden. */
     public final NumberSetting blockRadius =
-            new NumberSetting("Block-Sichtweite", 50, 8, 200, 2);
+            new NumberSetting("Block View Distance", 50, 8, 200, 2);
 
     /** Marker ausblenden, sobald man nah genug dran ist (0 = nie). */
-    public final NumberSetting hideNear = new NumberSetting("Ausblenden ab naeher als", 0, 0, 32, 2);
+    public final NumberSetting hideNear = new NumberSetting("Hide When Closer Than", 0, 0, 32, 2);
 
     /** Naechsten Marker als Zeile im Bild anzeigen. */
-    public final BooleanSetting showNearest = new BooleanSetting("Naechsten anzeigen", true);
+    public final BooleanSetting showNearest = new BooleanSetting("Show Nearest", true);
 
     /** Beim Sterben automatisch einen Todespunkt setzen. */
-    public final BooleanSetting deathWaypoint = new BooleanSetting("Todespunkt automatisch", true);
+    public final BooleanSetting deathWaypoint = new BooleanSetting("Auto Death Marker", true);
 
     // ---- Tastenbelegungen -------------------------------------------------
     //
@@ -100,15 +100,15 @@ public final class WaypointSettings {
 
     /** Marker an der aktuellen Position setzen. */
     public final KeySetting keyAddHere =
-            new KeySetting("Taste: Hier setzen", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+            new KeySetting("Key: Add Here", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
 
     /** Den Block markieren, auf den das Fadenkreuz zeigt. */
     public final KeySetting keyMarkBlock =
-            new KeySetting("Taste: Block markieren", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+            new KeySetting("Key: Mark Block", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
 
     /** Anzeige der Marker an- und ausschalten. */
     public final KeySetting keyToggle =
-            new KeySetting("Taste: Anzeige umschalten", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+            new KeySetting("Key: Toggle Display", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
 
     /**
      * Zweite Ecke fuer eine Bereichsmarkierung.
@@ -117,11 +117,11 @@ public final class WaypointSettings {
      * Damit markiert man ein 4x4-Feld mit zwei Tastendruecken statt sechzehn.
      */
     public final KeySetting keyMarkArea =
-            new KeySetting("Taste: Bereich markieren", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+            new KeySetting("Key: Mark Area", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
 
     /** Verwaltung oeffnen. */
     public final KeySetting keyManage =
-            new KeySetting("Taste: Verwaltung", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+            new KeySetting("Key: Manage", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
 
     private final List<Setting> settings;
 

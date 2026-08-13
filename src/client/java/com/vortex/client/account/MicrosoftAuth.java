@@ -43,7 +43,7 @@ public final class MicrosoftAuth {
     private static volatile String cachedClientId = null;
 
     private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("pvpclient-auth");
+            org.slf4j.LoggerFactory.getLogger("vortexclient-auth");
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(20))
@@ -74,24 +74,24 @@ public final class MicrosoftAuth {
             } else {
                 // Vorlage anlegen, damit der Nutzer weiss wohin mit der ID.
                 String tmpl = ""
-                        + "# EIGENE AZURE-CLIENT-ID EINTRAGEN\n"
+                        + "# ENTER YOUR OWN AZURE CLIENT ID BELOW\n"
                         + "#\n"
-                        + "# Ohne eigene ID lehnt Microsoft den Login ab mit:\n"
+                        + "# Without your own ID, Microsoft rejects the sign-in with:\n"
                         + "#   AADSTS700016: Application ... was not found in the directory\n"
-                        + "# Das ist kein Fehler des Clients -- jede Dritt-App braucht eine eigene ID.\n"
+                        + "# This is not a bug in the client -- every third-party app needs its own ID.\n"
                         + "#\n"
-                        + "# So bekommst du eine (kostenlos, etwa 5 Minuten):\n"
-                        + "#  1. portal.azure.com oeffnen und anmelden\n"
-                        + "#  2. Oben nach 'App registrations' suchen -> 'New registration'\n"
-                        + "#  3. Name frei waehlen. Bei 'Supported account types':\n"
-                        + "#     'Personal Microsoft accounts only' waehlen\n"
-                        + "#  4. Nach dem Erstellen links 'Authentication' oeffnen:\n"
+                        + "# How to get one (free, about 5 minutes):\n"
+                        + "#  1. Open portal.azure.com and sign in\n"
+                        + "#  2. Search for 'App registrations' -> 'New registration'\n"
+                        + "#  3. Pick any name. Under 'Supported account types' choose\n"
+                        + "#     'Personal Microsoft accounts only'\n"
+                        + "#  4. After creating it, open 'Authentication' on the left:\n"
                         + "#     - 'Add a platform' -> 'Mobile and desktop applications'\n"
-                        + "#     - Redirect-URI ankreuzen:\n"
+                        + "#     - Tick the redirect URI:\n"
                         + "#       https://login.microsoftonline.com/common/oauth2/nativeclient\n"
-                        + "#     - Ganz unten 'Allow public client flows' auf 'Yes' -> Speichern\n"
-                        + "#  5. Links 'Overview' -> 'Application (client) ID' kopieren\n"
-                        + "#  6. Diese ID unten in eine eigene Zeile schreiben (statt der alten)\n"
+                        + "#     - At the bottom set 'Allow public client flows' to 'Yes', then Save\n"
+                        + "#  5. Open 'Overview' and copy the 'Application (client) ID'\n"
+                        + "#  6. Replace the ID on the last line with yours\n"
                         + "#\n"
                         + FALLBACK_CLIENT_ID + "\n";
                 Files.writeString(cfg, tmpl, StandardCharsets.UTF_8);
@@ -122,11 +122,11 @@ public final class MicrosoftAuth {
         // --- Schritt 1: Device-Code anfordern ---
         String body = "client_id=" + enc(clientId())
                 + "&scope=" + enc("XboxLive.signin offline_access");
-        LOGGER.info("[pvpclient] Device-Code anfordern, client_id={}", clientId());
+        LOGGER.info("[vortexclient] Requesting device code, client_id={}", clientId());
         JsonObject dc = postForm(
                 "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode",
                 body);
-        LOGGER.info("[pvpclient] Device-Code erhalten");
+        LOGGER.info("[vortexclient] Device code received");
 
         String deviceCode = dc.get("device_code").getAsString();
         String userCode = dc.get("user_code").getAsString();
@@ -163,11 +163,11 @@ public final class MicrosoftAuth {
                     continue;
                 }
                 // Alles andere ist ein echter Fehler.
-                throw new RuntimeException("Microsoft-Login abgebrochen: " + err);
+                throw new RuntimeException("Microsoft sign-in cancelled: " + err);
             }
         }
         if (msAccessToken == null) {
-            throw new RuntimeException("Zeitueberschreitung beim Microsoft-Login.");
+            throw new RuntimeException("Microsoft sign-in timed out.");
         }
 
         return finishLogin(msAccessToken, false);
@@ -235,7 +235,7 @@ public final class MicrosoftAuth {
         JsonObject profile = JsonParser.parseString(profResp.body()).getAsJsonObject();
         if (!profile.has("id")) {
             throw new RuntimeException(
-                "Kein Minecraft-Profil gefunden (besitzt dieser Account das Spiel?).");
+                "No Minecraft profile found (does this account own the game?).");
         }
         String uuid = profile.get("id").getAsString();
         String name = profile.get("name").getAsString();
@@ -279,10 +279,10 @@ public final class MicrosoftAuth {
         String code = extractCode(pasted);
         if (code == null || code.isEmpty()) {
             throw new RuntimeException(
-                    "Kein Code gefunden. Bitte die komplette Adresse aus dem "
-                    + "Browser einfuegen (sie enthaelt 'code=').");
+                    "No code found. Paste the complete address from the "
+                    + "browser (it contains 'code=').");
         }
-        LOGGER.info("[pvpclient] Tausche Browser-Code gegen Token");
+        LOGGER.info("[vortexclient] Exchanging browser code for a token");
 
         String body = "client_id=" + enc(LEGACY_CLIENT_ID)
                 + "&code=" + enc(code)
@@ -290,10 +290,10 @@ public final class MicrosoftAuth {
                 + "&redirect_uri=" + enc(LEGACY_REDIRECT);
         JsonObject tok = postForm("https://login.live.com/oauth20_token.srf", body);
         if (!tok.has("access_token")) {
-            throw new RuntimeException("Microsoft lieferte keinen Token zurueck.");
+            throw new RuntimeException("Microsoft did not return a token.");
         }
         String msToken = tok.get("access_token").getAsString();
-        LOGGER.info("[pvpclient] Token erhalten, fahre mit Xbox Live fort");
+        LOGGER.info("[vortexclient] Token received, continuing with Xbox Live");
         // MBI_SSL -> RpsTicket ohne "d=" Praefix.
         return finishLogin(msToken, true);
     }
@@ -332,7 +332,7 @@ public final class MicrosoftAuth {
             String snippet = raw == null ? "(leer)"
                     : raw.substring(0, Math.min(raw.length(), 180));
             throw new RuntimeException("HTTP " + resp.statusCode()
-                    + " ohne JSON von " + shortHost(url) + ": " + snippet);
+                    + " without JSON from " + shortHost(url) + ": " + snippet);
         }
         // Fehler ODER kein 2xx-Status -> aussagekraeftig melden (statt spaeter NPE).
         if (o.has("error") || resp.statusCode() / 100 != 2) {
@@ -400,9 +400,9 @@ public final class MicrosoftAuth {
     }
 
     private static String xstsErrorMessage(long xerr) {
-        if (xerr == 2148916233L) return "Dieser Microsoft-Account hat kein Xbox-Profil.";
-        if (xerr == 2148916235L) return "Xbox Live ist in deiner Region nicht verfuegbar.";
-        if (xerr == 2148916238L) return "Kinderkonto -- muss einer Familie hinzugefuegt werden.";
-        return "Xbox-Login fehlgeschlagen (XErr " + xerr + ").";
+        if (xerr == 2148916233L) return "This Microsoft account has no Xbox profile.";
+        if (xerr == 2148916235L) return "Xbox Live is not available in your region.";
+        if (xerr == 2148916238L) return "Child account \u2014 must be added to a family group.";
+        return "Xbox sign-in failed (XErr " + xerr + ").";
     }
 }

@@ -10,8 +10,8 @@ public class PingModule extends Module implements HudElement {
 
     public final NumberSetting x = new NumberSetting("X", 4, 0, 1920, 1);
     public final NumberSetting y = new NumberSetting("Y", 28, 0, 1080, 1);
-    public final ColorSetting color = new ColorSetting("Textfarbe", 0xFFFFFFFF);
-    public final NumberSetting scale = new NumberSetting("Skalierung", 1.0, 0.5, 3.0, 0.1);
+    public final ColorSetting color = new ColorSetting("Text Color", 0xFFFFFFFF);
+    public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
 
     public PingModule() {
         super("Ping", Category.HUD);

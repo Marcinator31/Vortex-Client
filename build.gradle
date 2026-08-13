@@ -1,6 +1,6 @@
 plugins {
 	// Plugin-ID 'fabric-loom' -- existiert als fabric-loom.gradle.plugin
-	// im Fabric-Maven (verifiziert). Mit Gradle 9.2.1 loest sie sauber auf.
+	// in the Fabric maven (verified). Resolves cleanly with Gradle 9.2.1.
 	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
@@ -13,7 +13,7 @@ base {
 }
 
 repositories {
-	// Modrinth Maven -- hier liegen Sodium, Lithium etc.
+	// Modrinth maven -- Sodium, Lithium and friends live here.
 	exclusiveContent {
 		forRepository {
 			maven {
@@ -28,7 +28,7 @@ repositories {
 }
 
 loom {
-	// Trennt Client- und Common-Code. Ein PvP-Client ist rein clientseitig.
+	// Splits client and common code. This client is purely client-side.
 	splitEnvironmentSourceSets()
 
 	mods {
@@ -42,32 +42,32 @@ loom {
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
-	// Yarn-Mappings statt Mojang -- der gesamte Code nutzt Yarn-Namen
+	// Yarn mappings rather than Mojang -- all code uses Yarn names
 	// (net.minecraft.client.MinecraftClient, Text, DrawContext, ...).
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	// --- FPS / Performance ("der Boost wie bei Lunar/Ogulniega") ---
-	// Diese Mods MACHEN den FPS-Boost. Wir schreiben ihn nicht selbst.
-	// Sie laufen hier zur Laufzeit mit, damit du im Dev-Client schon
-	// die geboosteten Frames hast und Kompatibilitaet testen kannst.
-	// Spieler installieren sie spaeter einfach mit in ihren mods-Ordner.
+	// --- FPS / performance ("the boost you get from Lunar and friends") ---
+	// These mods ARE the FPS boost. We do not write one ourselves.
+	// They run at runtime here so the dev client already has the boosted
+	// frame rate and compatibility can be tested.
+	// Players simply drop them into their own mods folder later.
 	// Verifizierte echte 1.21.11-Versionen (Modrinth, Maerz 2026).
 	// Format: maven.modrinth:<slug>:<modrinth-version-id>
 	modRuntimeOnly "maven.modrinth:sodium:mc1.21.11-0.8.7-fabric"
 	modRuntimeOnly "maven.modrinth:lithium:mc1.21.11-0.21.4-fabric"
-	// (FerriteCore, Entity Culling etc. koennen analog ergaenzt werden,
-	//  sobald du die exakten 1.21.11-Versions-Strings von Modrinth hast.)
+	// (FerriteCore, Entity Culling and so on can be added the same way,
+	//  once the exact 1.21.11 version strings are known from Modrinth.)
 
 	// --- Eingebettete Mods (Jar-in-Jar) ---
-	// Diese werden NICHT ueber Looms 'include' eingebettet (das hat in
-	// diesem Setup nicht zuverlaessig funktioniert). Stattdessen kopiert
-	// der Task 'embedNestedMods' (siehe unten) die JARs aus libs/ direkt
-	// nach META-INF/jars/ in die fertige JAR und traegt sie in die
-	// fabric.mod.json ein -- der Mechanismus, den Fabric Loader direkt
-	// liest. Das ist 100% nachpruefbar und umgeht alle include-Eigenheiten.
+	// These are NOT embedded via Loom's 'include' (which did not work
+	// reliably in this setup). Instead the 'embedNestedMods' task below
+	// copies the jars from libs/ straight into META-INF/jars/ of the
+	// finished jar and registers them in fabric.mod.json -- the exact
+	// mechanism Fabric Loader reads directly. Fully verifiable and it
+	// sidesteps every quirk of 'include'.
 }
 
 processResources {
@@ -83,11 +83,11 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-	// KEINE sources-JAR mehr erzeugen. Vorher entstanden im Build zwei JARs
-	// (pvpclient-x.x.x.jar UND pvpclient-x.x.x-sources.jar). Die sources-JAR
-	// enthaelt KEINE eingebetteten Mods (kein AppleSkin) -- wer sie aus
-	// Versehen in den mods-Ordner legt, bei dem fehlt AppleSkin. Mit nur
-	// einer JAR kann das nicht mehr passieren.
+	// Do NOT produce a sources jar. The build used to create two jars
+	// (vortexclient-x.x.x.jar AND -sources.jar). The sources jar contains
+	// NO embedded mods (no AppleSkin) -- anyone who drops it into their
+	// mods folder by mistake ends up without it. With a single jar that
+	// can no longer happen.
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
 }
@@ -99,18 +99,18 @@ jar {
 }
 
 // === Jar-in-Jar: Mods MANUELL einbetten (zuverlaessig & nachpruefbar) ===
-// Looms 'include' hat in diesem Setup nicht funktioniert. Daher betten wir
-// die Mods aus libs/ selbst ein, mit dem Mechanismus, den Fabric Loader
+// Loom's 'include' did not work in this setup, so we embed the mods
+// from libs/ ourselves, using the mechanism Fabric Loader reads:
 // direkt liest:
-//   1. Die Mod-JARs werden nach META-INF/jars/ in die fertige JAR kopiert.
-//   2. In die fabric.mod.json wird ein "jars":[{"file":"META-INF/jars/..."}]
+//   1. The mod jars are copied into META-INF/jars/ of the finished jar.
+//   2. A "jars" entry pointing at META-INF/jars/ is added to fabric.mod.json.
 //      Eintrag pro Mod geschrieben.
-// Fabric Loader entpackt und laedt nested JARs beim Spielstart automatisch.
+// Fabric Loader unpacks and loads nested jars automatically at startup.
 //
-// Welche Mods? Alle .jar in libs/. Einfach JARs in libs/ legen -> werden
+// Which mods? Every .jar in libs/. Drop jars in there and they are
 // eingebettet. (Reihenfolge egal.)
 tasks.register("embedNestedMods") {
-	// Laeuft nachdem remapJar die finale JAR erzeugt hat.
+	// Runs after remapJar has produced the final jar.
 	dependsOn tasks.named("remapJar")
 
 	doLast {
@@ -122,21 +122,21 @@ tasks.register("embedNestedMods") {
 			}
 		}
 		if (modJars.isEmpty()) {
-			println "  [embedNestedMods] libs/ ist leer -- nichts einzubetten."
+			println "  [embedNestedMods] libs/ is empty -- nothing to embed."
 			return
 		}
 
-		// Die finale (remappte) JAR finden.
+		// Locate the final (remapped) jar.
 		def outJar = tasks.named("remapJar").get().archiveFile.get().asFile
 		if (!outJar.exists()) {
-			println "  [embedNestedMods] FEHLER: finale JAR nicht gefunden: " + outJar
+			println "  [embedNestedMods] ERROR: final jar not found: " + outJar
 			return
 		}
 
 		println "  [embedNestedMods] Ziel-JAR: " + outJar.name
-		modJars.each { println "  [embedNestedMods]   bette ein: " + it.name }
+		modJars.each { println "  [embedNestedMods]   embedding: " + it.name }
 
-		// In ein temporaeres Verzeichnis entpacken, aendern, neu packen.
+		// Unpack into a temporary directory, modify, repack.
 		def workDir = new File(temporaryDir, "jij-work")
 		delete workDir
 		workDir.mkdirs()
@@ -145,7 +145,7 @@ tasks.register("embedNestedMods") {
 			into workDir
 		}
 
-		// 1) Mod-JARs nach META-INF/jars/ kopieren.
+		// 1) Copy the mod jars into META-INF/jars/.
 		def jarsTarget = new File(workDir, "META-INF/jars")
 		jarsTarget.mkdirs()
 		def jarEntries = []
@@ -171,9 +171,9 @@ tasks.register("embedNestedMods") {
 		fmjFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(fmj))
 		println "  [embedNestedMods] fabric.mod.json: " + jarsList.size() + " jars-Eintraege geschrieben."
 
-		// 3) Alles wieder in die JAR packen (alte ersetzen).
-		//    Reine Java-Implementierung (java.util.zip) -- laeuft in jeder
-		//    Umgebung, kein ant noetig.
+		// 3) Pack everything back into the jar (replacing the old one).
+		//    Pure Java implementation (java.util.zip) -- works in any
+		//    environment, no ant required.
 		delete outJar
 		def fos = new java.io.FileOutputStream(outJar)
 		def zos = new java.util.zip.ZipOutputStream(fos)
@@ -189,7 +189,7 @@ tasks.register("embedNestedMods") {
 		zos.close()
 		fos.close()
 
-		// 4) Verifikation: nachsehen, was jetzt wirklich drin ist.
+		// 4) Verification: check what actually ended up inside.
 		def zf = new java.util.zip.ZipFile(outJar)
 		def count = 0
 		def en = zf.entries()
@@ -202,7 +202,7 @@ tasks.register("embedNestedMods") {
 	}
 }
 
-// embedNestedMods automatisch als Teil von 'build' ausfuehren.
+// Run embedNestedMods automatically as part of 'build'.
 tasks.named("assemble") {
 	finalizedBy tasks.named("embedNestedMods")
 }

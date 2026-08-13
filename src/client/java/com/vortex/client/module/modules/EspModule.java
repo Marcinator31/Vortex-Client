@@ -17,7 +17,7 @@ import java.util.Set;
  */
 public class EspModule extends Module {
 
-    public final ColorSetting color = new ColorSetting("Glow-Farbe", 0xFFFF0000);
+    public final ColorSetting color = new ColorSetting("Glow Color", 0xFFFF0000);
 
     // Aktive Mob-Typen (z.B. "minecraft:zombie"). Wird im ESP-Menue umgeschaltet.
     private final Set<String> enabledMobs = new HashSet<>();

@@ -39,7 +39,7 @@ public class AccountScreen extends Screen {
 
         // "Microsoft-Login" -- startet den Device Code Flow.
         this.addDrawableChild(ButtonWidget.builder(
-            Text.literal(loggingIn ? "Login laeuft..." : "+ Microsoft-Login"),
+            Text.literal(loggingIn ? "Signing in..." : "+ Microsoft sign-in"),
             btn -> startMicrosoftLogin()
         ).dimensions(x, y, 200, 20).build());
 
@@ -47,7 +47,7 @@ public class AccountScreen extends Screen {
 
         // --- Klassischer Browser-Login (ohne eigene Azure-App) ---
         this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("1. Login-Seite oeffnen"),
+            Text.literal("1. Open login page"),
             btn -> openLoginPage()
         ).dimensions(x, y, 200, 20).build());
 
@@ -56,15 +56,15 @@ public class AccountScreen extends Screen {
         // Feld zum Einfuegen der Adresse aus dem Browser.
         this.codeField = new net.minecraft.client.gui.widget.TextFieldWidget(
                 this.textRenderer, x, y, 200, 20,
-                Text.literal("Adresse einfuegen"));
+                Text.literal("Paste the address"));
         this.codeField.setMaxLength(2000);
-        this.codeField.setPlaceholder(Text.literal("Adresse mit code=... einfuegen"));
+        this.codeField.setPlaceholder(Text.literal("Paste the address containing code=..."));
         this.addDrawableChild(this.codeField);
 
         y += 24;
 
         this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("2. Code einloesen"),
+            Text.literal("2. Redeem code"),
             btn -> redeemCode()
         ).dimensions(x, y, 200, 20).build());
 
@@ -73,7 +73,7 @@ public class AccountScreen extends Screen {
         // Pro gespeichertem Account: "Wechseln" + "Entfernen".
         for (Account acc : new java.util.ArrayList<>(AccountManager.INSTANCE.getAccounts())) {
             this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Wechseln: " + acc.username),
+                Text.literal("Switch to: " + acc.username),
                 btn -> {
                     AccountManager.INSTANCE.switchTo(acc);
                     this.clearAndInit();
@@ -93,14 +93,14 @@ public class AccountScreen extends Screen {
 
         // Schliessen-Button.
         this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("Schliessen"),
+            Text.literal("Close"),
             btn -> this.close()
         ).dimensions(x, this.height - 30, 200, 20).build());
     }
 
     /** Startet den Microsoft Device Code Flow in einem Hintergrund-Thread. */
     private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("pvpclient-auth");
+            org.slf4j.LoggerFactory.getLogger("vortexclient-auth");
 
     /**
      * Macht aus einer Exception eine lesbare Zeile. Wichtig: getMessage() ist oft
@@ -125,14 +125,14 @@ public class AccountScreen extends Screen {
     /** Schritt 1: Microsoft-Login-Seite im Browser oeffnen. */
     private void openLoginPage() {
         String url = MicrosoftAuth.getAuthUrl();
-        statusLine = "Im Browser einloggen, dann die Adresse kopieren.";
-        codeLine = "Sie enthaelt 'code=' und sieht leer aus.";
+        statusLine = "Sign in with your browser, then copy the address.";
+        codeLine = "It contains 'code=' and looks blank.";
         try {
             Util.getOperatingSystem().open(new java.net.URI(url));
         } catch (Throwable t) {
-            LOGGER.error("[pvpclient] Browser konnte nicht geoeffnet werden", t);
-            statusLine = "Browser ging nicht auf - Adresse steht in latest.log";
-            LOGGER.info("[pvpclient] Login-Adresse: {}", url);
+            LOGGER.error("[vortexclient] Could not open the browser", t);
+            statusLine = "Browser did not open \u2014 the address is in latest.log";
+            LOGGER.info("[vortexclient] Sign-in address: {}", url);
         }
     }
 
@@ -141,11 +141,11 @@ public class AccountScreen extends Screen {
         if (loggingIn) return;
         String pasted = (codeField != null) ? codeField.getText() : "";
         if (pasted == null || pasted.trim().isEmpty()) {
-            statusLine = "Bitte zuerst die Adresse aus dem Browser einfuegen.";
+            statusLine = "Paste the address from your browser first.";
             return;
         }
         loggingIn = true;
-        statusLine = "Loese Code ein...";
+        statusLine = "Redeeming code...";
         codeLine = "";
         this.clearAndInit();
 
@@ -156,16 +156,16 @@ public class AccountScreen extends Screen {
                 statusLine = "Eingeloggt als " + acc.username + "!";
                 codeLine = "";
             } catch (Throwable e) {
-                LOGGER.error("[pvpclient] Code-Einloesung fehlgeschlagen", e);
+                LOGGER.error("[vortexclient] Code redemption failed", e);
                 String msg = describe(e);
-                statusLine = "Fehler: " + msg;
+                statusLine = "Error: " + msg;
                 // Bei genau diesem Microsoft-Fehler direkt sagen, was zu tun ist --
                 // er bedeutet immer dasselbe: die Client-ID ist nicht registriert.
                 if (msg.contains("unauthorized_client") || msg.contains("AADSTS700016")) {
-                    statusLine = "Client-ID nicht registriert (AADSTS700016)";
-                    codeLine = "Eigene Azure-ID in config/vortexclient-clientid.txt eintragen";
+                    statusLine = "Client ID not registered (AADSTS700016)";
+                    codeLine = "Add your own Azure ID to config/vortexclient-clientid.txt";
                 } else {
-                    codeLine = "Details siehe latest.log";
+                    codeLine = "See latest.log for details";
                 }
             } finally {
                 loggingIn = false;
@@ -175,7 +175,7 @@ public class AccountScreen extends Screen {
                     }
                 });
             }
-        }, "pvpclient-ms-code");
+        }, "vortexclient-ms-code");
         t.setDaemon(true);
         t.start();
     }
@@ -183,7 +183,7 @@ public class AccountScreen extends Screen {
     private void startMicrosoftLogin() {
         if (loggingIn) return;
         loggingIn = true;
-        statusLine = "Verbinde mit Microsoft...";
+        statusLine = "Connecting to Microsoft...";
         codeLine = "";
         this.clearAndInit();
 
@@ -192,12 +192,12 @@ public class AccountScreen extends Screen {
                 Account acc = MicrosoftAuth.login(code -> {
                     // Code anzeigen + Browser oeffnen.
                     codeLine = "Code: " + code.userCode;
-                    statusLine = "Oeffne Browser... Code eingeben: " + code.userCode;
+                    statusLine = "Opening browser... enter this code: " + code.userCode;
                     try {
                         Util.getOperatingSystem().open(new java.net.URI(code.verificationUri));
                     } catch (Throwable ignored) {
                         statusLine = "Gehe zu " + code.verificationUri
-                                + " und gib den Code ein.";
+                                + " and enter the code.";
                     }
                 });
 
@@ -208,9 +208,9 @@ public class AccountScreen extends Screen {
             } catch (Throwable e) {
                 // Vollstaendigen Fehler ins Spiel-Log schreiben (latest.log) --
                 // die GUI-Zeile ist kurz, im Log steht die ganze Ursache.
-                LOGGER.error("[pvpclient] Microsoft-Login fehlgeschlagen", e);
-                statusLine = "Fehler: " + describe(e);
-                codeLine = "Details siehe latest.log";
+                LOGGER.error("[vortexclient] Microsoft sign-in failed", e);
+                statusLine = "Error: " + describe(e);
+                codeLine = "See latest.log for details";
             } finally {
                 loggingIn = false;
                 // GUI im Main-Thread neu aufbauen.
@@ -220,7 +220,7 @@ public class AccountScreen extends Screen {
                     }
                 });
             }
-        }, "pvpclient-ms-login");
+        }, "vortexclient-ms-login");
         t.setDaemon(true);
         t.start();
     }
@@ -230,7 +230,7 @@ public class AccountScreen extends Screen {
         super.render(ctx, mouseX, mouseY, delta);
 
         // Aktueller Account-Name oben.
-        String current = "Aktuell: " + this.client.getSession().getUsername();
+        String current = "Current: " + this.client.getSession().getUsername();
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(current),
                 this.width / 2, 18, 0xFFFFFF00);
 

@@ -49,7 +49,15 @@ public final class ActiveSkin {
     private ActiveSkin() {}
 
     private static Path stateFile() {
-        return SkinWardrobe.skinDir().resolve("aktiv.txt");
+        Path neu = SkinWardrobe.skinDir().resolve("active.txt");
+        // Alten Dateinamen uebernehmen, damit der gewaehlte Skin erhalten bleibt.
+        try {
+            Path alt = SkinWardrobe.skinDir().resolve("aktiv.txt");
+            if (!Files.exists(neu) && Files.exists(alt)) Files.move(alt, neu);
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("ActiveSkin.stateFile", pvpErr);
+        }
+        return neu;
     }
 
     /** Der aktuell angewendete Skin, oder null wenn der eigene benutzt wird. */
@@ -99,7 +107,7 @@ public final class ActiveSkin {
             if (image.getWidth() != 64 || (image.getHeight() != 64 && image.getHeight() != 32)) {
                 image.close();
                 com.vortex.client.core.Errors.note("ActiveSkin",
-                        skin.fileName + ": Groesse passt nicht (erwartet 64x64)");
+                        skin.fileName + ": wrong size (expected 64x64)");
                 return null;
             }
 

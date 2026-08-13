@@ -78,7 +78,7 @@ public final class SusChunks {
     private static void ensureWorker() {
         if (running) return;
         running = true;
-        worker = new Thread(SusChunks::workerLoop, "pvpclient-suschunks");
+        worker = new Thread(SusChunks::workerLoop, "vortexclient-suschunks");
         worker.setDaemon(true);
         worker.start();
     }

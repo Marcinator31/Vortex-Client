@@ -18,18 +18,18 @@ import com.vortex.client.module.Module;
  */
 public class ProjectilePathModule extends Module {
 
-    public final ColorSetting color = new ColorSetting("Farbe", 0xFF55FFFF);
+    public final ColorSetting color = new ColorSetting("Color", 0xFF55FFFF);
     public final NumberSetting lineWidth =
-            new NumberSetting("Linienbreite", 2.0, 0.5, 5.0, 0.5);
+            new NumberSetting("Line Width", 2.0, 0.5, 5.0, 0.5);
 
     /** Kaestchen am Einschlagpunkt einzeichnen. */
-    public final BooleanSetting marker = new BooleanSetting("Landepunkt", true);
+    public final BooleanSetting marker = new BooleanSetting("Landing Marker", true);
 
     /** Auch anzeigen, wenn das Wurfobjekt in der Nebenhand liegt. */
-    public final BooleanSetting offHand = new BooleanSetting("Nebenhand", true);
+    public final BooleanSetting offHand = new BooleanSetting("Off Hand", true);
 
     /** Wie viele Schritte hoechstens vorausberechnet werden (1 Schritt = 1 Tick). */
-    public final NumberSetting maxSteps = new NumberSetting("Vorausschau", 120, 20, 300, 10);
+    public final NumberSetting maxSteps = new NumberSetting("Prediction Steps", 120, 20, 300, 10);
 
     /**
      * Auch die Bahn von Pfeilen zeigen (Bogen und Armbrust).
@@ -37,10 +37,10 @@ public class ProjectilePathModule extends Module {
      * Beim Bogen haengt Geschwindigkeit und damit Reichweite davon ab, wie weit
      * gespannt wurde -- die Bahn passt sich waehrend des Spannens laufend an.
      */
-    public final BooleanSetting bow = new BooleanSetting("Bogen/Armbrust", true);
+    public final BooleanSetting bow = new BooleanSetting("Bow / Crossbow", true);
 
     public ProjectilePathModule() {
-        super("Projektil-Flugbahn", Category.PVP);
+        super("Projectile Path", Category.PVP);
         addSetting(color);
         addSetting(lineWidth);
         addSetting(marker);

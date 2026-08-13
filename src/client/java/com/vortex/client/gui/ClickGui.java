@@ -144,7 +144,7 @@ public class ClickGui extends Screen {
     private final List<Hit> hits = new ArrayList<>();
 
     public ClickGui() {
-        super(Text.literal("PvP Client"));
+        super(Text.literal("Vortex Client"));
     }
 
     // ---------------------------------------------------------------- Aufbau
@@ -261,14 +261,14 @@ public class ClickGui extends Screen {
         ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
 
         ctx.fill(x + PAD, y + 11, x + PAD + 3, y + 23, fade(accent, openAnim));
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("PVP CLIENT"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("VORTEX"),
                 x + PAD + 9, y + 8, fade(t.text.get(), openAnim));
 
         int active = 0;
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             if (m.isEnabled()) active++;
         }
-        ctx.drawText(this.textRenderer, Text.literal(active + " aktiv"),
+        ctx.drawText(this.textRenderer, Text.literal(active + " active"),
                 x + PAD + 9, y + 19, fade(t.textDim.get(), openAnim), false);
 
         // Rueckmeldung nach einem Preset-Wechsel, blendet nach 3 Sekunden aus.
@@ -300,7 +300,7 @@ public class ClickGui extends Screen {
                 x + PAD + 70, y + 6, fade(0xFF74747F, openAnim), false);
 
         // Knopf zum Design-Menue (Farben der Oberflaeche).
-        String design = "Design";
+        String design = "Theme";
         int dw = this.textRenderer.getWidth(design) + 14;
         int dx = px + 6;
         boolean dHov = inRect(mx, my, dx, y + 17, dw, 13);
@@ -317,7 +317,7 @@ public class ClickGui extends Screen {
             ctx.drawText(this.textRenderer, Text.literal("Q"),
                     sx + 6, sy + 6, fade(0xFF6A6A76, openAnim), false);
             if (search.getText().isEmpty()) {
-                ctx.drawText(this.textRenderer, Text.literal("Suchen ..."),
+                ctx.drawText(this.textRenderer, Text.literal("Search..."),
                         sx + 18, sy + 6, fade(0xFF6A6A76, openAnim), false);
             }
         }
@@ -345,7 +345,7 @@ public class ClickGui extends Screen {
             if ((bg >>> 24) != 0) {
                 roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
             }
-            ctx.drawText(this.textRenderer, Text.literal("* Favoriten"),
+            ctx.drawText(this.textRenderer, Text.literal("* Favourites"),
                     x + 16, cy + 7,
                     fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
             String badge = String.valueOf(GuiState.getFavorites().size());
@@ -403,7 +403,7 @@ public class ClickGui extends Screen {
                 accent, t, dt, searching);
         cy = drawSectionEntry(ctx, x, cy, "Skins", Section.SKINS, null,
                 accent, t, dt, searching);
-        cy = drawSectionEntry(ctx, x, cy, "Design", Section.DESIGN, null,
+        cy = drawSectionEntry(ctx, x, cy, "Theme", Section.DESIGN, null,
                 accent, t, dt, searching);
 
         if (!searching && indicatorY >= 0) {
@@ -561,7 +561,7 @@ public class ClickGui extends Screen {
         }
 
         if (list.isEmpty()) {
-            String msg = "Nichts gefunden";
+            String msg = "No results";
             ctx.drawText(this.textRenderer, Text.literal(msg),
                     x + (w - this.textRenderer.getWidth(msg)) / 2, y + h / 2 - 4,
                     0xFF6A6A76, false);
@@ -594,8 +594,8 @@ public class ClickGui extends Screen {
                 ctx.drawTextWithShadow(this.textRenderer, Text.literal("Waypoints"),
                         cx, cy, t.text.get());
                 ctx.drawText(this.textRenderer,
-                        Text.literal(count + (count == 1 ? " Marker gesetzt"
-                                                         : " Marker gesetzt")),
+                        Text.literal(count + (count == 1 ? " markers"
+                                                         : " markers")),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
 
@@ -603,7 +603,7 @@ public class ClickGui extends Screen {
                 boolean hov = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20,
                         hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.drawText(this.textRenderer, Text.literal("Marker verwalten"),
+                ctx.drawText(this.textRenderer, Text.literal("Manage markers"),
                         cx + 10, cy + 6, t.text.get(), false);
                 ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
@@ -627,12 +627,12 @@ public class ClickGui extends Screen {
                 ctx.drawTextWithShadow(this.textRenderer, Text.literal("Skins"),
                         cx, cy, t.text.get());
                 ctx.drawText(this.textRenderer,
-                        Text.literal("Garderobe, Suche nach Spielernamen, eigene Dateien"),
+                        Text.literal("Wardrobe, player name lookup, your own files"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean hov = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.drawText(this.textRenderer, Text.literal("Skin-Garderobe oeffnen"),
+                ctx.drawText(this.textRenderer, Text.literal("Open skin wardrobe"),
                         cx + 10, cy + 6, t.text.get(), false);
                 ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
@@ -640,15 +640,15 @@ public class ClickGui extends Screen {
                 break;
             }
             case DESIGN: {
-                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Design"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Theme"),
                         cx, cy, t.text.get());
                 ctx.drawText(this.textRenderer,
-                        Text.literal("Farbschema der Oberflaeche anpassen"),
+                        Text.literal("Customise the interface colours"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean hov = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.drawText(this.textRenderer, Text.literal("Design-Menue oeffnen"),
+                ctx.drawText(this.textRenderer, Text.literal("Open theme editor"),
                         cx + 10, cy + 6, t.text.get(), false);
                 ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
@@ -682,11 +682,11 @@ public class ClickGui extends Screen {
         String label;
         Act act;
         if (m instanceof com.vortex.client.module.modules.EspModule) {
-            label = "Mobs auswaehlen"; act = Act.SUB_ESP;
+            label = "Select mobs"; act = Act.SUB_ESP;
         } else if (m instanceof com.vortex.client.module.modules.BlockEspModule) {
-            label = "Bloecke auswaehlen"; act = Act.SUB_BLOCK;
+            label = "Select blocks"; act = Act.SUB_BLOCK;
         } else if (m instanceof com.vortex.client.module.modules.AntiRenderModule) {
-            label = "Entities auswaehlen"; act = Act.SUB_ANTI;
+            label = "Select entities"; act = Act.SUB_ANTI;
 
         } else {
             return sy;
@@ -758,7 +758,7 @@ public class ClickGui extends Screen {
         } else if (s instanceof KeySetting k) {
             ctx.drawText(this.textRenderer, Text.literal(name), x, y + 6,
                     t.textDim.get(), false);
-            String val = k.isListening() ? "Taste druecken" : k.getKeyName();
+            String val = k.isListening() ? "Press a key" : k.getKeyName();
             int vw = this.textRenderer.getWidth(val);
             roundRect(ctx, x + w - vw - 10, y + 3, vw + 8, 14,
                     k.isListening() ? mix(C_INNER, accent, 0.4f) : C_INNER);
@@ -827,7 +827,7 @@ public class ClickGui extends Screen {
             ctx.fill(gx + 8, gy + 8 - o, gx + 10, gy + 10 - o, gc);
         }
         ctx.drawText(this.textRenderer,
-                Text.literal("Klick = Einstellungen   Schalter rechts = an/aus   ESC = schliessen"),
+                Text.literal("Click to expand   ·   Toggle on the right   ·   ESC to close"),
                 x + PAD, y + 5, fade(0xFF74747F, openAnim), false);
     }
 
@@ -915,7 +915,7 @@ public class ClickGui extends Screen {
                     // Kurze Rueckmeldung im Chat -- sonst ist beim Wechsel auf ein
                     // leeres Preset nicht erkennbar, ob etwas passiert ist.
                     presetInfo = "Preset " + (target + 1) + ": "
-                            + countEnabled() + " Module aktiv";
+                            + countEnabled() + " modules active";
                     presetInfoTime = 0f;
                     break;
                 }

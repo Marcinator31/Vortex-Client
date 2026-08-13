@@ -25,7 +25,7 @@ public class VortexClient implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        System.out.println("[" + MOD_ID + "] geladen.");
+        System.out.println("[" + MOD_ID + "] loaded.");
         registerBundledPacks();
     }
 

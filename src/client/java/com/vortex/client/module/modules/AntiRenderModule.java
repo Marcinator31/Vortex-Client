@@ -33,11 +33,11 @@ public class AntiRenderModule extends Module {
      * gegen viele weit entfernte Entities, die man ohnehin kaum sieht.
      */
     public final NumberSetting maxDistance =
-            new NumberSetting("Max. Distanz", 0, 0, 256, 8);
+            new NumberSetting("Max Distance", 0, 0, 256, 8);
 
     /** Spieler nie per Distanz ausblenden (wichtig fuer PvP). */
     public final BooleanSetting keepPlayers =
-            new BooleanSetting("Spieler immer zeigen", true);
+            new BooleanSetting("Always Show Players", true);
 
     // Ausgeblendete Entity-Typen (z.B. "minecraft:minecart").
     private final Set<String> hiddenTypes = new HashSet<>();

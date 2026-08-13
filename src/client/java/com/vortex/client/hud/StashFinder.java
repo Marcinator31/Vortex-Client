@@ -79,7 +79,7 @@ public final class StashFinder {
             if (mod.notifyEnabled()) {
                 List<Stash> pend = PENDING_NOTIFY.getAndSet(new ArrayList<>());
                 for (Stash s : pend) {
-                    String msg = "\u00a7d[Stash Finder] \u00a7fStash gefunden bei \u00a7e"
+                    String msg = "\u00a7d[Stash Finder] \u00a7fStash found at \u00a7e"
                             + s.blockX + ", " + s.blockZ
                             + " \u00a77(" + s.count + " Container)";
                     try {
@@ -160,7 +160,7 @@ public final class StashFinder {
     private static void ensureWorker() {
         if (running) return;
         running = true;
-        worker = new Thread(StashFinder::workerLoop, "pvpclient-stashfinder");
+        worker = new Thread(StashFinder::workerLoop, "vortexclient-stashfinder");
         worker.setDaemon(true);
         worker.start();
     }

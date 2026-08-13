@@ -176,7 +176,7 @@ public final class BlockEspRenderer {
     private static void ensureWorker() {
         if (running) return;
         running = true;
-        worker = new Thread(BlockEspRenderer::workerLoop, "pvpclient-blockesp");
+        worker = new Thread(BlockEspRenderer::workerLoop, "vortexclient-blockesp");
         worker.setDaemon(true);
         worker.start();
     }

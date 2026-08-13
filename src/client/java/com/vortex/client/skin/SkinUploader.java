@@ -71,21 +71,21 @@ public final class SkinUploader {
         String token = token();
         if (token == null || token.isEmpty()) {
             throw new RuntimeException(
-                    "Keine gueltige Anmeldung -- Hochladen nicht moeglich.");
+                    "Not signed in \u2014 upload unavailable.");
         }
         if (!Files.exists(pngFile)) {
-            throw new RuntimeException("Datei nicht gefunden: " + pngFile.getFileName());
+            throw new RuntimeException("File not found: " + pngFile.getFileName());
         }
         byte[] png = Files.readAllBytes(pngFile);
         if (png.length < 8 || png[0] != (byte) 0x89 || png[1] != 'P') {
-            throw new RuntimeException("Die Datei ist kein gueltiges PNG.");
+            throw new RuntimeException("That file is not a valid PNG.");
         }
         if (png.length > 24576) {
             // Mojang lehnt zu grosse Dateien ab; ein normaler Skin ist winzig.
-            throw new RuntimeException("Datei zu gross fuer einen Skin.");
+            throw new RuntimeException("File too large for a skin.");
         }
 
-        String boundary = "----pvpclient" + System.currentTimeMillis();
+        String boundary = "----vortexclient" + System.currentTimeMillis();
         byte[] body = buildMultipart(boundary, slim ? "slim" : "classic",
                 pngFile.getFileName().toString(), png);
 
@@ -105,17 +105,17 @@ public final class SkinUploader {
         // Verstaendliche Meldungen statt roher Statuscodes.
         if (code == 401) {
             throw new RuntimeException(
-                    "Anmeldung abgelehnt (401) -- Token abgelaufen? Spiel neu starten.");
+                    "Sign-in rejected (401) \u2014 token expired? Restart the game.");
         }
         if (code == 403) {
             throw new RuntimeException(
-                    "Nicht erlaubt (403) -- Konto besitzt Minecraft nicht oder ist gesperrt.");
+                    "Not allowed (403) \u2014 the account does not own Minecraft or is banned.");
         }
         if (code == 429) {
-            throw new RuntimeException("Zu viele Aenderungen -- kurz warten.");
+            throw new RuntimeException("Too many changes \u2014 wait a moment.");
         }
         String b = resp.body();
-        throw new RuntimeException("Hochladen fehlgeschlagen (HTTP " + code + ")"
+        throw new RuntimeException("Upload failed (HTTP " + code + ")"
                 + (b == null || b.isEmpty() ? "" : ": "
                     + b.substring(0, Math.min(b.length(), 140))));
     }
@@ -148,7 +148,7 @@ public final class SkinUploader {
     public static void reset() throws Exception {
         String token = token();
         if (token == null || token.isEmpty()) {
-            throw new RuntimeException("Keine gueltige Anmeldung.");
+            throw new RuntimeException("Not signed in.");
         }
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(ENDPOINT + "/active"))
@@ -158,7 +158,7 @@ public final class SkinUploader {
         HttpResponse<String> resp = HTTP.send(req,
                 HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (resp.statusCode() / 100 != 2) {
-            throw new RuntimeException("Zuruecksetzen fehlgeschlagen (HTTP "
+            throw new RuntimeException("Reset failed (HTTP "
                     + resp.statusCode() + ").");
         }
     }

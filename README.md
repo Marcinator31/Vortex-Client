@@ -1,118 +1,102 @@
-# PvP Client (Fabric, Minecraft 1.21.11)
+# Vortex Client
 
-Ein PvP-fokussierter Fabric-Client als Lernprojekt. Aufgebaut wie ein
-echtes Mod-Projekt, das du per GitHub Actions zu einer `.jar` baust --
-genau wie dein Plugin, nur mit Fabric statt Bukkit/Spigot.
+A Fabric client for **Minecraft 1.21.11** with HUD modules, ESP, a waypoint
+system, a skin wardrobe and performance tools. Everything is configurable
+in-game, and every setting is saved with your preset.
 
-## Was schon drin ist
+---
 
-- **CPS-Counter** als HUD-Overlay (oben links). Das ist deine **Lern-Vorlage**.
-  Sie zeigt die zwei Werkzeuge, die du fuer alles Weitere brauchst:
-  - ein **Mixin** (`MouseMixin`), das Mausklicks abfaengt
-  - ein **Fabric-Event** (`HudRenderer`), das aufs HUD zeichnet
-- **GitHub-Actions-Build** (`.github/workflows/build.yml`) -> spuckt die
-  `.jar` im Actions-Tab als Artifact aus.
-- **Performance-Mods** (Sodium, Lithium) als `modRuntimeOnly` -- laufen im
-  Dev-Client mit.
+## Features
 
-## Zum FPS-Boost -- wichtig und ehrlich
+**HUD** — FPS, ping, CPS, coordinates, potion effects, armour with durability,
+totem count, radar, saturation, player list, keystrokes, totem popper counter
+and session stats. Every element can be dragged into place in the HUD editor,
+with snapping to edges and to other elements.
 
-Du schreibst den FPS-Boost **nicht selbst**. Niemand in dieser Liga tut das,
-auch Lunar und Ogulniega nicht. Deren "Boost" ist zum allergroessten Teil
-**Sodium + Lithium + FerriteCore + Entity Culling** usw., zusammengepackt
-unter einem eigenen Namen.
+**Combat** — hitboxes, shield status, toggle sprint, health indicator and
+target info (an opponent's gear plus whether they are actually in attack
+range). Projectile paths preview where a pearl, potion or arrow will land,
+with bow charge taken into account.
 
-Dein Client macht es genauso, nur transparent:
-- Im Dev-Client laufen Sodium/Lithium ueber `modRuntimeOnly` mit.
-- Spieler legen dieselben Mods spaeter einfach in ihren `mods`-Ordner.
+**ESP** — mobs, blocks, containers, spawners and dropped items, each with its
+own selection screen, colours and draw distance.
 
-Eine eigene Render-Engine zu schreiben, die Sodium schlaegt, waere ein
-Mehrjahres-Projekt eines bezahlten Teams. Das ist nicht der Weg.
+**Waypoints** — a system of its own rather than a module. Markers are drawn as
+small rings with the initial of their name; aim at one and it grows and shows
+the full name and distance. Markers can carry groups of marked blocks, which
+appear only when you are nearby. Markers are scoped per world, with named
+profiles for proxy networks where every server shares one address. Four
+assignable keys handle adding, marking blocks, marking an area and opening the
+manager.
 
-## Bauen
+**Skins** — a wardrobe that fetches skins by player name, imports your own PNG
+files and previews every entry. Skins can be applied client-side or uploaded
+to your account so that everyone sees them.
 
-### Lokal
+**Base hunting** — stash finder, suspicious chunk detection, tunnel detector
+and chunk borders.
+
+**Performance** — potato mode and anti-render for hiding entity types you do
+not need to see.
+
+Three presets can be switched at any time; each holds its own modules,
+colours, favourites, window layout and waypoints. Presets can be exported to a
+text file and imported again, which makes them easy to share.
+
+---
+
+## Building
+
+### Locally
 ```
 ./gradlew build
 ```
-Die fertige Mod liegt dann in `build/libs/` (die Datei **ohne** `-sources`).
+The finished mod appears in `build/libs/` — the file **without** `-sources`.
 
-### Im Dev-Client testen
-```
-./gradlew runClient
-```
+### Via GitHub Actions
+Every push builds automatically. The `.jar` is available as an artifact in the
+Actions tab. The workflow caches Minecraft and retries up to three times, so a
+short outage of Mojang's or Fabric's servers does not fail the build.
 
-### Per GitHub Actions
-Einfach pushen. Im Tab **Actions** -> Workflow-Run -> unten bei **Artifacts**
-liegt `pvpclient-jar`.
+---
 
-## Versionen (verifiziert fuer 1.21.11)
+## Requirements
 
-- Minecraft **1.21.11** (braucht **Java 21**)
-- Fabric Loader **0.18.1**, Loom **1.14**
-- **Mojang Mappings** statt Yarn -- ab 1.21.11 der empfohlene, zukunftssichere
-  Weg. Yarn wird danach nicht mehr aktualisiert.
+- Minecraft **1.21.11**
+- Fabric Loader **0.18.1** or newer
+- Fabric API
+- Java **21**
 
-> Hinweis: Die exakten Build-Nummern von Fabric API, Sodium und Lithium fuer
-> 1.21.11 aenderst du beim ersten Build ggf. in `gradle.properties` /
-> `build.gradle` auf die neuesten Werte von Modrinth. Steht dort auch als
-> Kommentar.
+---
 
-## Naechste Schritte (deine eigentlichen Ziele)
+## Commands
 
-1. **ArmorHUD** -- gleiches Geruest wie der CPS-Renderer, aber statt Text
-   zeichnest du `context.drawItem(...)` fuer jedes Ruestungsteil aus
-   `client.player.getInventory()`. Dazu die Haltbarkeit als Balken/Zahl.
-2. **Keystrokes** -- WASD/Maus-Tasten als Kaesten, die aufleuchten.
-   Tastenstatus kommt aus `client.options`-Keybinds.
-3. **FPS / Ping / Potion-HUD** -- weitere HudRenderer-Module.
-4. **Account-Switcher** -- eigener Screen + Microsoft-OAuth (MSA-Flow).
-   Das ist der komplexeste Brocken, machen wir separat und sorgfaeltig.
-5. **Settings-GUI** -- Module an/aus, Positionen verschieben.
+| Command | What it does |
+| --- | --- |
+| `/wp add \| del \| list` | Manage waypoints |
+| `/export <name>` | Save the active preset to a file |
+| `/import <name>` | Load a saved preset |
+| `/presets` | List saved presets |
+| `/errors` | Show what went wrong and how often |
+| `/lag` | Show which part of the client uses how much time |
+| `/relaunch` | Restart the game |
 
-## Projektstruktur
+Default keys: **Right Shift** opens the menu, **Right Ctrl** the HUD editor,
+**F4** freecam. Waypoint keys are unassigned by default so that nothing is
+taken away from you — assign them once in the Waypoints section.
 
-```
-src/
-  main/java/...            common-Einstiegspunkt (wenig)
-  main/resources/          fabric.mod.json (= dein "plugin.yml")
-  client/java/...          der ganze Client-Code (HUD, Mixins)
-  client/resources/        Mixin-Config
-.github/workflows/build.yml  der Build, wie bei deinem Plugin
-```
+---
 
-## Das Modul-System (Stand jetzt)
+## A note on fair play
 
-Das ist das Fundament fuer "alles customizen wie bei Lunar".
+Some modules — aimbot, auto hit, auto totem, fly, no fall and the crystal
+macro — automate combat. They are detected reliably by most anti-cheat
+systems, and using them on a server that forbids them will very likely get you
+banned. They are marked accordingly in the module list. Everything else in
+this client only displays information the game has already sent you.
 
-Bedienung im Spiel:
-- **Rechte Umschalttaste** -> oeffnet das Mods-Menue (ClickGUI)
-- **Linksklick** auf ein Modul -> an/aus
-- **Rechtsklick** auf ein Modul -> Einstellungen auf-/zuklappen
-- **O** -> Account-Switcher
+---
 
-Architektur (wichtig zu verstehen):
-- `module/Module.java` -- Basis fuer JEDES Feature (Name, Kategorie,
-  an/aus, Settings-Liste).
-- `core/setting/` -- Setting-Typen: Boolean (Schalter), Number (Slider),
-  Color (Farbwaehler-Grundlage).
-- `module/ModuleManager.java` -- hier registrierst du neue Features.
-- `gui/ClickGui.java` -- das Menue. Kennt KEIN einzelnes Feature, baut
-  sich aus der Modul-Liste auf. Neues Modul -> erscheint automatisch.
-- `gui/Theme.java` -- alle GUI-Farben zentral, anpassbar.
+## Licence
 
-Ein neues Feature hinzufuegen = 1) Module-Unterklasse in
-`module/modules/` schreiben, 2) in ModuleManager registrieren. Fertig --
-es taucht im Menue auf, ist an/aus-schaltbar und speicherbar.
-
-### Was NICHT eingebaut wird
-Cheat-Features (Killaura, Reach-Erweiterung, Auto-Clicker, Anti-KB,
-Velocity ...). Die verschaffen unfairen Vorteil gegen echte Spieler und
-fliegen von jedem Server. Komfort/Anzeige (ArmorHUD, Keystrokes, FPS,
-Toggle-Sprint) ist drin -- das ist das, was Lunar auch wirklich macht.
-
-### Noch offen (Ausbau)
-- Settings persistent speichern/laden (Setting hat schon serialize()).
-- Echter Farbwaehler-Screen fuer ColorSettings.
-- Slider-Widget statt Klick-zum-Erhoehen.
-- Drag&Drop, um HUD-Elemente mit der Maus zu positionieren.
+MIT

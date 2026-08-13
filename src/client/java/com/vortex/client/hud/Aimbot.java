@@ -168,7 +168,7 @@ public final class Aimbot {
      *       Blick am naechsten liegt -> kuerzeste Drehung), 1 = Kopf,
      *   2 = Koerper, 3 = Fuesse.
      *
-     * Fuer "Naechster" braucht es den Augpunkt + die aktuelle Blickrichtung, um
+     * Fuer "Nearest" braucht es den Augpunkt + die aktuelle Blickrichtung, um
      * die Winkel zu den drei Stellen zu vergleichen.
      */
     private static Vec3d aimPointFor(AbstractClientPlayerEntity target, int mode,

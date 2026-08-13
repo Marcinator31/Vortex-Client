@@ -129,7 +129,7 @@ public final class BlockEntityEsp {
     private static void ensureWorker() {
         if (running) return;
         running = true;
-        worker = new Thread(BlockEntityEsp::workerLoop, "pvpclient-blockentity-esp");
+        worker = new Thread(BlockEntityEsp::workerLoop, "vortexclient-blockentity-esp");
         worker.setDaemon(true);
         worker.start();
     }

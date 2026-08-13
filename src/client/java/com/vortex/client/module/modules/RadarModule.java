@@ -28,21 +28,21 @@ public class RadarModule extends Module implements HudElement {
     // HUD-Element-Position (linke obere Ecke des Radar-Quadrats).
     public final NumberSetting x = new NumberSetting("X", 10, 0, 1920, 1);
     public final NumberSetting y = new NumberSetting("Y", 80, 0, 1080, 1);
-    public final ColorSetting color = new ColorSetting("Rahmenfarbe", 0xFF55FF7A);
+    public final ColorSetting color = new ColorSetting("Frame Color", 0xFF55FF7A);
     // Skalierung wirkt auf den Radar-Durchmesser.
-    public final NumberSetting scale = new NumberSetting("Skalierung", 1.0, 0.5, 3.0, 0.1);
+    public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
 
     // Radius der Erfassung in Bloecken (32 Chunks = 512).
-    public final NumberSetting range = new NumberSetting("Reichweite (Bloecke)", 512, 32, 512, 16);
+    public final NumberSetting range = new NumberSetting("Range (Blocks)", 512, 32, 512, 16);
 
     // Welche Entity-Typen anzeigen.
-    public final BooleanSetting showPlayers  = new BooleanSetting("Spieler", true);
-    public final BooleanSetting showHostiles = new BooleanSetting("Feindliche", true);
-    public final BooleanSetting showAnimals  = new BooleanSetting("Tiere", false);
+    public final BooleanSetting showPlayers  = new BooleanSetting("Players", true);
+    public final BooleanSetting showHostiles = new BooleanSetting("Hostile", true);
+    public final BooleanSetting showAnimals  = new BooleanSetting("Animals", false);
     public final BooleanSetting showItems    = new BooleanSetting("Items", false);
 
     // Bei Spielern Kopf + Name + Entfernung anzeigen.
-    public final BooleanSetting playerDetails = new BooleanSetting("Spieler-Details", true);
+    public final BooleanSetting playerDetails = new BooleanSetting("Player Details", true);
 
     public RadarModule() {
         super("Radar", Category.HUD);

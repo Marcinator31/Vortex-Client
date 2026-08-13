@@ -78,7 +78,7 @@ public final class TunnelDetector {
     private static void ensureWorker() {
         if (running) return;
         running = true;
-        worker = new Thread(TunnelDetector::workerLoop, "pvpclient-tunneldetector");
+        worker = new Thread(TunnelDetector::workerLoop, "vortexclient-tunneldetector");
         worker.setDaemon(true);
         worker.start();
     }

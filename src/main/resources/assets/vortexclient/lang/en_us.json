@@ -1,5 +1,8 @@
 {
-	"key.pvpclient.clickgui": "Open Mods Menu",
-	"key.pvpclient.hudeditor": "Open HUD Editor",
-	"category.pvpclient": "PvP Client"
+	"key.vortexclient.clickgui": "Open Vortex Menu",
+	"key.vortexclient.hudeditor": "Open HUD Editor",
+	"category.vortexclient": "Vortex Client",
+	"category.vortexclient.main": "Vortex Client",
+	"key.categories.vortexclient.main": "Vortex Client",
+	"key.category.vortexclient.main": "Vortex Client"
 }

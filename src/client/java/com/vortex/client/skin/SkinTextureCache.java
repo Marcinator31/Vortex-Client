@@ -55,7 +55,7 @@ public final class SkinTextureCache {
                 image.close();
                 FAILED.put(key, true);
                 com.vortex.client.core.Errors.note("SkinTextureCache",
-                        skin.fileName + ": ungewoehnliche Groesse, erwartet 64x64");
+                        skin.fileName + ": unusual size, expected 64x64");
                 return null;
             }
 

@@ -25,12 +25,12 @@ public class StashFinderModule extends Module {
 
     // Ab wie vielen Containern in einem Chunk es als Stash gilt.
     public final NumberSetting threshold =
-            new NumberSetting("Schwelle", 10, 4, 64, 1);
+            new NumberSetting("Threshold", 10, 4, 64, 1);
     // Tracer zum Stash zeichnen?
-    public final BooleanSetting tracer = new BooleanSetting("Tracer", true);
-    public final ColorSetting tracerColor = new ColorSetting("Tracer-Farbe", 0xFFFF00FF);
+    public final BooleanSetting tracer = new BooleanSetting("Tracers", true);
+    public final ColorSetting tracerColor = new ColorSetting("Tracer Color", 0xFFFF00FF);
     // Chat-Benachrichtigung bei Fund?
-    public final BooleanSetting notify = new BooleanSetting("Chat-Meldung", true);
+    public final BooleanSetting notify = new BooleanSetting("Chat Message", true);
 
     public StashFinderModule() {
         super("Stash Finder", Category.MISC);

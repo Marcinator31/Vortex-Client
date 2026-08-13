@@ -23,12 +23,12 @@ public class GlobalHudColorModule extends Module {
 
     private static final int WHITE = 0xFFFFFFFF;
 
-    public final ColorSetting color = new ColorSetting("Farbe", WHITE);
-    public final BooleanSetting apply = new BooleanSetting("Jetzt anwenden", false);
-    public final BooleanSetting reset = new BooleanSetting("Zuruecksetzen (weiss)", false);
+    public final ColorSetting color = new ColorSetting("Color", WHITE);
+    public final BooleanSetting apply = new BooleanSetting("Apply Now", false);
+    public final BooleanSetting reset = new BooleanSetting("Reset (White)", false);
 
     public GlobalHudColorModule() {
-        super("HUD-Farbe", Category.HUD);
+        super("HUD Color", Category.HUD);
         addSetting(color);
         addSetting(apply);
         addSetting(reset);

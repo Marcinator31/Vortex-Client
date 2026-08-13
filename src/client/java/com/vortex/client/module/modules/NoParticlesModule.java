@@ -15,8 +15,8 @@ import com.vortex.client.module.Module;
  */
 public class NoParticlesModule extends Module {
 
-    public final BooleanSetting noTotem = new BooleanSetting("Keine Totem-Partikel", true);
-    public final BooleanSetting noExplosion = new BooleanSetting("Keine Explosions-Partikel", true);
+    public final BooleanSetting noTotem = new BooleanSetting("No Totem Particles", true);
+    public final BooleanSetting noExplosion = new BooleanSetting("No Explosion Particles", true);
 
     public NoParticlesModule() {
         super("No Particles", Category.MISC);

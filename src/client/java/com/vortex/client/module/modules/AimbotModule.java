@@ -29,21 +29,21 @@ import com.vortex.client.module.Module;
 public class AimbotModule extends Module {
 
     public final NumberSetting strength =
-            new NumberSetting("Staerke", 45, 1, 100, 1);
+            new NumberSetting("Strength", 45, 1, 100, 1);
     public final NumberSetting smoothness =
-            new NumberSetting("Glaettung", 3, 1, 10, 1);
+            new NumberSetting("Smoothing", 3, 1, 10, 1);
     public final NumberSetting range =
-            new NumberSetting("Reichweite", 4.5, 2.0, 6.0, 0.5);
+            new NumberSetting("Range", 4.5, 2.0, 6.0, 0.5);
     public final NumberSetting fov =
             new NumberSetting("FOV", 60, 5, 180, 5);
     public final ModeSetting targetPoint =
-            new ModeSetting("Ziel-Punkt", 0, "Naechster", "Kopf", "Koerper", "Fuesse");
+            new ModeSetting("Aim Point", 0, "Nearest", "Kopf", "Koerper", "Fuesse");
     public final ModeSetting targetChoice =
-            new ModeSetting("Ziel-Wahl", 0, "Winkel", "Distanz");
+            new ModeSetting("Target Priority", 0, "Winkel", "Distanz");
     public final NumberSetting maxTurn =
-            new NumberSetting("Max Drehung/Tick", 30, 1, 180, 1);
+            new NumberSetting("Max Turn / Tick", 30, 1, 180, 1);
     public final BooleanSetting onlyWhenAttacking =
-            new BooleanSetting("Nur bei Angriff", false);
+            new BooleanSetting("Only While Attacking", false);
 
     public AimbotModule() {
         super("Aimbot", Category.PVP);

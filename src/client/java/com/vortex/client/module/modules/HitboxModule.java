@@ -22,23 +22,23 @@ import com.vortex.client.module.Module;
 public class HitboxModule extends Module {
 
     // --- Spieler ---
-    public final BooleanSetting showPlayers = new BooleanSetting("Spieler anzeigen", true);
-    public final ColorSetting playerColor   = new ColorSetting("Spieler-Farbe", 0xFFFF5555); // rot
+    public final BooleanSetting showPlayers = new BooleanSetting("Show Players", true);
+    public final ColorSetting playerColor   = new ColorSetting("Player Color", 0xFFFF5555); // rot
 
     // --- Passive Mobs / Tiere ---
-    public final BooleanSetting showAnimals = new BooleanSetting("Tiere anzeigen", true);
-    public final ColorSetting animalColor   = new ColorSetting("Tier-Farbe", 0xFFFFFFFF);   // weiss
+    public final BooleanSetting showAnimals = new BooleanSetting("Show Animals", true);
+    public final ColorSetting animalColor   = new ColorSetting("Animal Color", 0xFFFFFFFF);   // weiss
 
     // --- Feindliche Mobs ---
-    public final BooleanSetting showHostiles = new BooleanSetting("Gegner anzeigen", true);
-    public final ColorSetting hostileColor   = new ColorSetting("Gegner-Farbe", 0xFFFFFF55); // gelb
+    public final BooleanSetting showHostiles = new BooleanSetting("Show Enemies", true);
+    public final ColorSetting hostileColor   = new ColorSetting("Enemy Color", 0xFFFFFF55); // gelb
 
     // --- Sonstige Entities (Items, Pfeile, ...) ---
-    public final BooleanSetting showMisc = new BooleanSetting("Sonstige anzeigen", false);
-    public final ColorSetting miscColor  = new ColorSetting("Sonstige-Farbe", 0xFF55FFFF);   // cyan
+    public final BooleanSetting showMisc = new BooleanSetting("Show Others", false);
+    public final ColorSetting miscColor  = new ColorSetting("Other Color", 0xFF55FFFF);   // cyan
 
     // Liniendicke der Box.
-    public final NumberSetting lineWidth = new NumberSetting("Linienbreite", 2.0, 1.0, 5.0, 0.5);
+    public final NumberSetting lineWidth = new NumberSetting("Line Width", 2.0, 1.0, 5.0, 0.5);
 
     public HitboxModule() {
         super("Hitboxes", Category.PVP);

@@ -103,7 +103,7 @@ public class VortexClientMod implements ClientModInitializer {
 
         // Keybind: Rechte Umschalttaste oeffnet das ClickGUI (wie viele Clients).
         openClickGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.pvpclient.clickgui", InputUtil.Type.KEYSYM,
+            "key.vortexclient.clickgui", InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_SHIFT, CATEGORY));
 
         // HINWEIS: Der Account-Switcher ist vorerst deaktiviert.
@@ -120,7 +120,7 @@ public class VortexClientMod implements ClientModInitializer {
 
         // Keybind: Rechte Strg-Taste oeffnet den HUD-Editor (Drag & Drop).
         openHudEditorKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.pvpclient.hudeditor", InputUtil.Type.KEYSYM,
+            "key.vortexclient.hudeditor", InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_CONTROL, CATEGORY));
 
         // (deaktiviert) Accounts-Knopf im Hauptmenue -- siehe Hinweis oben.

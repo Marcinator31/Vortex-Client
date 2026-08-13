@@ -8,7 +8,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 /**
- * Fuegt dem Pause-Menue (ESC) einen "Spiel neu starten"-Knopf hinzu.
+ * Fuegt dem Pause-Menue (ESC) einen "Restart game"-Knopf hinzu.
  *
  * Der Knopf macht dasselbe wie der Befehl /relaunch: er startet einen neuen
  * Spiel-Prozess und faehrt den aktuellen sauber herunter.
@@ -38,12 +38,12 @@ public final class RestartButton {
             try {
                 // Oben links platzieren, damit nichts vom Vanilla-Menue verdeckt wird.
                 ButtonWidget btn = ButtonWidget.builder(
-                        Text.literal("Spiel neu starten"),
+                        Text.literal("Restart game"),
                         b -> {
                             try {
                                 GameRestarter.restart();
                             } catch (Throwable t) {
-                                b.setMessage(Text.literal("Neustart fehlgeschlagen"));
+                                b.setMessage(Text.literal("Restart failed"));
                             }
                         }
                 ).dimensions(6, 6, 140, 20).build();

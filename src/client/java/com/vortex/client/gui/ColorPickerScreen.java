@@ -65,7 +65,7 @@ public class ColorPickerScreen extends Screen {
     }
 
     public ColorPickerScreen(Screen parent, ColorSetting setting, Runnable onChange) {
-        super(Text.literal("Farbe waehlen"));
+        super(Text.literal("Pick a colour"));
         this.parent = parent;
         this.setting = setting;
         this.onChange = onChange;

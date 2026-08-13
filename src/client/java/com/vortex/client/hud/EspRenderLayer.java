@@ -33,7 +33,7 @@ public final class EspRenderLayer {
 
     // Der fertige Layer auf Basis der no-depth Pipeline.
     private static final RenderLayer ESP_LINES = RenderLayer.of(
-            "pvpclient_esp_lines",
+            "vortexclient_esp_lines",
             RenderSetup.builder(ESP_LINES_PIPELINE).build()
     );
 

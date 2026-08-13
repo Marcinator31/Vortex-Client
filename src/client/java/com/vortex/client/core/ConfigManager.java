@@ -50,7 +50,7 @@ public final class ConfigManager {
                 Path alt = base.resolve("pvpclient");
                 if (Files.exists(alt)) {
                     Files.move(alt, neu);
-                    Errors.note("ConfigManager", "Alte Einstellungen uebernommen.");
+                    Errors.note("ConfigManager", "Imported settings from the previous version.");
                 }
             }
         } catch (Throwable pvpErr) {
@@ -66,7 +66,16 @@ public final class ConfigManager {
 
     /** Merkt sich, welches Preset zuletzt aktiv war. */
     private static Path activeFile() {
-        return dir().resolve("aktiv.txt");
+        Path neu = dir().resolve("active.txt");
+        // Beim Umbenennen der Datei den alten Namen uebernehmen, damit das
+        // zuletzt gewaehlte Preset nicht verloren geht.
+        try {
+            Path alt = dir().resolve("aktiv.txt");
+            if (!Files.exists(neu) && Files.exists(alt)) Files.move(alt, neu);
+        } catch (Throwable pvpErr) {
+            Errors.report("ConfigManager.activeFile", pvpErr);
+        }
+        return neu;
     }
 
     public static int getActivePreset() {
@@ -302,7 +311,7 @@ public final class ConfigManager {
             Files.write(file, lines, StandardCharsets.UTF_8);
         } catch (IOException | RuntimeException e) {
             // Speichern soll das Spiel nie crashen lassen.
-            System.out.println("[pvpclient] Konnte Config nicht speichern: " + e.getMessage());
+            System.out.println("[vortexclient] Could not save config: " + e.getMessage());
         }
     }
 
@@ -433,16 +442,30 @@ public final class ConfigManager {
                 }
             }
             Errors.note("ConfigManager.load",
-                    "Preset " + (activePreset + 1) + " geladen: " + lines.size()
-                    + " Zeilen, " + unknown + " unbekannt, "
-                    + applied + " Module angewendet");
+                    "Preset " + (activePreset + 1) + " loaded: " + lines.size()
+                    + " lines, " + unknown + " unknown, "
+                    + applied + " modules applied");
         } catch (IOException | RuntimeException e) {
-            System.out.println("[pvpclient] Konnte Config nicht laden: " + e.getMessage());
+            System.out.println("[vortexclient] Could not load config: " + e.getMessage());
         }
     }
 
     /** Findet ein Setting anhand von Modul- und Settingname. */
     private static Setting findSetting(String modName, String settingName) {
+        Setting direkt = suche(modName, settingName);
+        if (direkt != null) return direkt;
+
+        // Nicht gefunden? Dann stammt die Zeile vermutlich aus einer aelteren
+        // Fassung mit deutschen Namen -- ueber die Tabelle nochmal versuchen.
+        String m2 = LegacyNames.module(modName);
+        String s2 = LegacyNames.setting(settingName);
+        if (!m2.equals(modName) || !s2.equals(settingName)) {
+            return suche(m2, s2);
+        }
+        return null;
+    }
+
+    private static Setting suche(String modName, String settingName) {
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             if (!m.getName().equals(modName)) continue;
             for (Setting s : m.getSettings()) {

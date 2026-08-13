@@ -12,8 +12,8 @@ import com.vortex.client.module.Module;
  */
 public class ContainerEspModule extends Module {
 
-    public final ColorSetting color = new ColorSetting("Farbe", 0xFFFFA500);
-    public final BooleanSetting tracer = new BooleanSetting("Tracer", false);
+    public final ColorSetting color = new ColorSetting("Color", 0xFFFFA500);
+    public final BooleanSetting tracer = new BooleanSetting("Tracers", false);
 
     public ContainerEspModule() {
         super("Container ESP", Category.PVP);

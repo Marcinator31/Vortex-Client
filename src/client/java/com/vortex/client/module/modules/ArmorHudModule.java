@@ -24,23 +24,23 @@ public class ArmorHudModule extends Module {
     //   "Schlaege" -> verbleibende Haltbarkeitspunkte als Zahl
     //   "Balken"  -> der Vanilla-Haltbarkeitsbalken (gruen -> rot)
     public final ModeSetting durabilityMode =
-        new ModeSetting("Haltbarkeit", 0, "Prozent", "Schlaege", "Balken");
-    public final ColorSetting textColor = new ColorSetting("Textfarbe", 0xFFFFFFFF);
-    public final NumberSetting scale = new NumberSetting("Skalierung", 1.0, 0.5, 3.0, 0.1);
+        new ModeSetting("Durability", 0, "Prozent", "Schlaege", "Balken");
+    public final ColorSetting textColor = new ColorSetting("Text Color", 0xFFFFFFFF);
+    public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
 
     public final NumberSetting baseX = new NumberSetting("X", 0, -1920, 1920, 1);
     public final NumberSetting baseY = new NumberSetting("Y", 0, -1080, 1080, 1);
 
-    public final NumberSetting helmetOffsetX = new NumberSetting("Helm X", 0, -400, 400, 1);
-    public final NumberSetting helmetOffsetY = new NumberSetting("Helm Y", 0, -400, 400, 1);
-    public final NumberSetting chestOffsetX  = new NumberSetting("Brust X", 0, -400, 400, 1);
-    public final NumberSetting chestOffsetY  = new NumberSetting("Brust Y", 0, -400, 400, 1);
-    public final NumberSetting legsOffsetX   = new NumberSetting("Hose X", 0, -400, 400, 1);
-    public final NumberSetting legsOffsetY   = new NumberSetting("Hose Y", 0, -400, 400, 1);
-    public final NumberSetting bootsOffsetX  = new NumberSetting("Schuhe X", 0, -400, 400, 1);
-    public final NumberSetting bootsOffsetY  = new NumberSetting("Schuhe Y", 0, -400, 400, 1);
-    public final NumberSetting handOffsetX   = new NumberSetting("Waffe X", 0, -400, 400, 1);
-    public final NumberSetting handOffsetY   = new NumberSetting("Waffe Y", 0, -400, 400, 1);
+    public final NumberSetting helmetOffsetX = new NumberSetting("Helmet X", 0, -400, 400, 1);
+    public final NumberSetting helmetOffsetY = new NumberSetting("Helmet Y", 0, -400, 400, 1);
+    public final NumberSetting chestOffsetX  = new NumberSetting("Chestplate X", 0, -400, 400, 1);
+    public final NumberSetting chestOffsetY  = new NumberSetting("Chestplate Y", 0, -400, 400, 1);
+    public final NumberSetting legsOffsetX   = new NumberSetting("Leggings X", 0, -400, 400, 1);
+    public final NumberSetting legsOffsetY   = new NumberSetting("Leggings Y", 0, -400, 400, 1);
+    public final NumberSetting bootsOffsetX  = new NumberSetting("Boots X", 0, -400, 400, 1);
+    public final NumberSetting bootsOffsetY  = new NumberSetting("Boots Y", 0, -400, 400, 1);
+    public final NumberSetting handOffsetX   = new NumberSetting("Weapon X", 0, -400, 400, 1);
+    public final NumberSetting handOffsetY   = new NumberSetting("Weapon Y", 0, -400, 400, 1);
 
     public ArmorHudModule() {
         super("ArmorHUD", Category.HUD);

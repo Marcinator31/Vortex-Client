@@ -24,7 +24,7 @@ public class NoFallModule extends Module {
      * bleiben dadurch voellig unauffaellig.
      */
     public final NumberSetting minHeight =
-            new NumberSetting("Ab Hoehe", 3.0, 1.0, 10.0, 0.5);
+            new NumberSetting("Min Fall Height", 3.0, 1.0, 10.0, 0.5);
 
     public NoFallModule() {
         super("No Fall", Category.MISC);

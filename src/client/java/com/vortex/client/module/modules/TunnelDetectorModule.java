@@ -18,10 +18,10 @@ import com.vortex.client.module.Module;
 public class TunnelDetectorModule extends Module {
 
     // Ab welcher Laenge (in Bloecken) eine gerade Luftlinie als Tunnel zaehlt.
-    public final NumberSetting minLength = new NumberSetting("Mindestlaenge", 6, 4, 32, 1);
+    public final NumberSetting minLength = new NumberSetting("Min Length", 6, 4, 32, 1);
     // Nur unterhalb dieser Hoehe suchen (Tunnel sind unterirdisch).
     public final NumberSetting maxY = new NumberSetting("Max Y", 60, -64, 320, 4);
-    public final ColorSetting color = new ColorSetting("Farbe", 0xFF00FFFF);
+    public final ColorSetting color = new ColorSetting("Color", 0xFF00FFFF);
 
     public TunnelDetectorModule() {
         super("Tunnel Detector", Category.MISC);

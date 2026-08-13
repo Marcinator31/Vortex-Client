@@ -21,9 +21,9 @@ import com.vortex.client.module.Module;
 public class SusChunksModule extends Module {
 
     // Ab welchem Aktivitaets-Score ein Chunk ueberhaupt markiert wird.
-    public final NumberSetting minScore = new NumberSetting("Mindest-Score", 8, 1, 100, 1);
+    public final NumberSetting minScore = new NumberSetting("Min Score", 8, 1, 100, 1);
     // Score, ab dem ein Chunk als "maximal verdaechtig" (volle Farbe) gilt.
-    public final NumberSetting maxScore = new NumberSetting("Max-Score", 60, 10, 300, 5);
+    public final NumberSetting maxScore = new NumberSetting("Max Score", 60, 10, 300, 5);
 
     public SusChunksModule() {
         super("Sus Chunks", Category.MISC);

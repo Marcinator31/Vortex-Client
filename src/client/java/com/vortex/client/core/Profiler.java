@@ -91,9 +91,9 @@ public final class Profiler {
      */
     public static String summary() {
         if (STATS.isEmpty()) {
-            return "Noch keine Messwerte. Kurz spielen und erneut versuchen.";
+            return "No measurements yet. Play for a moment and try again.";
         }
-        StringBuilder sb = new StringBuilder("Zeitverbrauch (Durchschnitt / Spitze):");
+        StringBuilder sb = new StringBuilder("Time spent (average / peak):");
         STATS.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue().maxNanos, a.getValue().maxNanos))
                 .limit(14)
@@ -106,7 +106,7 @@ public final class Profiler {
                             "\n  %-18s %5.2f ms / %6.2f ms   (zuletzt %.2f ms, %d x)",
                             e.getKey(), avgMs, maxMs, recentMs, st.calls));
                 });
-        sb.append("\n  Faustregel: ein Tick hat 50 ms. Alles ueber 5 ms faellt auf.");
+        sb.append("\n  Rule of thumb: a tick is 50 ms. Anything above 5 ms is noticeable.");
         return sb.toString();
     }
 }

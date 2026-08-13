@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class Errors {
 
     private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("pvpclient");
+            org.slf4j.LoggerFactory.getLogger("vortexclient");
 
     /** Wie oft ist an einer Stelle schon etwas schiefgegangen? */
     private static final Map<String, Integer> COUNTS = new ConcurrentHashMap<>();
@@ -36,7 +36,7 @@ public final class Errors {
         if (where == null) where = "unbekannt";
         Integer prev = COUNTS.merge(where, 1, Integer::sum);
         if (prev != null && prev == 1) {
-            LOGGER.warn("[pvpclient] Fehler in {} (weitere werden nur gezaehlt)", where, t);
+            LOGGER.warn("[vortexclient] Error in {} (further ones are only counted)", where, t);
         }
     }
 
@@ -44,7 +44,7 @@ public final class Errors {
     public static void note(String where, String message) {
         Integer prev = COUNTS.merge(where, 1, Integer::sum);
         if (prev != null && prev == 1) {
-            LOGGER.info("[pvpclient] {}: {}", where, message);
+            LOGGER.info("[vortexclient] {}: {}", where, message);
         }
     }
 
@@ -56,14 +56,14 @@ public final class Errors {
 
     /** Uebersicht aller Fehlerstellen -- fuer den Befehl /errors. */
     public static String summary() {
-        if (COUNTS.isEmpty()) return "Keine Fehler aufgezeichnet.";
-        StringBuilder sb = new StringBuilder("Aufgezeichnete Fehler:");
+        if (COUNTS.isEmpty()) return "No errors recorded.";
+        StringBuilder sb = new StringBuilder("Recorded errors:");
         COUNTS.entrySet().stream()
                 .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
                 .limit(15)
                 .forEach(e -> sb.append("\n  ").append(e.getKey())
                                 .append("  x").append(e.getValue()));
-        sb.append("\nDetails stehen in latest.log.");
+        sb.append("\nDetails are in latest.log.");
         return sb.toString();
     }
 

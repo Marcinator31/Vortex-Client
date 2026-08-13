@@ -92,9 +92,9 @@ public final class AccountManager {
 
             account.uuid = uuid.toString();
 
-            System.out.println("[pvpclient] Account gewechselt zu: " + account.username);
+            System.out.println("[vortexclient] Switched account to: " + account.username);
         } catch (Throwable t) {
-            System.out.println("[pvpclient] Account-Wechsel fehlgeschlagen: " + t);
+            System.out.println("[vortexclient] Account switch failed: " + t);
         }
     }
 }

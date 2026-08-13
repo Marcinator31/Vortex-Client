@@ -18,18 +18,18 @@ import com.vortex.client.module.Module;
  */
 public class ChunkBordersModule extends Module {
 
-    public final ColorSetting color = new ColorSetting("Farbe", 0xFF55FFFF);
+    public final ColorSetting color = new ColorSetting("Color", 0xFF55FFFF);
     public final NumberSetting lineWidth =
-            new NumberSetting("Linienbreite", 1.5, 0.5, 5.0, 0.5);
+            new NumberSetting("Line Width", 1.5, 0.5, 5.0, 0.5);
 
     /** Auch die acht angrenzenden Chunks zeigen. */
-    public final BooleanSetting neighbors = new BooleanSetting("Nachbar-Chunks", false);
+    public final BooleanSetting neighbors = new BooleanSetting("Neighbour Chunks", false);
 
     /** Wie weit die senkrechten Kanten ueber und unter dem Spieler reichen. */
-    public final NumberSetting height = new NumberSetting("Hoehe", 32, 8, 128, 8);
+    public final NumberSetting height = new NumberSetting("Height", 32, 8, 128, 8);
 
     public ChunkBordersModule() {
-        super("Chunk-Grenzen", Category.MISC);
+        super("Chunk Borders", Category.MISC);
         addSetting(color);
         addSetting(lineWidth);
         addSetting(neighbors);
