@@ -222,9 +222,25 @@ public final class WaypointActions {
         WaypointManager.Waypoint best = null;
         double bestSq = (double) radius * radius;
         for (WaypointManager.Waypoint w : WaypointManager.all()) {
-            if (w.kind != WaypointManager.Kind.BLOCK) continue;
             if (!WaypointManager.matches(w, dim)) continue;
-            // Abstand zum naechsten Block dieser Gruppe.
+
+            // JEDER Marker kann Bloecke aufnehmen, nicht nur solche vom Typ
+            // "Block". Man will schliesslich auch an einer bestehenden Base oder
+            // Farm nachtraeglich Stellen markieren koennen.
+            //
+            // Gemessen wird zum naechsten bereits markierten Block -- und, falls
+            // die Gruppe noch keine hat, zum Marker selbst.
+            if (w.blocks.isEmpty()) {
+                double dx = w.x - pos.getX();
+                double dy = w.y - pos.getY();
+                double dz = w.z - pos.getZ();
+                double sq = dx * dx + dy * dy + dz * dz;
+                if (sq < bestSq) {
+                    bestSq = sq;
+                    best = w;
+                }
+                continue;
+            }
             for (BlockPos b : w.blocks) {
                 double dx = b.getX() - pos.getX();
                 double dy = b.getY() - pos.getY();

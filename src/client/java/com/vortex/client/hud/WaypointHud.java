@@ -216,9 +216,10 @@ public final class WaypointHud {
                 // sehr kleinen Ringen lesbar bleibt und nichts verdeckt.
                 if (mod.showLetter.get()) {
                     String letter = initial(wp.name);
-                    int lc = mod.letterColor.get();
-                    if ((lc >>> 24) == 0) lc = color;
-                    lc = fadeA(lc, alpha);
+                    // Buchstabe traegt IMMER die Farbe des Markers -- so gehoert
+                    // beides sichtbar zusammen und man erkennt den Marker auch,
+                    // wenn der Ring gerade von etwas verdeckt wird.
+                    int lc = fadeA(color, alpha);
                     int lx = cxI + r + 3;
                     int ly = cyI - 3;
                     pushScale(ctx, lx, ly, 0.8f);

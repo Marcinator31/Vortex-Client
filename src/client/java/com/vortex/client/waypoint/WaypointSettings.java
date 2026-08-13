@@ -69,8 +69,6 @@ public final class WaypointSettings {
             new NumberSetting("Deckkraft", 0.7, 0.2, 1.0, 0.05);
     public final ColorSetting borderColor = new ColorSetting("Randfarbe", 0xC0000000);
 
-    /** Farbe des Buchstabens. Bei 0 wird automatisch hell/dunkel gewaehlt. */
-    public final ColorSetting letterColor = new ColorSetting("Buchstabenfarbe", 0x00000000);
 
     /** Buchstaben ueberhaupt anzeigen. */
     public final BooleanSetting showLetter = new BooleanSetting("Buchstabe", true);
@@ -130,7 +128,7 @@ public final class WaypointSettings {
     private WaypointSettings() {
         settings = List.of(enabled, lineWidth, maxDistance,
                 labels, edgeArrows, tracers,
-                dotSize, borderWidth, markerOpacity, borderColor, letterColor,
+                dotSize, borderWidth, markerOpacity, borderColor,
                 showLetter, useActionBar,
                 blockRadius, blockLineWidth, blockColor, hideNear, showNearest,
                 deathWaypoint,
