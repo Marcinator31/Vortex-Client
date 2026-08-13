@@ -1,30 +1,30 @@
 {
 	"schemaVersion": 1,
-	"id": "pvpclient",
+	"id": "vortexclient",
 	"version": "${version}",
 
-	"name": "PvP Client",
-	"description": "PvP-fokussierter Fabric-Client: HUD-Module (CPS, ArmorHUD ...), Account-Switcher und gebuendelte Performance-Mods.",
+	"name": "Vortex Client",
+	"description": "Vortex Client -- Fabric-Client mit HUD-Modulen, ESP, Waypoint-System, Skin-Garderobe und Performance-Werkzeugen.",
 	"authors": [],
 	"contact": {},
 
 	"license": "MIT",
-	"icon": "assets/pvpclient/icon/icon.png",
+	"icon": "assets/vortexclient/icon/icon.png",
 
 	"environment": "client",
 
 	"entrypoints": {
 		"main": [
-			"com.example.pvpclient.PvpClient"
+			"com.vortex.client.VortexClient"
 		],
 		"client": [
-			"com.example.pvpclient.PvpClientClient"
+			"com.vortex.client.VortexClientMod"
 		]
 	},
 
 	"mixins": [
 		{
-			"config": "pvpclient.client.mixins.json",
+			"config": "vortexclient.client.mixins.json",
 			"environment": "client"
 		}
 	],
