@@ -19,8 +19,13 @@ import java.util.List;
  */
 public class WaypointScreen extends Screen {
 
-    private static final int WIN_W = 380;
-    private static final int HEADER_H = 58;
+    /**
+     * Mindestbreite. Die tatsaechliche Breite richtet sich nach dem Bildschirm
+     * (siehe winW()) -- bei fester Breite wurden Knoepfe abgeschnitten, sobald
+     * mehrere nebeneinander standen.
+     */
+    private static final int WIN_MIN_W = 460;
+    private static final int HEADER_H = 82;
     private static final int FOOTER_H = 20;
     private static final int ROW_H = 24;
 
@@ -57,6 +62,7 @@ public class WaypointScreen extends Screen {
     private String status = "";
 
     private int winX, winY, winH, listH;
+    private int WIN_W;   // tatsaechliche Breite, in init() gesetzt
 
     public WaypointScreen(Screen parent) {
         super(Text.literal("Waypoints"));
@@ -65,7 +71,9 @@ public class WaypointScreen extends Screen {
 
     @Override
     protected void init() {
-        winH = Math.min(this.height - 40, 360);
+        // Breite an den Bildschirm anpassen, damit nichts abgeschnitten wird.
+        WIN_W = Math.max(WIN_MIN_W, Math.min(this.width - 40, 620));
+        winH = Math.min(this.height - 40, 400);
         winX = (this.width - WIN_W) / 2;
         winY = (this.height - winH) / 2;
         listH = winH - HEADER_H - FOOTER_H;
@@ -114,24 +122,25 @@ public class WaypointScreen extends Screen {
 
         List<WaypointManager.Waypoint> list = filtered();
         // Welt-Umschalter: aktuelle Welt / alle / einzelne gespeicherte Welten.
+        // Zweite Zeile: Filter fuer Welt und Dimension nebeneinander.
         String wl = shortWorld(worldFilter);
-        int wlw = this.textRenderer.getWidth(wl) + 14;
-        int wlx = winX + WIN_W - wlw - 12;
-        boolean wlHov = inRect(wlx, winY + 30, wlw, 20);
-        roundRect(ctx, wlx, winY + 30, wlw, 20,
+        int wlw = this.textRenderer.getWidth(wl) + 16;
+        int wlx = winX + 12;
+        boolean wlHov = inRect(wlx, winY + 56, wlw, 20);
+        roundRect(ctx, wlx, winY + 56, wlw, 20,
                 wlHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.drawText(this.textRenderer, Text.literal(wl),
-                wlx + 7, winY + 36, 0xFFD0D0DA, false);
+                wlx + 8, winY + 62, 0xFFD0D0DA, false);
 
         // Dimensions-Umschalter links neben dem Welt-Umschalter.
         String dl = dimLabel(dimFilter);
-        int dlw = this.textRenderer.getWidth(dl) + 14;
-        int dlx = wlx - dlw - 6;
-        boolean dlHov = inRect(dlx, winY + 30, dlw, 20);
-        roundRect(ctx, dlx, winY + 30, dlw, 20,
+        int dlw = this.textRenderer.getWidth(dl) + 16;
+        int dlx = wlx + wlw + 8;
+        boolean dlHov = inRect(dlx, winY + 56, dlw, 20);
+        roundRect(ctx, dlx, winY + 56, dlw, 20,
                 dlHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.drawText(this.textRenderer, Text.literal(dl),
-                dlx + 7, winY + 36, 0xFFD0D0DA, false);
+                dlx + 8, winY + 62, 0xFFD0D0DA, false);
 
         String count = list.size() + " Marker";
         int cw = this.textRenderer.getWidth(count);
@@ -144,13 +153,16 @@ public class WaypointScreen extends Screen {
             ctx.drawText(this.textRenderer, Text.literal("Name des Markers ..."),
                     winX + 12, winY + 36, 0xFF6A6A76, false);
         }
+        // "Hier setzen" direkt hinter dem Eingabefeld, die beiden Filter
+        // rechts aussen -- so ueberlappt nichts mehr.
         String addLbl = "Hier setzen";
         int aw = this.textRenderer.getWidth(addLbl) + 16;
-        boolean addHov = inRect(winX + 224, winY + 30, aw, 20);
-        roundRect(ctx, winX + 224, winY + 30, aw, 20,
+        int ax = winX + 224;
+        boolean addHov = inRect(ax, winY + 30, aw, 20);
+        roundRect(ctx, ax, winY + 30, aw, 20,
                 addHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
         ctx.drawText(this.textRenderer, Text.literal(addLbl),
-                winX + 232, winY + 36, 0xFFFFFFFF, false);
+                ax + 8, winY + 36, 0xFFFFFFFF, false);
 
         // Liste
         ctx.enableScissor(winX, winY + HEADER_H, winX + WIN_W, winY + HEADER_H + listH);
@@ -243,7 +255,7 @@ public class WaypointScreen extends Screen {
                     winX + 257, fy + 6, 0xFFFFFFFF, false);
         } else {
             String hint = status.isEmpty()
-                    ? "C = Koordinaten   T = Tracer   B = Block-Ziel   N = Nether   K = Kopieren"
+                    ? "C Koordinaten  T Tracer  B Blockziel  N Nether  K Kopieren"
                     : status;
             ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 10, fy + 6,
@@ -268,9 +280,9 @@ public class WaypointScreen extends Screen {
 
         // Welt-Umschalter durchklicken: aktuelle -> alle -> einzelne Welten.
         String wl = shortWorld(worldFilter);
-        int wlw = this.textRenderer.getWidth(wl) + 14;
-        int wlx = winX + WIN_W - wlw - 12;
-        if (inRect(wlx, winY + 30, wlw, 20)) {
+        int wlw = this.textRenderer.getWidth(wl) + 16;
+        int wlx = winX + 12;
+        if (inRect(wlx, winY + 56, wlw, 20)) {
             var worlds = WaypointManager.knownWorlds();
             if (worldFilter == null) {
                 worldFilter = "*";
@@ -298,9 +310,9 @@ public class WaypointScreen extends Screen {
 
         // Dimensions-Umschalter
         String dl = dimLabel(dimFilter);
-        int dlw = this.textRenderer.getWidth(dl) + 14;
-        int dlx = wlx - dlw - 6;
-        if (inRect(dlx, winY + 30, dlw, 20)) {
+        int dlw = this.textRenderer.getWidth(dl) + 16;
+        int dlx = wlx + wlw + 8;
+        if (inRect(dlx, winY + 56, dlw, 20)) {
             dimFilter = nextDim(dimFilter);
             scrollTarget = 0f;
             scroll = 0f;

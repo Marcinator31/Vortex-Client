@@ -165,59 +165,116 @@ public final class WaypointHud {
                 double dxc = s.x - w / 2.0;
                 double dyc = s.y - h / 2.0;
                 int baseSize = mod.dotSize.getInt();
-                double aimRadius = baseSize * 2.2;
+                double aimRadius = baseSize * 2.4;
                 boolean aimed = (dxc * dxc + dyc * dyc) < (aimRadius * aimRadius);
 
                 float a = AIM_ANIM.getOrDefault(wp, 0f);
-                a = a + ((aimed ? 1f : 0f) - a) * Math.min(1f, 12f * dt);
+                a = a + ((aimed ? 1f : 0f) - a) * Math.min(1f, 10f * dt);
                 AIM_ANIM.put(wp, a);
 
-                // Der Punkt waechst beim Anvisieren leicht mit.
-                int size = baseSize + Math.round(a * 3f);
-                int px = (int) s.x - size / 2;
-                int py = (int) s.y - size / 2;
+                // Feste Bildschirmgroesse -- unabhaengig von der Entfernung.
+                // Nur beim Anvisieren waechst der Punkt sanft um zwei Pixel.
+                float sizeF = baseSize + a * 2f;
+                float cxF = (float) s.x;
+                float cyF = (float) s.y;
 
-                int bw = mod.borderWidth.getInt();
-                if (bw > 0) {
-                    ctx.fill(px - bw, py - bw, px + size + bw, py + size + bw,
-                            mod.borderColor.get());
-                }
-                // Abgerundet wirkende Ecken: schmaler Streifen weniger oben/unten.
-                ctx.fill(px + 1, py, px + size - 1, py + size, color);
-                ctx.fill(px, py + 1, px + 1, py + size - 1, color);
-                ctx.fill(px + size - 1, py + 1, px + size, py + size - 1, color);
+                drawDot(ctx, cxF, cyF, sizeF, color, mod, a);
 
-                if (mod.showLetter.get() && size >= 7) {
+                if (mod.showLetter.get() && baseSize >= 7) {
                     String letter = initial(wp.name);
-                    int lw = client.textRenderer.getWidth(letter);
                     int lc = mod.letterColor.get();
                     if ((lc >>> 24) == 0) {
                         lc = isBright(color) ? 0xFF101014 : 0xFFFFFFFF;
                     }
+                    // Buchstabe verkleinert zeichnen, damit er in den Punkt passt
+                    // und nicht klobig wirkt.
+                    float ls = Math.max(0.5f, sizeF / 14f);
+                    pushScale(ctx, cxF, cyF, ls);
+                    int lw = client.textRenderer.getWidth(letter);
                     ctx.drawText(client.textRenderer, Text.literal(letter),
-                            px + (size - lw) / 2 + 1, py + (size - 8) / 2, lc, false);
+                            (int) (cxF - lw / 2f) + 1, (int) (cyF - 4f), lc, false);
+                    popScale(ctx);
                 }
 
-                // --- Beschriftung: klein, direkt darunter, weich eingeblendet ---
+                // --- Beschriftung: klein, ohne Kasten, weich eingeblendet ---
                 if (a > 0.02f && mod.labels.get()) {
                     String label = wp.name + "  " + (int) dist + "m";
-                    int tw = client.textRenderer.getWidth(label);
-                    int tx = (int) (s.x - tw / 2.0);
-                    // Faehrt beim Einblenden ein Stueck nach unten.
-                    int ty = py + size + 2 + Math.round((1f - a) * 3f);
+                    float ts = 0.75f;                     // deutlich kleiner
+                    float ty = cyF + sizeF / 2f + 4f + (1f - a) * 3f;
 
-                    int bgA = (int) (170 * a) << 24;
-                    ctx.fill(tx - 3, ty - 2, tx + tw + 3, ty + 9, bgA);
-                    // Feiner Farbstreifen als Verbindung zum Punkt.
-                    ctx.fill(tx - 3, ty - 2, tx + tw + 3, ty - 1, fadeA(color, a));
+                    pushScale(ctx, cxF, ty, ts);
+                    int tw = client.textRenderer.getWidth(label);
+                    int tx = (int) (cxF - tw / 2f);
+                    // Nur ein zarter Schatten statt eines harten Kastens.
                     ctx.drawText(client.textRenderer, Text.literal(label),
-                            tx, ty, fadeA(0xFFFFFFFF, a), false);
+                            tx + 1, (int) ty + 1, fadeA(0xFF000000, a * 0.7f), false);
+                    ctx.drawText(client.textRenderer, Text.literal(label),
+                            tx, (int) ty, fadeA(0xFFFFFFFF, a), false);
+                    popScale(ctx);
                 }
             } else if (mod.edgeArrows.get()) {
                 drawEdgeArrow(ctx, client, s, w, h, color, wp.name, (int) dist);
             }
         }
 
+    }
+
+    /**
+     * Zeichnet den Punkt als weiche Raute statt als hartes Viereck.
+     *
+     * Die Form entsteht aus waagerechten Streifen, deren Breite zu den Raendern
+     * hin abnimmt -- das wirkt gerundet, ohne dass dafuer eine Textur noetig
+     * waere. Aussen liegt ein zarter Rand, damit der Punkt auf jedem Untergrund
+     * ablesbar bleibt.
+     */
+    private static void drawDot(DrawContext ctx, float cx, float cy, float size,
+                                int color, com.vortex.client.waypoint.WaypointSettings mod,
+                                float aim) {
+        int r = Math.max(2, Math.round(size / 2f));
+        int bw = mod.borderWidth.getInt();
+        int border = mod.borderColor.get();
+
+        for (int dy = -r; dy <= r; dy++) {
+            // Kreisfoermige Breite je Zeile.
+            double t = (double) dy / r;
+            int half = (int) Math.round(Math.sqrt(Math.max(0.0, 1.0 - t * t)) * r);
+            if (half <= 0) continue;
+            int y = Math.round(cy) + dy;
+            int x1 = Math.round(cx) - half;
+            int x2 = Math.round(cx) + half;
+            if (bw > 0) {
+                ctx.fill(x1 - bw, y, x2 + bw, y + 1, border);
+            }
+            ctx.fill(x1, y, x2, y + 1, color);
+        }
+
+        // Beim Anvisieren ein zarter Ring aussen herum.
+        if (aim > 0.02f) {
+            int rr = r + 3;
+            int ringC = fadeA(0xFFFFFFFF, aim * 0.5f);
+            for (int dy = -rr; dy <= rr; dy++) {
+                double t = (double) dy / rr;
+                int half = (int) Math.round(Math.sqrt(Math.max(0.0, 1.0 - t * t)) * rr);
+                if (half <= 0) continue;
+                int y = Math.round(cy) + dy;
+                // Nur die Randpixel setzen.
+                ctx.fill(Math.round(cx) - half, y, Math.round(cx) - half + 1, y + 1, ringC);
+                ctx.fill(Math.round(cx) + half - 1, y, Math.round(cx) + half, y + 1, ringC);
+            }
+        }
+    }
+
+    /** Zeichnen um einen Punkt herum verkleinern. */
+    private static void pushScale(DrawContext ctx, float ax, float ay, float scale) {
+        var m = ctx.getMatrices();
+        m.pushMatrix();
+        m.translate(ax, ay);
+        m.scale(scale, scale);
+        m.translate(-ax, -ay);
+    }
+
+    private static void popScale(DrawContext ctx) {
+        ctx.getMatrices().popMatrix();
     }
 
     /** Farbe mit Deckkraft skalieren (fuer weiches Ein- und Ausblenden). */
