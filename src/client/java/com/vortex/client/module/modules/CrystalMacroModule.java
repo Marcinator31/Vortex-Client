@@ -48,7 +48,7 @@ public class CrystalMacroModule extends Module {
             new BooleanSetting("Only While Key Held", true);
 
     public CrystalMacroModule() {
-        super("Crystal Macro", Category.PVP);
+        super("Crystal Macro", Category.CHEATS);
         addSetting(delay);
         addSetting(switchBack);
         addSetting(bedrock);

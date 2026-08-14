@@ -25,7 +25,7 @@ public class AutoHitModule extends Module {
             new BooleanSetting("Players Only", true);
 
     public AutoHitModule() {
-        super("Auto Hit", Category.PVP);
+        super("Auto Hit", Category.CHEATS);
         addSetting(minCharge);
         addSetting(playersOnly);
     }

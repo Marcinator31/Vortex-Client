@@ -16,7 +16,6 @@ import org.lwjgl.glfw.GLFW;
  */
 public class FreecamModule extends Module {
 
-    public final KeySetting key = new KeySetting("Key", GLFW.GLFW_KEY_F4);
 
     // Fluggeschwindigkeit (Bloecke pro Sekunde) und Multiplikator, solange die
     // Sprint-Taste gehalten wird.
@@ -39,8 +38,7 @@ public class FreecamModule extends Module {
             new BooleanSetting("Render Anchor", false);
 
     public FreecamModule() {
-        super("Freecam", Category.MISC);
-        addSetting(key);
+        super("Freecam", Category.CHEATS);
         addSetting(speed);
         addSetting(sprintMult);
         addSetting(renderAnchor);

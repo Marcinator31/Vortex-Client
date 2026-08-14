@@ -46,7 +46,7 @@ public class AimbotModule extends Module {
             new BooleanSetting("Only While Attacking", false);
 
     public AimbotModule() {
-        super("Aimbot", Category.PVP);
+        super("Aimbot", Category.CHEATS);
         addSetting(strength);
         addSetting(smoothness);
         addSetting(range);

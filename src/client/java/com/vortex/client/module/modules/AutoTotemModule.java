@@ -17,6 +17,6 @@ import com.vortex.client.module.Module;
 public class AutoTotemModule extends Module {
 
     public AutoTotemModule() {
-        super("Auto Totem", Category.PVP);
+        super("Auto Totem", Category.CHEATS);
     }
 }

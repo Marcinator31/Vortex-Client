@@ -1155,10 +1155,22 @@ public class ClickGui extends Screen {
         return extraHeight(m) > 6;
     }
 
+    /**
+     * Category name as shown in the sidebar.
+     *
+     * Plain capitalisation turned HUD into "Hud" and PVP into "Pvp", which
+     * reads like a typo. Acronyms keep their form; everything else gets the
+     * normal treatment, so a category added later needs no change here.
+     */
     private static String pretty(String name) {
-        String s = name.toLowerCase(Locale.ROOT);
-        if (s.isEmpty()) return s;
-        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+        if (name == null || name.isEmpty()) return "";
+        switch (name) {
+            case "HUD": return "HUD";
+            case "PVP": return "PvP";
+            default:
+                String s = name.toLowerCase(Locale.ROOT);
+                return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+        }
     }
 
     private static String fmt(double v) {
@@ -1245,9 +1257,18 @@ public class ClickGui extends Screen {
         if (listening == null) return;
 
         MinecraftClient mc = MinecraftClient.getInstance();
+
+        // Escape CLEARS the binding instead of just cancelling.
+        //
+        // Cancelling left you stuck: once a key was assigned there was no way
+        // to get rid of it again, only to swap it for another one. Escape is
+        // the obvious "I want none of it" key, and it can never be a sensible
+        // binding itself, since it closes the menu.
         if (net.minecraft.client.util.InputUtil.isKeyPressed(
                 mc.getWindow(), org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE)) {
+            listening.setKeyCode(org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
             listening.setListening(false);
+            com.vortex.client.core.ConfigManager.save();
             return;
         }
         for (int code = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
@@ -1255,6 +1276,7 @@ public class ClickGui extends Screen {
             if (net.minecraft.client.util.InputUtil.isKeyPressed(mc.getWindow(), code)) {
                 listening.setKeyCode(code);
                 listening.setListening(false);
+                com.vortex.client.core.ConfigManager.save();
                 return;
             }
         }

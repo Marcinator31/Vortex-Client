@@ -15,7 +15,7 @@ public class ItemEspModule extends Module {
     public final BooleanSetting tracer = new BooleanSetting("Tracers", false);
 
     public ItemEspModule() {
-        super("Item ESP", Category.PVP);
+        super("Item ESP", Category.CHEATS);
         addSetting(color);
         addSetting(tracer);
     }

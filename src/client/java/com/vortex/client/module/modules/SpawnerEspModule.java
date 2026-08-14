@@ -14,7 +14,7 @@ public class SpawnerEspModule extends Module {
     public final BooleanSetting tracer = new BooleanSetting("Tracers", false);
 
     public SpawnerEspModule() {
-        super("Spawner ESP", Category.PVP);
+        super("Spawner ESP", Category.CHEATS);
         addSetting(color);
         addSetting(tracer);
     }

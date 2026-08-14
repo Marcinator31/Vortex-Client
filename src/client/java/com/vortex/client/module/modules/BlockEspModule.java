@@ -53,7 +53,7 @@ public class BlockEspModule extends Module {
     private final Set<String> enabledBlocks = new HashSet<>();
 
     public BlockEspModule() {
-        super("Block-ESP", Category.PVP);
+        super("Block-ESP", Category.CHEATS);
         addSetting(color);
         addSetting(range);
         addSetting(lineWidth);

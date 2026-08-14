@@ -36,12 +36,20 @@ public class KeySetting extends Setting {
 
     /** Lesbarer Name der Taste fuers GUI (z.B. "F", "LEFT SHIFT"). */
     public String getKeyName() {
+        // Unbound is a normal state, not an error -- say so plainly instead of
+        // showing a question mark that leaves the reader guessing.
+        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) return "Not bound";
         try {
             return InputUtil.Type.KEYSYM.createFromCode(keyCode)
                     .getLocalizedText().getString().toUpperCase();
         } catch (Throwable t) {
-            return "?";
+            return "Not bound";
         }
+    }
+
+    /** Is a usable key assigned? */
+    public boolean isBound() {
+        return keyCode != org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN;
     }
 
     @Override

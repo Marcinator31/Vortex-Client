@@ -21,8 +21,15 @@ import java.util.List;
  */
 public abstract class Module {
 
+    /**
+     * Order here is the order in the menu.
+     *
+     * CHEATS is deliberately its own group rather than a label inside PVP:
+     * these modules act for you instead of showing you something, and that is
+     * a difference worth seeing at a glance before switching one on.
+     */
     public enum Category {
-        HUD, PVP, PERFORMANCE, MISC
+        HUD, PVP, CHEATS, PERFORMANCE, MISC
     }
 
     private final String name;
@@ -31,11 +38,30 @@ public abstract class Module {
 
     private final BooleanSetting enabled = new BooleanSetting("Enabled", false);
 
+    /**
+     * Key that switches this module on and off.
+     *
+     * Every module has one, unbound by default. Binding a key to something you
+     * flip often -- crystal macro, freecam, a specific ESP -- saves opening the
+     * menu mid-fight, which is exactly when you do not have time for it.
+     */
+    private final com.vortex.client.core.setting.KeySetting toggleKey =
+            new com.vortex.client.core.setting.KeySetting(
+                    "Toggle Key", org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+
     protected Module(String name, Category category) {
         this.name = name;
         this.category = category;
-        // enabled ist selbst ein Setting -> erscheint automatisch im GUI.
+        // enabled is a setting itself, so it shows up in the menu automatically.
         this.settings.add(enabled);
+        this.settings.add(toggleKey);
+        enabled.rememberDefault();
+        toggleKey.rememberDefault();
+    }
+
+    /** The key that toggles this module (unbound by default). */
+    public com.vortex.client.core.setting.KeySetting getToggleKey() {
+        return toggleKey;
     }
 
     /**

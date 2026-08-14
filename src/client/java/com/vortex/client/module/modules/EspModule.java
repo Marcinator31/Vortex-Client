@@ -23,7 +23,7 @@ public class EspModule extends Module {
     private final Set<String> enabledMobs = new HashSet<>();
 
     public EspModule() {
-        super("ESP", Category.PVP);
+        super("ESP", Category.CHEATS);
         addSetting(color);
     }
 

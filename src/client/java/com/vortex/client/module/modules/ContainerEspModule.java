@@ -16,7 +16,7 @@ public class ContainerEspModule extends Module {
     public final BooleanSetting tracer = new BooleanSetting("Tracers", false);
 
     public ContainerEspModule() {
-        super("Container ESP", Category.PVP);
+        super("Container ESP", Category.CHEATS);
         addSetting(color);
         addSetting(tracer);
     }

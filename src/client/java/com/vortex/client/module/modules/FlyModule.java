@@ -28,7 +28,7 @@ public class FlyModule extends Module {
             new BooleanSetting("Hover After Disable", false);
 
     public FlyModule() {
-        super("Fly", Category.PVP);
+        super("Fly", Category.CHEATS);
         addSetting(speed);
         addSetting(keepAllowFlying);
     }

@@ -276,6 +276,8 @@ public final class HudRenderer {
     private static void drawTotemPopper(DrawContext ctx, MinecraftClient client) {
         TotemPopperModule mod = (TotemPopperModule) find(TotemPopperModule.class);
         if (mod == null || !mod.isEnabled()) return;
+        // The overhead count and this list switch independently.
+        if (!mod.showList.get()) return;
         if (client.textRenderer == null) return;
 
         var list = com.vortex.client.hud.TotemPops.top(mod.maxEntries.getInt());

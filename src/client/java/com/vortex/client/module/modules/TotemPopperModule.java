@@ -33,6 +33,15 @@ public class TotemPopperModule extends Module implements HudElement {
      * list. In a fight you are looking at the opponent, not at a corner of the
      * screen — this is where the number is actually useful.
      */
+    /**
+     * Show the list on screen.
+     *
+     * Separate from the overhead count on purpose: in a crowded fight the list
+     * gives the whole picture at a glance, while the overhead number tells you
+     * about the one person you are looking at. Both switch independently.
+     */
+    public final BooleanSetting showList = new BooleanSetting("Show List", true);
+
     public final BooleanSetting overhead = new BooleanSetting("Show Above Players", true);
 
     /** How far away the overhead count is still drawn. */
@@ -47,6 +56,7 @@ public class TotemPopperModule extends Module implements HudElement {
         addSetting(maxEntries);
         addSetting(highlight);
         addSetting(highlightColor);
+        addSetting(showList);
         addSetting(overhead);
         addSetting(overheadRange);
     }

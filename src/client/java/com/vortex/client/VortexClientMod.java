@@ -25,11 +25,14 @@ public class VortexClientMod implements ClientModInitializer {
     private static final KeyBinding.Category CATEGORY =
         KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
 
+    /** Which toggle keys were held last tick, for edge detection. */
+    private static final java.util.Map<String, Boolean> toggleKeyDown =
+            new java.util.HashMap<>();
+
     private static KeyBinding openClickGuiKey;
     private static KeyBinding openHudEditorKey;
 
     // Flankenerkennung fuer die Freecam-Taste (nur beim Druecken umschalten).
-    private static boolean freecamKeyWasDown = false;
 
     @Override
     public void onInitializeClient() {
@@ -152,25 +155,50 @@ public class VortexClientMod implements ClientModInitializer {
                 client.setScreen(new com.vortex.client.gui.HudEditorScreen());
             }
 
-            // --- Freecam: Taste abfragen (Toggle) + Bewegung pro Tick ---
+            // --- Module toggle keys ---
+            //
+            // Every module carries its own key, unbound by default. This is the
+            // one place they are all polled, with edge detection so holding the
+            // key does not flip the module dozens of times a second.
+            //
+            // Skipped while a screen is open: otherwise typing a name into the
+            // waypoint manager would switch modules on and off.
+            try {
+                if (client.currentScreen == null) {
+                    for (var module : ModuleManager.INSTANCE.getModules()) {
+                        int code = module.getToggleKey().getKeyCode();
+                        if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) continue;
+                        boolean down = net.minecraft.client.util.InputUtil.isKeyPressed(
+                                client.getWindow(), code);
+                        boolean was = Boolean.TRUE.equals(toggleKeyDown.get(module.getName()));
+                        if (down && !was) {
+                            module.toggle();
+                            com.vortex.client.core.ConfigManager.save();
+                        }
+                        toggleKeyDown.put(module.getName(), down);
+                    }
+                } else {
+                    toggleKeyDown.clear();
+                }
+            } catch (Throwable pvpErr) {
+                com.vortex.client.core.Errors.report("ModuleToggleKeys", pvpErr);
+            }
+
+            // --- Freecam follows its module ---
+            //
+            // The camera used to have a key of its own, on top of the module
+            // switch. Now that every module has a key, that second layer only
+            // caused confusion: module on, camera still off, and no obvious
+            // reason why. Module enabled means camera active, nothing else.
             try {
                 com.vortex.client.module.modules.FreecamModule fc =
                     com.vortex.client.freecam.Freecam.module();
                 if (fc != null && fc.isEnabled()) {
-                    int keyCode = fc.key.getKeyCode();
-                    boolean down = net.minecraft.client.util.InputUtil.isKeyPressed(
-                        client.getWindow(), keyCode);
-                    // Flankenerkennung: nur beim Druecken umschalten, nicht halten.
-                    if (down && !freecamKeyWasDown) {
+                    if (!com.vortex.client.freecam.Freecam.isActive()) {
                         com.vortex.client.freecam.Freecam.toggle();
                     }
-                    freecamKeyWasDown = down;
-                    // Die Bewegung passiert pro Frame im CameraMixin (fluessig),
-                    // hier wird nur die Umschalt-Taste geprueft.
                 } else {
-                    // Modul aus -> Freecam sicher beenden.
                     com.vortex.client.freecam.Freecam.disable();
-                    freecamKeyWasDown = false;
                 }
             } catch (Throwable ignored) {
             }
