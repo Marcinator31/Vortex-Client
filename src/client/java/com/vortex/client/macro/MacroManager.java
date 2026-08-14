@@ -98,6 +98,17 @@ public final class MacroManager {
      */
     public static synchronized void record(Macro.Action action, int value, int hold) {
         if (recording == null) return;
+
+        // Nichts aufzeichnen, solange ein Menue offen ist.
+        //
+        // Tasten werden ohnehin nur im Spiel erfasst (siehe tickRecording),
+        // Mausklicks liefen aber ueber das Mixin auch im Menue mit. Dadurch
+        // landete schon der Klick auf den Record-Knopf im Makro, und die
+        // Aufnahme fuellte sich mit Menueklicks -- was aussah, als wuerden
+        // nur Klicks funktionieren und Tasten nicht.
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc == null || mc.currentScreen != null) return;
+
         long now = System.currentTimeMillis();
         int delay = (int) Math.min(now - lastEventTime, 60_000L);
         lastEventTime = now;
