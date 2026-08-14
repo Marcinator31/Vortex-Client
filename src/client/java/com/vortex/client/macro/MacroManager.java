@@ -154,27 +154,16 @@ public final class MacroManager {
     // ------------------------------------------------------------------ tick
 
     public static void register() {
-        // Playback also runs on every frame, not only on every tick.
+        // Playback runs on the tick, and only on the tick.
         //
-        // THIS IS WHY MACROS FELT SLOW: a tick happens twenty times a second,
-        // so one step every fifty milliseconds was the hard floor -- a delay of
-        // one millisecond made no difference whatsoever. A four step sequence
-        // could not beat five runs a second, while a keyboard macro manages
-        // ten to twenty times that.
+        // It briefly ran on every frame instead, to make small delays matter.
+        // That was a mistake: it produced hundreds of actions a second, a rate
+        // no hardware can reach, and that alone is enough to stand out.
         //
-        // Frames come far more often (a hundred or more a second), so the
-        // delays finally mean something. Recording and the trigger keys stay
-        // on the tick, where they belong: they only need to notice a press.
-        net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents.AFTER_ENTITIES
-                .register(context -> {
-            try {
-                MinecraftClient client = MinecraftClient.getInstance();
-                if (client != null) tickPlayback(client);
-            } catch (Throwable pvpErr) {
-                Errors.report("MacroManager.frame", pvpErr);
-            }
-        });
-
+        // A keyboard macro cannot do that either. Its keystrokes go through the
+        // game, and the game handles input once per tick -- so a one millisecond
+        // delay on the keyboard never really was one millisecond. The tick is
+        // the natural ceiling, and staying under it is the whole point here.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             long t0 = System.nanoTime();
             try {
@@ -340,12 +329,12 @@ public final class MacroManager {
         // Without it an endless macro whose steps have no delay would loop
         // inside this one tick forever -- the game would simply freeze. The
         // cap is generous enough that normal macros never touch it.
-        // Steps allowed in a single pass.
+        // Steps allowed in a single tick.
         //
-        // Generous, because with zero delays a whole sequence should be able to
-        // run within one frame. The cap only exists so an endless macro without
-        // any delay cannot lock the game up inside one pass.
-        int budget = 100;
+        // Kept low on purpose. More than a handful of actions inside one tick
+        // is something no hardware can produce, and the game would not process
+        // them separately anyway -- it handles input once per tick.
+        int budget = 4;
 
         while (playing != null && now >= nextStepAt && budget-- > 0) {
             if (stepIndex >= playing.steps.size()) {
@@ -389,20 +378,31 @@ public final class MacroManager {
         try {
             switch (step.action) {
                 case LEFT_CLICK:
-                    // The same call the game makes on a left click, so it
-                    // attacks or breaks depending on what is in front of you.
-                    ((com.vortex.client.mixin.client.MinecraftClientAccessor) client)
-                            .pvpclient$invokeDoAttack();
+                    // Through the game's own input, not by calling the action.
+                    //
+                    // Calling doAttack() directly skips everything the game
+                    // does around a click: the attack cooldown, the order of
+                    // things within a tick, the rate limit. A keyboard macro
+                    // cannot skip any of that, and neither should this.
+                    pressBinding(client.options.attackKey);
                     break;
 
                 case RIGHT_CLICK:
-                    ((com.vortex.client.mixin.client.MinecraftClientAccessor) client)
-                            .vortex$invokeDoItemUse();
+                    pressBinding(client.options.useKey);
                     break;
 
                 case SLOT: {
                     int slot = Math.max(1, Math.min(9, step.value)) - 1;
-                    client.player.getInventory().setSelectedSlot(slot);
+                    // Through the hotbar key where there is one, so the change
+                    // travels the same path as a real key press. If the keys
+                    // are unavailable, set the slot directly -- the game syncs
+                    // it on its next tick either way.
+                    var keys = client.options.hotbarKeys;
+                    if (keys != null && slot < keys.length && keys[slot] != null) {
+                        pressBinding(keys[slot]);
+                    } else {
+                        client.player.getInventory().setSelectedSlot(slot);
+                    }
                     break;
                 }
 
@@ -416,6 +416,25 @@ public final class MacroManager {
             }
         } catch (Throwable pvpErr) {
             Errors.report("MacroManager.step", pvpErr);
+        }
+    }
+
+    /**
+     * Feeds a single press into a key binding.
+     *
+     * onKeyPressed is what the keyboard handler calls when a key really goes
+     * down: it queues one press, which the game then works through on its next
+     * tick, with everything it normally does. The result is indistinguishable
+     * from a key that was actually pressed -- because as far as the game is
+     * concerned, one was.
+     */
+    private static void pressBinding(net.minecraft.client.option.KeyBinding binding) {
+        if (binding == null) return;
+        try {
+            net.minecraft.client.option.KeyBinding.onKeyPressed(
+                    InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey()));
+        } catch (Throwable pvpErr) {
+            Errors.report("MacroManager.press", pvpErr);
         }
     }
 
