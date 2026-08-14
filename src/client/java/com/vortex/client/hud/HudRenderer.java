@@ -69,6 +69,7 @@ public final class HudRenderer {
         com.vortex.client.hud.WaypointHud.draw(context, client);
         drawKeystrokes(context, client);
         drawTotemPopper(context, client);
+        drawRecordingHint(context, client);
         drawSessionStats(context, client);
 
         // --- CPS ---
@@ -301,6 +302,34 @@ public final class HudRenderer {
      * die Klicks pro Sekunde, damit man sein Klickverhalten im Blick hat.
      */
     /** Liste der Spieler mit verbrauchten Totems. */
+    /**
+     * Shows that a macro is being recorded.
+     *
+     * Without this the feature is a guessing game: you press Record, the menu
+     * closes, and nothing on screen tells you whether anything is being
+     * captured -- or how to stop. The line says both.
+     */
+    private static void drawRecordingHint(DrawContext ctx, MinecraftClient client) {
+        if (!com.vortex.client.macro.MacroManager.isRecording()) return;
+        var macro = com.vortex.client.macro.MacroManager.recordingMacro();
+        if (macro == null) return;
+
+        String text = "\u25CF REC  " + macro.name + "  \u00B7  "
+                + macro.steps.size() + " steps  \u00B7  Right Shift \u2192 Macros \u2192 Stop";
+        int w = client.textRenderer.getWidth(text);
+        int x = (client.getWindow().getScaledWidth() - w) / 2;
+        int y = 6;
+
+        // Slow pulse, so the dot reads as "running" rather than as a stuck
+        // pixel, without flashing hard enough to distract during a fight.
+        float pulse = 0.65f + 0.35f * (float) Math.sin(System.currentTimeMillis() / 400.0);
+        int alpha = (int) (255 * pulse) << 24;
+
+        ctx.fill(x - 6, y - 3, x + w + 6, y + 11, 0x90000000);
+        ctx.drawTextWithShadow(client.textRenderer, Text.literal(text),
+                x, y, alpha | 0xFF5555);
+    }
+
     private static void drawTotemPopper(DrawContext ctx, MinecraftClient client) {
         TotemPopperModule mod = (TotemPopperModule) find(TotemPopperModule.class);
         if (mod == null || !mod.isEnabled()) return;

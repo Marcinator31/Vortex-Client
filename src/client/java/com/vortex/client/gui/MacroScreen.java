@@ -351,6 +351,16 @@ public class MacroScreen extends Screen {
                 return;
             }
         }
+        // Mouse buttons too, from the third onwards. Left and right are left
+        // alone: they are needed to press the button that starts the binding.
+        for (int b = 2; b <= 7; b++) {
+            if (MacroManager.isDown(mc, MacroManager.MOUSE_BASE + b)) {
+                bindingKey.key = MacroManager.MOUSE_BASE + b;
+                bindingKey = null;
+                save();
+                return;
+            }
+        }
     }
 
     @Override
@@ -381,7 +391,15 @@ public class MacroScreen extends Screen {
                         status = m.steps.size() + " steps recorded.";
                     } else {
                         MacroManager.startRecording(m);
-                        status = "Recording — close this menu and do the sequence.";
+                        // Straight back into the game.
+                        //
+                        // Recording only happens in game -- a menu swallows
+                        // every key, otherwise typing a name would end up in
+                        // the macro. Leaving the menu open after pressing
+                        // Record therefore looked exactly like a broken
+                        // feature: you act, and nothing is captured. Closing
+                        // it here removes the trap entirely.
+                        MinecraftClient.getInstance().setScreen(null);
                     }
                     return true;
                 }
@@ -591,6 +609,11 @@ public class MacroScreen extends Screen {
 
     private static String keyName(int code) {
         if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) return "none";
+        // Mouse buttons are counted the way people name them: button 3 is
+        // "Mouse 4", because the first two are left and right.
+        if (MacroManager.isMouse(code)) {
+            return "Mouse " + (code - MacroManager.MOUSE_BASE + 1);
+        }
         try {
             return net.minecraft.client.util.InputUtil.Type.KEYSYM
                     .createFromCode(code).getLocalizedText().getString().toUpperCase();

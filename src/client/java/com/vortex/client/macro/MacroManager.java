@@ -99,13 +99,12 @@ public final class MacroManager {
     public static synchronized void record(Macro.Action action, int value, int hold) {
         if (recording == null) return;
 
-        // Nichts aufzeichnen, solange ein Menue offen ist.
+        // Nothing is recorded while a menu is open.
         //
-        // Tasten werden ohnehin nur im Spiel erfasst (siehe tickRecording),
-        // Mausklicks liefen aber ueber das Mixin auch im Menue mit. Dadurch
-        // landete schon der Klick auf den Record-Knopf im Makro, und die
-        // Aufnahme fuellte sich mit Menueklicks -- was aussah, als wuerden
-        // nur Klicks funktionieren und Tasten nicht.
+        // Keys were already handled that way, but clicks came in through the
+        // mixin and were recorded even in a menu -- so the click on the Record
+        // button itself ended up in the macro. That looked like "clicks work,
+        // keys do not", when in truth recording simply only happens in game.
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc == null || mc.currentScreen != null) return;
 
@@ -226,6 +225,23 @@ public final class MacroManager {
             }
         }
 
+        // Extra mouse buttons -- the side buttons most mice have.
+        //
+        // Left and right come in through the mouse mixin, which fires on the
+        // press. The others are polled here so their hold time is captured too,
+        // exactly like a key.
+        for (int b = 2; b <= 7; b++) {
+            int code = MOUSE_BASE + b;
+            boolean down = isDown(client, code);
+            Long since = recHeld.get(code);
+            if (down && since == null) {
+                recHeld.put(code, now);
+            } else if (!down && since != null) {
+                recHeld.remove(code);
+                record(Macro.Action.KEY, code, (int) Math.min(now - since, 30_000L));
+            }
+        }
+
         // Hotbar changes.
         int slot = client.player.getInventory().getSelectedSlot();
         if (recLastSlot < 0) {
@@ -244,7 +260,7 @@ public final class MacroManager {
         }
         for (Macro m : all()) {
             if (m.key == GLFW.GLFW_KEY_UNKNOWN) continue;
-            boolean down = InputUtil.isKeyPressed(client.getWindow(), m.key);
+            boolean down = isDown(client, m.key);
             boolean was = Boolean.TRUE.equals(keyDown.get(m.name));
 
             switch (m.trigger) {
@@ -362,8 +378,7 @@ public final class MacroManager {
     private static void holdKey(MinecraftClient client, int code, int ms) {
         releaseHeldKey();
         try {
-            net.minecraft.client.option.KeyBinding.setKeyPressed(
-                    InputUtil.Type.KEYSYM.createFromCode(code), true);
+            net.minecraft.client.option.KeyBinding.setKeyPressed(keyOf(code), true);
             heldKey = code;
             releaseHeldAt = System.currentTimeMillis() + Math.max(20, ms);
         } catch (Throwable pvpErr) {
@@ -371,11 +386,43 @@ public final class MacroManager {
         }
     }
 
+    /**
+     * Codes at or above this belong to the mouse: MOUSE_BASE + button number.
+     *
+     * Keyboard and mouse share one number space here so that a step, a macro
+     * key and the saved file all work the same way for both. Keyboard codes
+     * stop well below this, so the two can never collide.
+     */
+    public static final int MOUSE_BASE = 1000;
+
+    public static boolean isMouse(int code) {
+        return code >= MOUSE_BASE;
+    }
+
+    /** Turns a code into the key object the game expects. */
+    private static net.minecraft.client.util.InputUtil.Key keyOf(int code) {
+        return isMouse(code)
+                ? InputUtil.Type.MOUSE.createFromCode(code - MOUSE_BASE)
+                : InputUtil.Type.KEYSYM.createFromCode(code);
+    }
+
+    /** Is this code currently held down? Works for keyboard and mouse. */
+    public static boolean isDown(MinecraftClient client, int code) {
+        try {
+            if (isMouse(code)) {
+                return GLFW.glfwGetMouseButton(client.getWindow().getHandle(),
+                        code - MOUSE_BASE) == GLFW.GLFW_PRESS;
+            }
+            return InputUtil.isKeyPressed(client.getWindow(), code);
+        } catch (Throwable pvpErr) {
+            return false;
+        }
+    }
+
     private static void releaseHeldKey() {
         if (heldKey == GLFW.GLFW_KEY_UNKNOWN) return;
         try {
-            net.minecraft.client.option.KeyBinding.setKeyPressed(
-                    InputUtil.Type.KEYSYM.createFromCode(heldKey), false);
+            net.minecraft.client.option.KeyBinding.setKeyPressed(keyOf(heldKey), false);
         } catch (Throwable pvpErr) {
             Errors.report("MacroManager.releaseKey", pvpErr);
         }

@@ -64,6 +64,9 @@ public final class Macro {
         }
 
         private static String keyName(int code) {
+            if (MacroManager.isMouse(code)) {
+                return "Mouse " + (code - MacroManager.MOUSE_BASE + 1);
+            }
             try {
                 return net.minecraft.client.util.InputUtil.Type.KEYSYM
                         .createFromCode(code).getLocalizedText().getString().toUpperCase();
