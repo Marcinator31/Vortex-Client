@@ -131,9 +131,6 @@ public final class ConfigManager {
                 if (m instanceof com.vortex.client.module.modules.BlockEspModule besp) {
                     besp.getEnabledBlocks().clear();
                 }
-                if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
-                    lines.add(m.getName() + "\t__hiddenblocks__\t" + nrb.serializeBlocks());
-                }
                 if (m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
                     for (String id : new ArrayList<>(ar.getHiddenTypes())) {
                         ar.set(id, false);
@@ -279,6 +276,9 @@ public final class ConfigManager {
                 }
                 if (m instanceof com.vortex.client.module.modules.BlockEspModule besp) {
                     lines.add(m.getName() + "\t__blocks__\t" + besp.serializeBlocks());
+                }
+                if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
+                    lines.add(m.getName() + "\t__hiddenblocks__\t" + nrb.serializeBlocks());
                 }
                 if (m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
                     lines.add(m.getName() + "\t__antirender__\t" + ar.serialize());
