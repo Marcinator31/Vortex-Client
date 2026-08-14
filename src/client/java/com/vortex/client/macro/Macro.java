@@ -82,11 +82,14 @@ public final class Macro {
     /**
      * How often the macro runs.
      *
-     * 0 means "keep going until stopped"; any other number is a count. Keyboard
-     * software usually offers exactly this, and it is the difference between
-     * "do this combo three times" and "hold this down".
+     * 0 means "keep going until stopped"; any other number is a count.
+     *
+     * Zero is the default because that is what the triggers imply: pressing a
+     * toggle is meant to keep it going until you press again. With a count of
+     * one it stopped after a single pass, which made the toggle look broken --
+     * it had run, it was simply already finished.
      */
-    public int repeat = 1;
+    public int repeat = 0;
 
     /**
      * How the key behaves.
@@ -178,6 +181,11 @@ public final class Macro {
             m.repeat = oldLoop ? 0 : 1;
             if (head.length >= 8) {
                 m.repeat = Integer.parseInt(head[4].trim());
+                // Macros saved while the default was still one pass would stop
+                // after a single run, which is not what a toggle is for. They
+                // are lifted to "until stopped"; an explicit count of two or
+                // more was clearly meant and stays untouched.
+                if (m.repeat == 1) m.repeat = 0;
                 m.speed = Integer.parseInt(head[5].trim());
                 m.startDelay = Integer.parseInt(head[6].trim());
                 try {

@@ -299,11 +299,22 @@ public final class MacroManager {
         // A screen interrupts playback: the macro would otherwise type into it.
         if (client.currentScreen != null) return;
 
-        while (playing != null && now >= nextStepAt) {
+        // Cap on how much runs in a single tick.
+        //
+        // Without it an endless macro whose steps have no delay would loop
+        // inside this one tick forever -- the game would simply freeze. The
+        // cap is generous enough that normal macros never touch it.
+        int budget = 40;
+
+        while (playing != null && now >= nextStepAt && budget-- > 0) {
             if (stepIndex >= playing.steps.size()) {
                 passesDone++;
                 // repeat 0 means "until stopped"; anything else is a count.
                 boolean again = (playing.repeat == 0) || (passesDone < playing.repeat);
+                // "While held" means exactly that: it runs as long as the key
+                // is down, and the count has no say. Stopping early under a
+                // held key would look like a fault.
+                if (playing.trigger == Macro.Trigger.HOLD) again = true;
                 if (playing.trigger == Macro.Trigger.ONCE) again = false;
                 if (again) {
                     stepIndex = 0;
