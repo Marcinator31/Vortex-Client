@@ -177,21 +177,40 @@ public final class MacroManager {
         }
         if (client.currentScreen != null) return;
 
-        // Movement and action keys worth recording.
-        var o = client.options;
-        int[] codes = {
-            keyCode(o.forwardKey), keyCode(o.backKey), keyCode(o.leftKey), keyCode(o.rightKey),
-            keyCode(o.jumpKey), keyCode(o.sneakKey), keyCode(o.sprintKey), keyCode(o.dropKey)
-        };
+        // EVERY key, not just a handful of movement keys.
+        //
+        // The first attempt only watched forward, back, jump and so on. That
+        // covered walking, but not the keys you actually bind things to -- and
+        // those are the interesting ones in a macro.
+        //
+        // So the whole keyboard is polled instead. That sounds expensive and
+        // is not: this is one cheap lookup per key, twenty times a second, and
+        // only while recording is running.
         long now = System.currentTimeMillis();
-        for (int code : codes) {
-            if (code == GLFW.GLFW_KEY_UNKNOWN) continue;
-            boolean down = InputUtil.isKeyPressed(client.getWindow(), code);
+        for (int code = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
+             code <= org.lwjgl.glfw.GLFW.GLFW_KEY_LAST; code++) {
+
+            // Escape opens a screen, so it can never be part of a sequence.
+            if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) continue;
+
+            boolean down;
+            try {
+                down = InputUtil.isKeyPressed(client.getWindow(), code);
+            } catch (Throwable pvpErr) {
+                continue;   // not every code in the range is a real key
+            }
+
             Long since = recHeld.get(code);
             if (down && since == null) {
                 recHeld.put(code, now);
             } else if (!down && since != null) {
                 recHeld.remove(code);
+                // Number keys change the hotbar; that is recorded below as a
+                // slot change, which survives a different key layout.
+                if (code >= org.lwjgl.glfw.GLFW.GLFW_KEY_1
+                        && code <= org.lwjgl.glfw.GLFW.GLFW_KEY_9) {
+                    continue;
+                }
                 record(Macro.Action.KEY, code, (int) Math.min(now - since, 30_000L));
             }
         }
@@ -203,16 +222,6 @@ public final class MacroManager {
         } else if (slot != recLastSlot) {
             recLastSlot = slot;
             record(Macro.Action.SLOT, slot + 1, 0);
-        }
-    }
-
-    /** Key code behind a binding, or unknown. */
-    private static int keyCode(net.minecraft.client.option.KeyBinding binding) {
-        try {
-            return net.minecraft.client.util.InputUtil.fromTranslationKey(
-                    binding.getBoundKeyTranslationKey()).getCode();
-        } catch (Throwable pvpErr) {
-            return GLFW.GLFW_KEY_UNKNOWN;
         }
     }
 
