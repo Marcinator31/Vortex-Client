@@ -170,14 +170,19 @@ public class ClickGui extends Screen {
     private int windowHeight() {
         int custom = GuiState.getWindowH();
         int base = (custom > 0) ? custom : Math.min(this.height - 40, WIN_MAX_H);
-        return Math.max(180, Math.min(this.height - 20, base));
+        // The lower bound must never beat the screen: on a very small display
+        // Math.max would otherwise hand back 180 even when only 140 are there,
+        // and the window would reach past the edge.
+        int avail = this.height - 20;
+        return Math.min(avail, Math.max(180, Math.min(avail, base)));
     }
 
     /** Fensterbreite -- analog zur Hoehe. */
     private int windowWidth() {
         int custom = GuiState.getWindowW();
         int base = (custom > 0) ? custom : Math.min(this.width - 40, WIN_MAX_W);
-        return Math.max(360, Math.min(this.width - 20, base));
+        int avail = this.width - 20;
+        return Math.min(avail, Math.max(360, Math.min(avail, base)));
     }
 
     /** Deckkraft aus dem Design -- macht das Fenster auf Wunsch durchsichtig. */

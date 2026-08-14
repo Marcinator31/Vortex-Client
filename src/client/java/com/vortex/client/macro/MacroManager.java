@@ -154,6 +154,27 @@ public final class MacroManager {
     // ------------------------------------------------------------------ tick
 
     public static void register() {
+        // Playback also runs on every frame, not only on every tick.
+        //
+        // THIS IS WHY MACROS FELT SLOW: a tick happens twenty times a second,
+        // so one step every fifty milliseconds was the hard floor -- a delay of
+        // one millisecond made no difference whatsoever. A four step sequence
+        // could not beat five runs a second, while a keyboard macro manages
+        // ten to twenty times that.
+        //
+        // Frames come far more often (a hundred or more a second), so the
+        // delays finally mean something. Recording and the trigger keys stay
+        // on the tick, where they belong: they only need to notice a press.
+        net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents.AFTER_ENTITIES
+                .register(context -> {
+            try {
+                MinecraftClient client = MinecraftClient.getInstance();
+                if (client != null) tickPlayback(client);
+            } catch (Throwable pvpErr) {
+                Errors.report("MacroManager.frame", pvpErr);
+            }
+        });
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             long t0 = System.nanoTime();
             try {
@@ -319,7 +340,12 @@ public final class MacroManager {
         // Without it an endless macro whose steps have no delay would loop
         // inside this one tick forever -- the game would simply freeze. The
         // cap is generous enough that normal macros never touch it.
-        int budget = 40;
+        // Steps allowed in a single pass.
+        //
+        // Generous, because with zero delays a whole sequence should be able to
+        // run within one frame. The cap only exists so an endless macro without
+        // any delay cannot lock the game up inside one pass.
+        int budget = 100;
 
         while (playing != null && now >= nextStepAt && budget-- > 0) {
             if (stepIndex >= playing.steps.size()) {

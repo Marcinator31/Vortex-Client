@@ -25,7 +25,6 @@ public class WaypointScreen extends Screen {
      * (siehe winW()) -- bei fester Breite wurden Knoepfe abgeschnitten, sobald
      * mehrere nebeneinander standen.
      */
-    private static final int WIN_MIN_W = 460;
     private static final int HEADER_H = 82;
     private static final int FOOTER_H = 20;
     private static final int ROW_H = 24;
@@ -79,8 +78,10 @@ public class WaypointScreen extends Screen {
     @Override
     protected void init() {
         // Breite an den Bildschirm anpassen, damit nichts abgeschnitten wird.
-        WIN_W = Math.max(WIN_MIN_W, Math.min(this.width - 40, 620));
-        winH = Math.min(this.height - 40, 400);
+        // Never wider than the screen -- see MacroScreen for why the old
+        // minimum width was a mistake.
+        WIN_W = Math.min(this.width - 20, 620);
+        winH = Math.min(this.height - 20, 400);
         winX = (this.width - WIN_W) / 2;
         winY = (this.height - winH) / 2;
         listH = winH - HEADER_H - FOOTER_H;

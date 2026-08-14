@@ -20,12 +20,15 @@ import java.util.List;
  * numbers make it exact.
  */
 public class MacroScreen extends Screen {
+    /** Base height of the header; grows when the buttons wrap. */
+    private static final int HEADER_BASE_H = 62;
 
-    private static final int WIN_MIN_W = 620;
-    private static final int HEADER_H = 62;
+    /** Actual header height for this frame. */
+    private int headerH = HEADER_BASE_H;
     private static final int FOOTER_H = 24;
     private static final int ROW_H = 22;
-    private static final int LIST_W = 210;
+    /** Width of the macro list. Worked out from the window width. */
+    private int listW = 210;
 
     private static final int C_DIM    = 0xB4000000;
     private static final int C_WINDOW = 0xF21B1B21;
@@ -74,11 +77,23 @@ public class MacroScreen extends Screen {
 
     @Override
     protected void init() {
-        winW = Math.max(WIN_MIN_W, Math.min(this.width - 40, 720));
-        winH = Math.min(this.height - 40, 420);
+        // NEVER wider than the screen.
+        //
+        // This used to force a minimum of 620 pixels. On a small display -- or
+        // simply at a large GUI scale -- the window then reached past both
+        // edges, and the buttons at the sides could not be clicked at all.
+        // A window that does not fit is worse than a cramped one.
+        winW = Math.min(this.width - 20, 720);
+        winH = Math.min(this.height - 20, 420);
+
+        // The list of macros takes about a third, within sensible bounds, so
+        // the step list keeps usable space on a narrow window.
+        // Never wider than the window leaves room for.
+        listW = Math.min(Math.max(110, Math.min(210, winW / 3)),
+                         Math.max(60, winW - 120));
         winX = (this.width - winW) / 2;
         winY = (this.height - winH) / 2;
-        listH = winH - HEADER_H - FOOTER_H;
+        listH = winH - headerH - FOOTER_H;
 
         nameField = new TextFieldWidget(this.textRenderer,
                 winX + 90, winY + winH - 18, 180, 14, Text.literal(""));
@@ -122,6 +137,9 @@ public class MacroScreen extends Screen {
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         drawHeader(ctx, accent);
+        // The header works out its own height (the buttons may have wrapped),
+        // so the space left for the lists is only known now.
+        listH = Math.max(40, winH - headerH - FOOTER_H);
         drawList(ctx, accent);
         drawSteps(ctx, accent);
         drawFooter(ctx, accent);
@@ -132,8 +150,8 @@ public class MacroScreen extends Screen {
     }
 
     private void drawHeader(DrawContext ctx, int accent) {
-        ctx.fill(winX, winY, winX + winW, winY + HEADER_H, fade(C_BAR, openAnim));
-        ctx.fill(winX, winY + HEADER_H - 1, winX + winW, winY + HEADER_H, fade(C_LINE, openAnim));
+        ctx.fill(winX, winY, winX + winW, winY + headerH, fade(C_BAR, openAnim));
+        ctx.fill(winX, winY + headerH - 1, winX + winW, winY + headerH, fade(C_LINE, openAnim));
 
         boolean backHov = in(winX + 8, winY + 8, 16, 16);
         ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
@@ -148,25 +166,55 @@ public class MacroScreen extends Screen {
         ctx.drawText(this.textRenderer, Text.literal(c),
                 winX + winW - cw - 12, winY + 12, 0xFF74747F, false);
 
+        // The buttons wrap onto a second row when they do not fit.
+        //
+        // They used to be laid out strictly left to right, so on a narrow
+        // window the last ones ran off the edge and could not be reached --
+        // including the key binding.
         int bx = winX + 12;
-        bx = button(ctx, bx, winY + 32, "New macro", Act.NEW, null, accent, false);
+        int by = winY + 32;
+        int right = winX + winW - 10;
+
+        int[] pos = { bx, by };
+        wrapButton(ctx, pos, right, "New macro", Act.NEW, null, accent, false);
 
         if (selected != null) {
             boolean rec = MacroManager.isRecording()
                     && MacroManager.recordingMacro() == selected;
-            bx = button(ctx, bx, winY + 32, rec ? "Stop recording" : "Record",
+            wrapButton(ctx, pos, right, rec ? "Stop recording" : "Record",
                     Act.RECORD, selected, accent, rec);
 
             boolean play = MacroManager.isPlaying() && MacroManager.playingMacro() == selected;
-            bx = button(ctx, bx, winY + 32, play ? "Stop" : "Play",
+            wrapButton(ctx, pos, right, play ? "Stop" : "Play",
                     Act.PLAY, selected, accent, play);
 
-            bx = button(ctx, bx, winY + 32, "Trigger: " + selected.trigger.label,
+            wrapButton(ctx, pos, right, "Trigger: " + selected.trigger.label,
                     Act.TRIGGER, selected, accent, false);
 
             String keyLabel = "Key: " + (bindingKey == selected ? "press a key" : keyName(selected.key));
-            button(ctx, bx, winY + 32, keyLabel, Act.BIND, selected, accent, bindingKey == selected);
+            wrapButton(ctx, pos, right, keyLabel, Act.BIND, selected, accent,
+                    bindingKey == selected);
         }
+
+        // How tall the header actually turned out.
+        headerH = (pos[1] + 20 + 8) - winY;
+    }
+
+    /**
+     * Draws a button and moves on, starting a new row when the width runs out.
+     *
+     * pos carries the current x and y between calls, which keeps the caller
+     * free of layout arithmetic.
+     */
+    private void wrapButton(DrawContext ctx, int[] pos, int right, String label,
+                            Act act, Object data, int accent, boolean active) {
+        int w = this.textRenderer.getWidth(label) + 16;
+        if (pos[0] + w > right && pos[0] > winX + 12) {
+            pos[0] = winX + 12;
+            pos[1] += 24;
+        }
+        button(ctx, pos[0], pos[1], label, act, data, accent, active);
+        pos[0] += w + 6;
     }
 
     private int button(DrawContext ctx, int x, int y, String label, Act act,
@@ -182,9 +230,9 @@ public class MacroScreen extends Screen {
 
     private void drawList(DrawContext ctx, int accent) {
         int x = winX + 8;
-        int y = winY + HEADER_H + 6;
-        ctx.fill(winX + LIST_W, winY + HEADER_H, winX + LIST_W + 1,
-                winY + HEADER_H + listH, C_LINE);
+        int y = winY + headerH + 6;
+        ctx.fill(winX + listW, winY + headerH, winX + listW + 1,
+                winY + headerH + listH, C_LINE);
 
         if (MacroManager.all().isEmpty()) {
             ctx.drawText(this.textRenderer, Text.literal("No macros yet"),
@@ -194,32 +242,32 @@ public class MacroScreen extends Screen {
 
         for (Macro m : MacroManager.all()) {
             boolean sel = m == selected;
-            boolean hov = in(x, y, LIST_W - 16, ROW_H);
-            roundRect(ctx, x, y, LIST_W - 16, ROW_H,
+            boolean hov = in(x, y, listW - 16, ROW_H);
+            roundRect(ctx, x, y, listW - 16, ROW_H,
                     sel ? mix(C_CARD, accent, 0.28f) : (hov ? C_HOV : C_CARD));
 
-            String label = shorten(m.name, LIST_W - 70);
+            String label = shorten(m.name, listW - 70);
             ctx.drawText(this.textRenderer, Text.literal(label), x + 8, y + 3, 0xFFFFFFFF, false);
             ctx.drawText(this.textRenderer, Text.literal(m.steps.size() + " steps"),
                     x + 8, y + 12, 0xFF74747F, false);
 
             ctx.drawText(this.textRenderer, Text.literal("R"),
-                    x + LIST_W - 44, y + 7, 0xFF9AD8FF, false);
+                    x + listW - 44, y + 7, 0xFF9AD8FF, false);
             ctx.drawText(this.textRenderer, Text.literal("x"),
-                    x + LIST_W - 28, y + 7,
+                    x + listW - 28, y + 7,
                     pendingDelete == m ? 0xFFFF3030 : 0xFFFF7A7A, false);
 
-            hits.add(new Hit(x + LIST_W - 46, y + 5, 14, 12, Act.RENAME, m));
-            hits.add(new Hit(x + LIST_W - 30, y + 5, 14, 12, Act.DELETE, m));
-            hits.add(new Hit(x, y, LIST_W - 50, ROW_H, Act.PICK, m));
+            hits.add(new Hit(x + listW - 46, y + 5, 14, 12, Act.RENAME, m));
+            hits.add(new Hit(x + listW - 30, y + 5, 14, 12, Act.DELETE, m));
+            hits.add(new Hit(x, y, listW - 50, ROW_H, Act.PICK, m));
             y += ROW_H + 4;
         }
     }
 
     private void drawSteps(DrawContext ctx, int accent) {
-        int x = winX + LIST_W + 12;
-        int w = winW - LIST_W - 24;
-        int top = winY + HEADER_H;
+        int x = winX + listW + 12;
+        int w = winW - listW - 24;
+        int top = winY + headerH;
 
         if (selected == null) {
             ctx.drawText(this.textRenderer, Text.literal("Pick a macro on the left"),

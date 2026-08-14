@@ -49,6 +49,8 @@ public class ThemeScreen extends Screen {
     private int mx = 0, my = 0;
 
     private int winX, winY, winH;
+    /** Actual window width for this frame; capped to the screen. */
+    private int winW = WIN_W;
     private int moodX, moodY, moodCell;
 
     public ThemeScreen(Screen parent) {
@@ -74,18 +76,25 @@ public class ThemeScreen extends Screen {
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
 
         List<ColorSetting> list = colors();
-        winH = HEADER_H + list.size() * (ROW_H + 4) + FOOTER_H;
-        winX = (this.width - WIN_W) / 2;
+        // Height follows the content, but never past the screen.
+        //
+        // With enough colour entries the window used to grow beyond the top and
+        // bottom edge, and the rows outside could not be reached. Capping it
+        // keeps everything inside; the list scrolls if it does not fit.
+        winH = Math.min(this.height - 20,
+                HEADER_H + list.size() * (ROW_H + 4) + FOOTER_H);
+        winW = Math.min(this.width - 20, WIN_W);
+        winX = (this.width - winW) / 2;
         winY = (this.height - winH) / 2 + (int) ((1f - openAnim) * 12f);
 
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
-        roundRect(ctx, winX, winY, WIN_W, winH, fade(C_WINDOW, openAnim));
-        ctx.fill(winX, winY, winX + WIN_W, winY + 1, fade(accent, openAnim));
+        roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+        ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         // Kopfzeile
-        ctx.fill(winX, winY, winX + WIN_W, winY + HEADER_H, fade(C_BAR, openAnim));
-        ctx.fill(winX, winY + HEADER_H - 1, winX + WIN_W, winY + HEADER_H,
+        ctx.fill(winX, winY, winX + winW, winY + HEADER_H, fade(C_BAR, openAnim));
+        ctx.fill(winX, winY + HEADER_H - 1, winX + winW, winY + HEADER_H,
                 fade(C_LINE, openAnim));
 
         boolean backHov = inRect(mx, my, winX + 8, winY + 8, 16, 16);
@@ -115,8 +124,8 @@ public class ThemeScreen extends Screen {
         // Farbzeilen
         int y = winY + HEADER_H + 4;
         for (ColorSetting c : list) {
-            boolean hov = inRect(mx, my, winX + 8, y, WIN_W - 16, ROW_H);
-            roundRect(ctx, winX + 8, y, WIN_W - 16, ROW_H, hov ? C_HOV : C_CARD);
+            boolean hov = inRect(mx, my, winX + 8, y, winW - 16, ROW_H);
+            roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
             ctx.drawText(this.textRenderer, Text.literal(c.getName()),
                     winX + 18, y + 8, 0xFFD0D0DA, false);
 
@@ -124,17 +133,17 @@ public class ThemeScreen extends Screen {
             String hx = String.format(java.util.Locale.ROOT, "#%08X", c.get());
             int hw = this.textRenderer.getWidth(hx);
             ctx.drawText(this.textRenderer, Text.literal(hx),
-                    winX + WIN_W - 34 - hw - 8, y + 8, 0xFF74747F, false);
-            roundRect(ctx, winX + WIN_W - 34, y + 5, 26, 14, 0xFF000000);
-            roundRect(ctx, winX + WIN_W - 33, y + 6, 24, 12, c.get() | 0xFF000000);
+                    winX + winW - 34 - hw - 8, y + 8, 0xFF74747F, false);
+            roundRect(ctx, winX + winW - 34, y + 5, 26, 14, 0xFF000000);
+            roundRect(ctx, winX + winW - 33, y + 6, 24, 12, c.get() | 0xFF000000);
 
             y += ROW_H + 4;
         }
 
         // Fusszeile mit Zuruecksetzen
         int fy = winY + winH - FOOTER_H;
-        ctx.fill(winX, fy, winX + WIN_W, winY + winH, fade(C_BAR, openAnim));
-        ctx.fill(winX, fy, winX + WIN_W, fy + 1, fade(C_LINE, openAnim));
+        ctx.fill(winX, fy, winX + winW, winY + winH, fade(C_BAR, openAnim));
+        ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
         String reset = "Reset";
         int rw = this.textRenderer.getWidth(reset) + 16;
         boolean rHov = inRect(mx, my, winX + 10, fy + 4, rw, 17);
@@ -176,7 +185,7 @@ public class ThemeScreen extends Screen {
         // Farbzeile -> Farbwaehler
         int y = winY + HEADER_H + 4;
         for (ColorSetting c : colors()) {
-            if (inRect(mx, my, winX + 8, y, WIN_W - 16, ROW_H)) {
+            if (inRect(mx, my, winX + 8, y, winW - 16, ROW_H)) {
                 MinecraftClient.getInstance().setScreen(new ColorPickerScreen(this, c));
                 return true;
             }
