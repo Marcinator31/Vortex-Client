@@ -265,9 +265,24 @@ public final class MacroManager {
 
             switch (m.trigger) {
                 case HOLD:
-                    // Runs while the key is down and stops the moment it is let go.
-                    if (down && !was) play(m);
-                    if (!down && was && playing == m) stop();
+                    // Restarts on its own for as long as the key is held.
+                    //
+                    // The old version only started on the moment of pressing
+                    // ("down && !was"). If the run then finished -- because it
+                    // reached its repeat count, or ended for any other reason --
+                    // it never came back, since the key had long been down and
+                    // that moment was gone. You had to let go and press again.
+                    //
+                    // Asking "is the key down and is this macro not running?"
+                    // instead makes it start again immediately, over and over,
+                    // until the key is released. That also makes the behaviour
+                    // genuinely independent of the repeat count: whatever ends
+                    // the run, a held key starts it right back up.
+                    if (down && playing != m) {
+                        play(m);
+                    } else if (!down && playing == m) {
+                        stop();
+                    }
                     break;
                 case ONCE:
                     if (down && !was) play(m);
