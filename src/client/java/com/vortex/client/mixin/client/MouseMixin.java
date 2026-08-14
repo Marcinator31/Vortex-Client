@@ -37,8 +37,12 @@ public class MouseMixin {
         int button = input.button();
         if (button == LEFT_BUTTON) {
             CpsCounter.LEFT.onClick();
+            com.vortex.client.macro.MacroManager.record(
+                    com.vortex.client.macro.Macro.Action.LEFT_CLICK, 0, 0);
         } else if (button == RIGHT_BUTTON) {
             CpsCounter.RIGHT.onClick();
+            com.vortex.client.macro.MacroManager.record(
+                    com.vortex.client.macro.Macro.Action.RIGHT_CLICK, 0, 0);
         }
     }
 }

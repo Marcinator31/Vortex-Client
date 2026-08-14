@@ -74,7 +74,21 @@ public final class HudRenderer {
         // --- CPS ---
         CpsModule cps = (CpsModule) find(CpsModule.class);
         if (cps != null && cps.isEnabled()) {
-            String text = "CPS: " + CpsCounter.LEFT.getCps();
+            // Left, right, or both side by side -- see the module for why the
+            // two are not added together.
+            String text;
+            switch (cps.mode.getIndex()) {
+                case 1:
+                    text = "CPS: " + CpsCounter.RIGHT.getCps();
+                    break;
+                case 2:
+                    text = "CPS: " + CpsCounter.LEFT.getCps()
+                            + " | " + CpsCounter.RIGHT.getCps();
+                    break;
+                default:
+                    text = "CPS: " + CpsCounter.LEFT.getCps();
+                    break;
+            }
             pushScale(context, cps.x.getInt(), cps.y.getInt(), cps.scale.getFloat());
             context.drawTextWithShadow(client.textRenderer, Text.literal(text),
                     cps.x.getInt(), cps.y.getInt(), cps.color.get());
@@ -96,12 +110,26 @@ public final class HudRenderer {
         if (ping != null && ping.isEnabled() && client.player != null
                 && client.getNetworkHandler() != null) {
             int latency = 0;
-            try {
-                net.minecraft.client.network.PlayerListEntry entry =
-                        client.getNetworkHandler()
-                        .getPlayerListEntry(client.player.getUuid());
-                if (entry != null) latency = entry.getLatency();
-            } catch (Throwable ignored) {
+            boolean own = false;
+            if (ping.measure.get()) {
+                // Our own measurement, refreshed every second. Only used while
+                // it is actually recent -- a stale reading is no better than
+                // the server's, so fall back rather than show something old.
+                PingMeter.setInterval((long) (ping.interval.get() * 1000));
+                int measured = PingMeter.get();
+                if (measured >= 0 && PingMeter.age() < 15_000L) {
+                    latency = measured;
+                    own = true;
+                }
+            }
+            if (!own) {
+                try {
+                    net.minecraft.client.network.PlayerListEntry entry =
+                            client.getNetworkHandler()
+                            .getPlayerListEntry(client.player.getUuid());
+                    if (entry != null) latency = entry.getLatency();
+                } catch (Throwable ignored) {
+                }
             }
             String text = latency + " ms";
             pushScale(context, ping.x.getInt(), ping.y.getInt(), ping.scale.getFloat());

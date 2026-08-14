@@ -102,9 +102,12 @@ public final class WaypointHud {
         if (client.textRenderer == null) return;
         if (!mod.labels.get() && !mod.edgeArrows.get()) return;
 
-        // Kameraposition ueber den bereits erprobten Helfer holen -- der
-        // beruecksichtigt auch die Freecam. Camera.getPos() gibt es in 1.21.11
-        // nicht, deshalb bewusst dieser Weg.
+        // Position AND direction come from the render camera.
+        //
+        // Using the player's own values was only correct in first person. In
+        // third person the camera sits behind the player, and in the front view
+        // it even looks the opposite way — markers ended up shifted, or moved
+        // the wrong way entirely when the view changed.
         float tickDelta = client.getRenderTickCounter().getTickProgress(false);
         net.minecraft.util.math.Vec3d camPos = EspRender.cameraOffset(client, tickDelta);
 
@@ -113,8 +116,14 @@ public final class WaypointHud {
             yaw = com.vortex.client.freecam.Freecam.getYaw();
             pitch = com.vortex.client.freecam.Freecam.getPitch();
         } else {
-            yaw = client.player.getYaw();
-            pitch = client.player.getPitch();
+            var camera = client.gameRenderer.getCamera();
+            if (camera != null) {
+                yaw = camera.getYaw();
+                pitch = camera.getPitch();
+            } else {
+                yaw = client.player.getYaw();
+                pitch = client.player.getPitch();
+            }
         }
 
         double fov = 70.0;

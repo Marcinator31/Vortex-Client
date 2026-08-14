@@ -24,7 +24,7 @@ public class EspScreen extends SelectionScreen {
 
     @Override
     protected void buildEntries() {
-        entries.add(new Entry(Items.PLAYER_HEAD, "minecraft:player", "Spieler"));
+        entries.add(new Entry(Items.PLAYER_HEAD, "minecraft:player", "Players"));
         for (EntityType<?> type : Registries.ENTITY_TYPE) {
             SpawnEggItem egg = SpawnEggItem.forEntity(type);
             if (egg == null) continue; // kein Spawn-Ei -> kein Mob

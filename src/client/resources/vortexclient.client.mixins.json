@@ -4,7 +4,9 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"BiomeAccessSeedAccessor",
+		"BlockRenderTypeMixin",
 		"CameraMixin",
+		"CameraPosAccessor",
 		"CrosshairTargetMixin",
 		"EntityEspMixin",
 		"EntityLookMixin",

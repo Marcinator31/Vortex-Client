@@ -68,4 +68,14 @@ public interface MinecraftClientAccessor {
      */
     @org.spongepowered.asm.mixin.gen.Invoker("method_1536")
     boolean pvpclient$invokeDoAttack();
+
+    /**
+     * Invoker for doItemUse() -- what the game runs on a right click.
+     *
+     * Used by macro playback, so a recorded right click does exactly what a
+     * real one does: place, eat, draw a bow, depending on what you are holding
+     * and looking at.
+     */
+    @org.spongepowered.asm.mixin.gen.Invoker("method_1583")
+    void vortex$invokeDoItemUse();
 }

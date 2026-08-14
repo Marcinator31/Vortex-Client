@@ -77,7 +77,7 @@ public class ClickGui extends Screen {
      * Design und Skins gibt es aber Dinge, die keine Module sind -- die gehoeren
      * nicht in die Kategorie-Liste, sondern gleichberechtigt daneben.
      */
-    private enum Section { MODULE, WAYPOINTS, SKINS, DESIGN }
+    private enum Section { MODULE, WAYPOINTS, MACROS, SKINS, DESIGN }
 
     private Section section = Section.MODULE;
     private Module.Category selected = Module.Category.values()[0];
@@ -122,7 +122,7 @@ public class ClickGui extends Screen {
     private int dragX = 0, dragW = 0;
 
     // ---- Klickflaechen (beim Zeichnen gefuellt) ----
-    private enum Act { THEME, PRESET, CATEGORY, FAVCAT, STAR, SUB_WAYPOINT,
+    private enum Act { THEME, PRESET, CATEGORY, FAVCAT, STAR, SUB_WAYPOINT, SUB_NORENDER,
                        SECTION, WP_SETTING, WP_MANAGE, TOGGLE, EXPAND, SUB_ESP, SUB_BLOCK, SUB_ANTI,
                        S_BOOL, S_NUM, S_MODE_PREV, S_MODE_NEXT, S_COLOR, S_KEY }
 
@@ -401,6 +401,9 @@ public class ClickGui extends Screen {
         cy = drawSectionEntry(ctx, x, cy, "Waypoints", Section.WAYPOINTS,
                 String.valueOf(com.vortex.client.waypoint.WaypointManager.all().size()),
                 accent, t, dt, searching);
+        cy = drawSectionEntry(ctx, x, cy, "Macros", Section.MACROS,
+                String.valueOf(com.vortex.client.macro.MacroManager.all().size()),
+                accent, t, dt, searching);
         cy = drawSectionEntry(ctx, x, cy, "Skins", Section.SKINS, null,
                 accent, t, dt, searching);
         cy = drawSectionEntry(ctx, x, cy, "Theme", Section.DESIGN, null,
@@ -623,6 +626,28 @@ public class ClickGui extends Screen {
                 }
                 break;
             }
+            case MACROS: {
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Macros"),
+                        cx, cy, t.text.get());
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Record clicks and keys, edit the timing, bind a key"),
+                        cx, cy + 11, t.textDim.get(), false);
+                cy += 28;
+                boolean mh = inRect(mx, my, cx, cy, cw, 20);
+                roundRect(ctx, cx, cy, cw, 20, mh ? mix(C_INNER, accent, 0.35f) : C_INNER);
+                ctx.drawText(this.textRenderer, Text.literal("Open macro editor"),
+                        cx + 10, cy + 6, t.text.get(), false);
+                ctx.drawText(this.textRenderer, Text.literal(">"),
+                        cx + cw - 14, cy + 6, accent, false);
+                hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openMacros"));
+                cy += 28;
+
+                int n = com.vortex.client.macro.MacroManager.all().size();
+                ctx.drawText(this.textRenderer,
+                        Text.literal(n == 0 ? "No macros yet" : n + " saved"),
+                        cx, cy, t.textDim.get(), false);
+                break;
+            }
             case SKINS: {
                 ctx.drawTextWithShadow(this.textRenderer, Text.literal("Skins"),
                         cx, cy, t.text.get());
@@ -687,6 +712,8 @@ public class ClickGui extends Screen {
             label = "Select blocks"; act = Act.SUB_BLOCK;
         } else if (m instanceof com.vortex.client.module.modules.AntiRenderModule) {
             label = "Select entities"; act = Act.SUB_ANTI;
+        } else if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule) {
+            label = "Select blocks"; act = Act.SUB_NORENDER;
 
         } else {
             return sy;
@@ -879,6 +906,10 @@ public class ClickGui extends Screen {
                         MinecraftClient.getInstance().setScreen(new SkinScreen(this));
                         break;
                     }
+                    if ("openMacros".equals(hit.extra)) {
+                        MinecraftClient.getInstance().setScreen(new MacroScreen(this));
+                        break;
+                    }
                     section = (Section) hit.extra;
                     favView = false;
                     scrollTarget = 0f;
@@ -945,6 +976,9 @@ public class ClickGui extends Screen {
                     break;
                 case SUB_ANTI:
                     MinecraftClient.getInstance().setScreen(new AntiRenderScreen(this));
+                    break;
+                case SUB_NORENDER:
+                    MinecraftClient.getInstance().setScreen(new NoRenderBlocksScreen(this));
                     break;
                 case SUB_WAYPOINT:
                     MinecraftClient.getInstance().setScreen(new WaypointScreen(this));
@@ -1130,6 +1164,7 @@ public class ClickGui extends Screen {
         if (m instanceof com.vortex.client.module.modules.EspModule
                 || m instanceof com.vortex.client.module.modules.BlockEspModule
                 || m instanceof com.vortex.client.module.modules.AntiRenderModule
+                || m instanceof com.vortex.client.module.modules.NoRenderBlocksModule
                 ) {
             h += SUB_H;
         }
@@ -1145,6 +1180,7 @@ public class ClickGui extends Screen {
         if (m instanceof com.vortex.client.module.modules.EspModule
                 || m instanceof com.vortex.client.module.modules.BlockEspModule
                 || m instanceof com.vortex.client.module.modules.AntiRenderModule
+                || m instanceof com.vortex.client.module.modules.NoRenderBlocksModule
                 ) {
             return SUB_H;
         }

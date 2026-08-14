@@ -67,6 +67,8 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.ChunkBorders.register();
         com.vortex.client.hud.ProjectilePath.register();
         com.vortex.client.hud.SessionStats.register();
+        com.vortex.client.hud.PingMeter.start();
+        com.vortex.client.macro.MacroManager.register();
         com.vortex.client.hud.WaypointRenderer.register();
         com.vortex.client.waypoint.WaypointActions.register();
         com.vortex.client.hud.CrystalMacro.register();
@@ -87,6 +89,9 @@ public class VortexClientMod implements ClientModInitializer {
                 com.vortex.client.hud.TotemPops.reset();
                 // Fingerprint belongs to the server we just left.
                 com.vortex.client.waypoint.ServerFingerprint.clear();
+                // Reading belongs to the server we just left.
+                com.vortex.client.hud.PingMeter.stop();
+                com.vortex.client.hud.PingMeter.start();
             });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {

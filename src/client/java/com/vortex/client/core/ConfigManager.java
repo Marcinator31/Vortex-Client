@@ -131,10 +131,16 @@ public final class ConfigManager {
                 if (m instanceof com.vortex.client.module.modules.BlockEspModule besp) {
                     besp.getEnabledBlocks().clear();
                 }
+                if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
+                    lines.add(m.getName() + "\t__hiddenblocks__\t" + nrb.serializeBlocks());
+                }
                 if (m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
                     for (String id : new ArrayList<>(ar.getHiddenTypes())) {
                         ar.set(id, false);
                     }
+                }
+                if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb2) {
+                    nrb2.clearAll();
                 }
                 m.syncState();
             } catch (Throwable pvpErr) {
@@ -284,6 +290,9 @@ public final class ConfigManager {
                 lines.add("__wpsettings__\t" + ws.getName() + "\t" + ws.serialize());
             }
 
+            // Makros.
+            lines.add("__macros__\tdaten\t" + com.vortex.client.macro.MacroManager.serialize());
+
             // Weltprofile (fuer Netzwerke mit Proxy).
             lines.add("__wpprofiles__\tdaten\t"
                     + com.vortex.client.waypoint.WorldProfiles.serialize());
@@ -358,6 +367,12 @@ public final class ConfigManager {
                     continue;
                 }
 
+                // Sonderfall: Makros.
+                if (modName.equals("__macros__")) {
+                    com.vortex.client.macro.MacroManager.deserialize(value);
+                    continue;
+                }
+
                 // Sonderfall: Weltprofile.
                 if (modName.equals("__wpprofiles__")) {
                     com.vortex.client.waypoint.WorldProfiles.deserialize(value);
@@ -407,6 +422,17 @@ public final class ConfigManager {
                     }
                     continue;
                 }
+                // Sonderfall: Liste der ausgeblendeten Bloecke.
+                if (settingName.equals("__hiddenblocks__")) {
+                    for (Module m : ModuleManager.INSTANCE.getModules()) {
+                        if (m.getName().equals(modName)
+                                && m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
+                            nrb.deserializeBlocks(value);
+                        }
+                    }
+                    continue;
+                }
+
                 // Sonderfall: Anti-Render-Liste.
                 if (settingName.equals("__antirender__")) {
                     for (Module m : ModuleManager.INSTANCE.getModules()) {

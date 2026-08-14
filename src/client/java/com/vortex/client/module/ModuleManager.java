@@ -38,6 +38,7 @@ import com.vortex.client.module.modules.TotemPopperModule;
 import com.vortex.client.module.modules.SessionStatsModule;
 import com.vortex.client.module.modules.TargetInfoModule;
 import com.vortex.client.module.modules.CrystalMacroModule;
+import com.vortex.client.module.modules.NoRenderBlocksModule;
 import com.vortex.client.module.modules.GlobalHudColorModule;
 import com.vortex.client.module.modules.HitboxModule;
 import com.vortex.client.module.modules.HealthIndicatorModule;
@@ -119,6 +120,7 @@ public final class ModuleManager {
         register(new SessionStatsModule());
         register(new TargetInfoModule());
         register(new CrystalMacroModule());
+        register(new NoRenderBlocksModule());
         register(new NoParticlesModule());
         register(new SmallTotemModule());
         register(new NoPumpkinBlurModule());

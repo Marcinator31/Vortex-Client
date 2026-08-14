@@ -25,7 +25,7 @@ public class AntiRenderScreen extends SelectionScreen {
 
     @Override
     protected void buildEntries() {
-        entries.add(new Entry(Items.PLAYER_HEAD, "minecraft:player", "Spieler"));
+        entries.add(new Entry(Items.PLAYER_HEAD, "minecraft:player", "Players"));
         for (EntityType<?> type : Registries.ENTITY_TYPE) {
             Identifier id = Registries.ENTITY_TYPE.getId(type);
             if (id == null) continue;

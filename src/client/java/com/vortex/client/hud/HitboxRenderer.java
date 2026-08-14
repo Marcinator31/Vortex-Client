@@ -54,7 +54,10 @@ public final class HitboxRenderer {
                 float tickDelta = client.getRenderTickCounter().getTickProgress(false);
 
                 // Kamera-Position (interpoliert) als Bezugspunkt.
-                Vec3d cam = client.player.getCameraPosVec(tickDelta);
+                // Via the shared helper, which uses the real render camera and
+                // handles freecam. Computing this locally from the player's
+                // eyes shifted everything as soon as the view changed.
+                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
                 // Bei aktiver Freecam ist die echte Kamera woanders -> deren
                 // Position als Offset nutzen, sonst stehen die Boxen falsch.
                 if (com.vortex.client.freecam.Freecam.isActive()) {

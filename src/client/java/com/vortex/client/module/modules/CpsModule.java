@@ -1,6 +1,7 @@
 package com.vortex.client.module.modules;
 
 import com.vortex.client.core.setting.ColorSetting;
+import com.vortex.client.core.setting.ModeSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.hud.HudElement;
 import com.vortex.client.module.Module;
@@ -19,6 +20,15 @@ public class CpsModule extends Module implements HudElement {
     public final ColorSetting color = new ColorSetting("Text Color", 0xFFFFFFFF);
     public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
 
+    /**
+     * Which button is counted.
+     *
+     * "Both" shows the two numbers side by side rather than adding them up:
+     * a total would hide which hand is actually doing the work, and that is
+     * usually the thing you want to know.
+     */
+    public final ModeSetting mode = new ModeSetting("Count", 0, "Left", "Right", "Both");
+
     public CpsModule() {
         super("CPS", Category.HUD);
         enabledByDefault();
@@ -26,6 +36,7 @@ public class CpsModule extends Module implements HudElement {
         addSetting(y);
         addSetting(color);
         addSetting(scale);
+        addSetting(mode);
     }
 
     @Override public String hudName() { return "CPS"; }
@@ -33,6 +44,6 @@ public class CpsModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public com.vortex.client.core.setting.ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 50; }
+    @Override public int hudWidth() { return mode.getIndex() == 2 ? 84 : 50; }
     @Override public int hudHeight() { return 12; }
 }

@@ -100,7 +100,10 @@ public final class StashFinder {
 
             try {
                 float tickDelta = client.getRenderTickCounter().getTickProgress(false);
-                Vec3d cam = client.player.getCameraPosVec(tickDelta);
+                // Via the shared helper, which uses the real render camera and
+                // handles freecam. Computing this locally from the player's
+                // eyes shifted everything as soon as the view changed.
+                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
                 if (com.vortex.client.freecam.Freecam.isActive()) {
                     cam = com.vortex.client.freecam.Freecam.getPos();
                 }

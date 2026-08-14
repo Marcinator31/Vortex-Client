@@ -23,11 +23,30 @@ public final class EspRender {
 
     /** Aktuelle Kamera-Position als Render-Offset (freecam-bewusst). */
     public static Vec3d cameraOffset(MinecraftClient client, float tickDelta) {
-        Vec3d cam = client.player.getCameraPosVec(tickDelta);
+        // Freecam has its own position and takes precedence.
         if (com.vortex.client.freecam.Freecam.isActive()) {
-            cam = com.vortex.client.freecam.Freecam.getPos();
+            return com.vortex.client.freecam.Freecam.getPos();
         }
-        return cam;
+
+        // The REAL camera position, not the player's eyes.
+        //
+        // Those two are the same only in first person. In third person the
+        // camera sits behind and above the player, and using the eye position
+        // shifted every box, line and marker by exactly that offset — which is
+        // why everything looked fine until the view was switched.
+        try {
+            var camera = client.gameRenderer.getCamera();
+            if (camera != null) {
+                Vec3d pos = ((com.vortex.client.mixin.client.CameraPosAccessor)
+                        (Object) camera).vortex$getPos();
+                if (pos != null) return pos;
+            }
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("EspRender.camera", pvpErr);
+        }
+
+        // Fallback if the camera cannot be read for some reason.
+        return client.player.getCameraPosVec(tickDelta);
     }
 
     /** Startpunkt fuer Tracer: knapp vor der Kamera in Blickrichtung. */
