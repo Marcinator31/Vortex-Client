@@ -66,7 +66,7 @@ public final class ChunkBorders {
                 com.vortex.client.core.Errors.report("ChunkBorders", pvpErr);
             }
                     } finally {
-                com.vortex.client.core.Profiler.record("ChunkGrenzen",
+                com.vortex.client.core.Profiler.record("ChunkBorders",
                         System.nanoTime() - pvpT0);
             }
         });

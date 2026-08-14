@@ -120,7 +120,7 @@ public final class BlockEntityEsp {
                 com.vortex.client.core.Errors.report("ContainerEsp", pvpErr);
             }
                     } finally {
-                com.vortex.client.core.Profiler.record("ContainerEsp-Render",
+                com.vortex.client.core.Profiler.record("ContainerEsp",
                         System.nanoTime() - pvpT0);
             }
         });

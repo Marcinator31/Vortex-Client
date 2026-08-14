@@ -214,7 +214,7 @@ public final class WaypointRenderer {
                     }
                 }
             } catch (Throwable pvpErr) {
-                com.vortex.client.core.Errors.report("WaypointRender", pvpErr);
+                com.vortex.client.core.Errors.report("Waypoints", pvpErr);
             }
                     } finally {
                 com.vortex.client.core.Profiler.record("Waypoints",

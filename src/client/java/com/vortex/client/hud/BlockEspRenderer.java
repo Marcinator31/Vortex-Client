@@ -166,7 +166,7 @@ public final class BlockEspRenderer {
                 com.vortex.client.core.Errors.report("BlockEsp", pvpErr);
             }
                     } finally {
-                com.vortex.client.core.Profiler.record("BlockEsp-Render",
+                com.vortex.client.core.Profiler.record("BlockEsp",
                         System.nanoTime() - pvpT0);
             }
         });

@@ -147,10 +147,10 @@ public final class ProjectilePath {
                     EspRender.drawBox(matrices, lines, box, cam, color, lw);
                 }
             } catch (Throwable pvpErr) {
-                com.vortex.client.core.Errors.report("ProjektilBahn", pvpErr);
+                com.vortex.client.core.Errors.report("ProjectilePath", pvpErr);
             }
                     } finally {
-                com.vortex.client.core.Profiler.record("ProjektilBahn",
+                com.vortex.client.core.Profiler.record("ProjectilePath",
                         System.nanoTime() - pvpT0);
             }
         });
