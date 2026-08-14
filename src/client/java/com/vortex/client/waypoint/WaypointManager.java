@@ -102,17 +102,57 @@ public final class WaypointManager {
         return out;
     }
 
-    /** Gehoert der Marker zur angegebenen Welt? */
+    /**
+     * Does this marker belong to the given world?
+     *
+     * A key looks like {@code mp:host|s1a2b3c4|minecraft:overworld}: where you
+     * are, optionally the world seed, and the dimension.
+     *
+     * The comparison is deliberately tolerant about the seed. It was added
+     * later, so markers saved before that do not carry one — and they must not
+     * vanish because of it. The rule is: place and dimension always have to
+     * match, the seed only when both sides actually have one.
+     */
     public static boolean matches(Waypoint w, String worldKey) {
         if (w.dimension == null || worldKey == null) return true;
         if (w.dimension.equals(worldKey)) return true;
-        // Altbestand ohne Server-Anteil: nur die Dimension vergleichen.
-        if (!w.dimension.contains("|")) {
-            int i = worldKey.indexOf('|');
-            String dim = (i >= 0) ? worldKey.substring(i + 1) : worldKey;
-            return w.dimension.equals(dim);
+
+        String[] a = split(w.dimension);
+        String[] b = split(worldKey);
+
+        // Dimension must always match.
+        if (!a[3].equals(b[3])) return false;
+
+        // Older entries carry only the dimension — keep showing them there.
+        if (a[0].isEmpty()) return true;
+
+        if (!a[0].equals(b[0])) return false;
+
+        // Seed and fingerprint only count when both sides know them. Either one
+        // differing is enough to say "different server".
+        if (!a[1].isEmpty() && !b[1].isEmpty() && !a[1].equals(b[1])) return false;
+        if (!a[2].isEmpty() && !b[2].isEmpty() && !a[2].equals(b[2])) return false;
+        return true;
+    }
+
+    /** Splits a key into place, seed and dimension. Missing parts stay empty. */
+    private static String[] split(String key) {
+        String place = "";
+        String seed = "";
+        String finger = "";
+        String dim = key;
+        String[] parts = key.split("\\|");
+        if (parts.length == 1) {
+            // Only a dimension — the oldest format.
+            return new String[] { "", "", "", parts[0] };
         }
-        return false;
+        place = parts[0];
+        dim = parts[parts.length - 1];
+        for (int i = 1; i < parts.length - 1; i++) {
+            if (parts[i].startsWith("s")) seed = parts[i].substring(1);
+            else if (parts[i].startsWith("f")) finger = parts[i].substring(1);
+        }
+        return new String[] { place, seed, finger, dim };
     }
 
     /** Alle vorkommenden Welten -- fuer die Auswahl in der Verwaltung. */

@@ -50,12 +50,23 @@ public final class WaypointRenderer {
     // erneuert; oefter aendert sie sich ohnehin nicht.
     private static String cachedKey = null;
     private static long cachedAt = 0L;
+    private static Object cachedWorld = null;
 
     public static String currentWorldKey(MinecraftClient client) {
+        // Tied to the world object, not just to a timer.
+        //
+        // When a proxy moves you to another server the client throws the world
+        // away and builds a new one. Recognising that here means the switch is
+        // noticed the moment it happens, instead of up to half a second later
+        // with markers from the previous server still on screen.
+        Object world = client.world;
         long now = System.currentTimeMillis();
-        if (cachedKey != null && (now - cachedAt) < 500L) return cachedKey;
+        if (cachedKey != null && world == cachedWorld && (now - cachedAt) < 500L) {
+            return cachedKey;
+        }
         String key = buildWorldKey(client);
         cachedKey = key;
+        cachedWorld = world;
         cachedAt = now;
         return key;
     }
@@ -63,11 +74,11 @@ public final class WaypointRenderer {
     /** Erzwingt eine Neuberechnung (z.B. beim Weltwechsel). */
     public static void invalidateWorldKey() {
         cachedKey = null;
+        cachedWorld = null;
     }
 
     private static String buildWorldKey(MinecraftClient client) {
-        // Hat der Spieler ein Profil gesetzt, gilt das -- es ist auf Netzwerken
-        // die einzige verlaessliche Angabe (siehe WorldProfiles).
+        // A profile the player set by hand always wins.
         String profile = com.vortex.client.waypoint.WorldProfiles.getActive();
         if (profile != null) {
             String d = currentDimension(client);
@@ -79,18 +90,49 @@ public final class WaypointRenderer {
             if (client.isInSingleplayer()) {
                 var server = client.getServer();
                 String name = (server != null && server.getSaveProperties() != null)
-                        ? server.getSaveProperties().getLevelName() : "Einzelspieler";
+                        ? server.getSaveProperties().getLevelName() : "Singleplayer";
                 place = "sp:" + name;
             } else {
                 var entry = client.getCurrentServerEntry();
                 place = "mp:" + ((entry != null && entry.address != null)
-                        ? entry.address : "unbekannt");
+                        ? entry.address : "unknown");
             }
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("WaypointRenderer.worldKey", pvpErr);
         }
+
+        // The world seed, which tells backend servers apart.
+        //
+        // On a proxy network every server answers on the same address, so the
+        // address alone cannot distinguish them — two worlds both called
+        // "Spawn" looked like one place, and markers leaked across. The seed
+        // is per world, arrives on join, and survives reconnects.
+        String seed = worldSeed(client);
+
+        // Fingerprint of the server itself, for the case where two backend
+        // servers share a seed (flat lobby worlds often do).
+        String fp = com.vortex.client.waypoint.ServerFingerprint.get();
+
         String dim = currentDimension(client);
-        return place + "|" + (dim == null ? "?" : dim);
+        return place + (seed == null ? "" : "|s" + seed)
+                     + (fp == null ? "" : "|f" + fp)
+                     + "|" + (dim == null ? "?" : dim);
+    }
+
+    /** World seed as text, or null if it cannot be read. */
+    private static String worldSeed(MinecraftClient client) {
+        try {
+            if (client.world == null) return null;
+            var access = client.world.getBiomeAccess();
+            if (access == null) return null;
+            long s = ((com.vortex.client.mixin.client.BiomeAccessSeedAccessor) (Object) access)
+                    .vortex$getSeed();
+            // Shortened: the full number adds nothing and makes the key unwieldy.
+            return Long.toHexString(s).substring(0, Math.min(8, Long.toHexString(s).length()));
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("WaypointRenderer.seed", pvpErr);
+            return null;
+        }
     }
 
     public static void register() {

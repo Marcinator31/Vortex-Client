@@ -3,13 +3,16 @@
 	"package": "com.vortex.client.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"BiomeAccessSeedAccessor",
 		"CameraMixin",
 		"CrosshairTargetMixin",
 		"EntityEspMixin",
 		"EntityLookMixin",
 		"EntityRenderShouldRenderMixin",
+		"EntityStatusMixin",
 		"FogDataAccessor",
 		"FreecamMoveMixin",
+		"GameJoinMixin",
 		"GammaMixin",
 		"HeldItemRendererMixin",
 		"HudCameraPlayerMixin",
@@ -17,7 +20,6 @@
 		"KeyboardInputMixin",
 		"KeyboardInputOverrideMixin",
 		"LivingEntityRendererMixin",
-		"LivingTotemPopMixin",
 		"LowFireMixin",
 		"LowShieldMixin",
 		"MinecraftClientAccessor",
@@ -25,8 +27,7 @@
 		"MouseMixin",
 		"NoPumpkinBlurMixin",
 		"ParticleManagerMixin",
-		"SkinOverrideMixin",
-		"TotemPopMixin"
+		"SkinOverrideMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

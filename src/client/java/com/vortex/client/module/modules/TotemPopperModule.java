@@ -28,6 +28,16 @@ public class TotemPopperModule extends Module implements HudElement {
     public final BooleanSetting highlight = new BooleanSetting("Highlight New", true);
     public final ColorSetting highlightColor = new ColorSetting("Highlight", 0xFFFF5555);
 
+    /**
+     * Show the count next to the player's name in the world, not just in the
+     * list. In a fight you are looking at the opponent, not at a corner of the
+     * screen — this is where the number is actually useful.
+     */
+    public final BooleanSetting overhead = new BooleanSetting("Show Above Players", true);
+
+    /** How far away the overhead count is still drawn. */
+    public final NumberSetting overheadRange = new NumberSetting("Overhead Range", 32, 8, 96, 4);
+
     public TotemPopperModule() {
         super("Totem Popper", Category.HUD);
         addSetting(x);
@@ -37,6 +47,8 @@ public class TotemPopperModule extends Module implements HudElement {
         addSetting(maxEntries);
         addSetting(highlight);
         addSetting(highlightColor);
+        addSetting(overhead);
+        addSetting(overheadRange);
     }
 
     @Override public String hudName() { return "Totem Popper"; }

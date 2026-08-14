@@ -46,6 +46,19 @@ public final class TotemPops {
         }
     }
 
+    /** How many totems this player has used this session (0 if none). */
+    public static synchronized int countFor(String player) {
+        if (player == null) return 0;
+        Integer n = COUNTS.get(player);
+        return (n == null) ? 0 : n;
+    }
+
+    /** Milliseconds since this player last used one, or -1 if never. */
+    public static synchronized long sinceFor(String player) {
+        Long last = LAST.get(player);
+        return (last == null) ? -1L : (System.currentTimeMillis() - last);
+    }
+
     public static synchronized void reset() {
         COUNTS.clear();
         LAST.clear();

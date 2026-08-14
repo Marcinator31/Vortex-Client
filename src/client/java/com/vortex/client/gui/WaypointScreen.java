@@ -230,6 +230,13 @@ public class WaypointScreen extends Screen {
                 // Bei mehreren Welten dazuschreiben, wohin der Marker gehoert --
                 // sonst sieht man nur Koordinaten ohne Zusammenhang.
                 if ("*".equals(worldFilter)) pos += "   " + shortWorld(w.dimension);
+                // Markers saved before the seed was added are not tied to a
+                // specific backend server yet, so they still show up on all of
+                // them. Flag it, and W (right click) pins it to where you are.
+                else if (w.dimension != null && w.dimension.contains("|")
+                        && !w.dimension.contains("|s")) {
+                    pos += "   not pinned";
+                }
                 if (client.player != null) {
                     double dx = w.x - client.player.getX();
                     double dz = w.z - client.player.getZ();
@@ -310,7 +317,7 @@ public class WaypointScreen extends Screen {
                     winX + 257, fy + 6, 0xFFFFFFFF, false);
         } else {
             String hint = status.isEmpty()
-                    ? "W world   G go to   R rename   C coords   T tracer   B blocks   N nether   K copy"
+                    ? "W world (right click = pin here)   G go to   R rename   C coords   T tracer   B blocks   N nether   K copy"
                     : status;
             ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 10, fy + 6,

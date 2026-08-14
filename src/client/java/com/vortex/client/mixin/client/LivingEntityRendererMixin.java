@@ -210,6 +210,57 @@ public class LivingEntityRendererMixin {
         return sb.toString().trim();
     }
 
+    /**
+     * Totem count above a player's head.
+     *
+     * Deliberately its own entry point rather than part of the target info:
+     * this number matters even when you are not aiming at someone, and the two
+     * modules switch on independently.
+     */
+    @Inject(method = "method_4054", at = @At("TAIL"), require = 0)
+    private void vortex$renderTotemCount(LivingEntityRenderState state, MatrixStack matrices,
+                                         OrderedRenderCommandQueue queue,
+                                         CameraRenderState camState, CallbackInfo ci) {
+        try {
+            com.vortex.client.module.modules.TotemPopperModule mod =
+                (com.vortex.client.module.modules.TotemPopperModule)
+                    pvpclient$find(com.vortex.client.module.modules.TotemPopperModule.class);
+            if (mod == null || !mod.isEnabled() || !mod.overhead.get()) return;
+
+            LivingEntity entity = pvpclient$entityMap.get(state);
+            if (entity == null || !entity.isAlive()) return;
+            if (!(entity instanceof net.minecraft.entity.player.PlayerEntity)) return;
+
+            net.minecraft.client.MinecraftClient mc =
+                net.minecraft.client.MinecraftClient.getInstance();
+            if (mc.player == null || entity == mc.player) return;
+            if (mc.player.distanceTo(entity) > mod.overheadRange.get()) return;
+
+            String name = entity.getName().getString();
+            int pops = com.vortex.client.hud.TotemPops.countFor(name);
+            if (pops <= 0) return;   // nothing to say yet
+
+            // Highlight briefly after a fresh pop -- that is the moment it counts.
+            long since = com.vortex.client.hud.TotemPops.sinceFor(name);
+            boolean fresh = mod.highlight.get() && since >= 0 && since < 2000;
+            int color = fresh ? mod.highlightColor.get() : mod.color.get();
+
+            Text label = Text.literal(pops + " totems")
+                .setStyle(Style.EMPTY.withColor(color & 0xFFFFFF));
+
+            // Above the health indicator and the target info, so the three do
+            // not sit on top of each other.
+            Vec3d labelPos = new Vec3d(0.0, entity.getHeight() + 1.25, 0.0);
+            int light = 0xF000F0;
+            matrices.push();
+            RenderCommandQueue rcq = queue.getBatchingQueue(light);
+            rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+            matrices.pop();
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("TotemCountOverhead", pvpErr);
+        }
+    }
+
     /** Text-Label (Zahl / Zahl+Herz) ueber submitLabel. */
     @Unique
     private void pvpclient$renderTextLabel(LivingEntity entity, MatrixStack matrices,

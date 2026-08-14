@@ -82,6 +82,8 @@ public class VortexClientMod implements ClientModInitializer {
                 // Beim Serverwechsel die Totem-Zaehlung leeren -- die Werte
                 // gelten nur fuer die Spieler der aktuellen Welt.
                 com.vortex.client.hud.TotemPops.reset();
+                // Fingerprint belongs to the server we just left.
+                com.vortex.client.waypoint.ServerFingerprint.clear();
             });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
