@@ -55,7 +55,7 @@ public final class ModuleInfo {
         put("Nametags", "Size, transparency and range of the names above players.");
         put("Zoom", "Hold a key and zoom with the wheel. The hotbar stays put while you do.");
         put("Auto Reconnect", "Counts down on the disconnect screen and dials back in.");
-        put("No Render Blocks", "Hides the block types you pick, as if they were air. Nothing else changes.");
+        put("No Render Blocks", "Hides the block types you pick, chests and signs included. Nothing else changes.");
         put("Anti Render", "Hides selected entity types completely.");
         put("Fullbright", "Brightens everything, no torches needed.");
         put("No Particles", "Hides particle effects.");

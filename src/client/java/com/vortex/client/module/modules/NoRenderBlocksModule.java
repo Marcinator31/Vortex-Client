@@ -28,7 +28,7 @@ public class NoRenderBlocksModule extends Module {
     private final Set<String> hiddenBlocks = new LinkedHashSet<>();
 
     public NoRenderBlocksModule() {
-        super("No Render Blocks", Category.CHEATS);
+        super("No Render Blocks", Category.PERFORMANCE);
     }
 
     public Set<String> getHiddenBlocks() {

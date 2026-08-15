@@ -5,6 +5,7 @@
 	"client": [
 		"AutoReconnectMixin",
 		"BiomeAccessSeedAccessor",
+		"BlockEntityHideMixin",
 		"BlockRenderTypeMixin",
 		"CameraMixin",
 		"CameraPosAccessor",

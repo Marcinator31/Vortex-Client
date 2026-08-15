@@ -24,6 +24,12 @@ public final class CrosshairRenderer {
         int color = mod.color.get();
         boolean outline = mod.outline.get();
 
+        // The charge bar first, so the crosshair sits on top of it rather
+        // than the other way round -- vanilla does it in that order too.
+        if (mod.attackIndicator.get()) {
+            drawAttackIndicator(ctx, client, cx, cy);
+        }
+
         switch (mod.shape.getIndex()) {
             case 1:                     // Dot
                 fill(ctx, cx - th, cy - th, th * 2, th * 2, color, outline);
@@ -45,6 +51,52 @@ public final class CrosshairRenderer {
                 arm(ctx, cx - gap - len, cy - th / 2, len, th, color, outline);      // left
                 arm(ctx, cx + gap, cy - th / 2, len, th, color, outline);            // right
                 break;
+        }
+    }
+
+    /**
+     * The attack charge bar, as vanilla draws it.
+     *
+     * Sixteen pixels wide, four high, nine below the centre -- the same numbers
+     * the game uses, so it lands where the eye already expects it after years
+     * of playing.
+     *
+     * Only shown while the weapon is still charging. A full bar sitting there
+     * permanently is noise; what matters is the moment it fills.
+     */
+    private static void drawAttackIndicator(DrawContext ctx, MinecraftClient client,
+                                            int cx, int cy) {
+        try {
+            if (client.player == null) return;
+
+            // Respect the game's own setting for this.
+            //
+            // Anyone who moved the indicator to the hotbar, or switched it off,
+            // meant it -- putting it back under the crosshair would override a
+            // decision they already made.
+            Object mode = client.options.getAttackIndicator().getValue();
+            if (mode != null && !"CROSSHAIR".equals(mode.toString().toUpperCase())) {
+                return;
+            }
+
+            float progress = client.player.getAttackCooldownProgress(0.0f);
+            if (progress >= 1.0f) return;
+
+            int x = cx - 8;
+            int y = cy + 9;
+            int w = 16;
+            int h = 4;
+
+            // Dark trough, then the filled part on top.
+            ctx.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xC0000000);
+            ctx.fill(x, y, x + w, y + h, 0xFF2E2E38);
+
+            int filled = (int) (w * progress);
+            if (filled > 0) {
+                ctx.fill(x, y, x + filled, y + h, 0xFFFFFFFF);
+            }
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("CrosshairRenderer.indicator", pvpErr);
         }
     }
 

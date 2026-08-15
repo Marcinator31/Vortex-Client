@@ -18,10 +18,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Only the appearance changes. The block still blocks movement, still takes the
  * same time to break, and the server never learns about any of it.
  *
- * NOTE ON WHAT THIS CANNOT DO: blocks drawn by a block entity — chests, signs,
- * beds, shulker boxes — do not go through this path. Their model is drawn
- * separately, so hiding them needs a different hook. Everything built from the
- * normal block model, which is the vast majority, works here.
+ * Blocks drawn by a block entity -- chests, signs, beds, shulker boxes -- do
+ * not go through this path at all. Those are handled by BlockEntityHideMixin,
+ * which hooks the renderer they do use.
  */
 @Mixin(AbstractBlock.AbstractBlockState.class)
 public abstract class BlockRenderTypeMixin {

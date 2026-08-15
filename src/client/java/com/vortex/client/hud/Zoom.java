@@ -28,6 +28,9 @@ public final class Zoom {
     /** Was the key held on the previous frame? */
     private static boolean wasHeld = false;
 
+    /** When update() last ran, for working out how much time has passed. */
+    private static long lastNano = 0L;
+
     private Zoom() {}
 
     private static ZoomModule module() {
@@ -75,8 +78,29 @@ public final class Zoom {
         }
         wasHeld = held;
 
-        double smooth = mod.smoothness.get();
-        current += (target - current) * smooth;
+        // How far to move, worked out from TIME rather than from frames.
+        //
+        // It used to be a fixed share per frame, which tied the speed to the
+        // frame rate: at 240 frames a second the zoom arrived four times
+        // faster than at 60. Whoever had the smoother game got the harsher
+        // movement, which is the wrong way round.
+        //
+        // 1 - e^(-rate * seconds) is the same curve either way: quick at first,
+        // easing out at the end, and identical at any frame rate.
+        long now = System.nanoTime();
+        double dt = (lastNano == 0L) ? 0.016 : (now - lastNano) / 1_000_000_000.0;
+        lastNano = now;
+        // A hitch should not make the view jump across in one step.
+        if (dt > 0.1) dt = 0.1;
+
+        // Values saved before this changed were a share per frame (0.03 to
+        // 0.6). Anything in that range is converted rather than taken at face
+        // value, which would make the zoom crawl.
+        double raw = mod.smoothness.get();
+        double rate = (raw < 1.0) ? (raw * 60.0) : raw;
+        if (rate < 0.5) rate = 0.5;
+        double step = 1.0 - Math.exp(-rate * dt);
+        current += (target - current) * step;
 
         // Snap the last sliver, so it does not creep towards the value forever.
         if (Math.abs(target - current) < 0.001) current = target;

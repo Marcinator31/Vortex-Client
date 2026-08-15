@@ -37,6 +37,15 @@ public class CrosshairModule extends Module {
     /** Dark outline, so it stays readable on a light background. */
     public final BooleanSetting outline = new BooleanSetting("Outline", true);
 
+    /**
+     * Keep the attack charge bar underneath.
+     *
+     * Vanilla draws it inside the crosshair routine, so replacing the crosshair
+     * took the bar with it -- and in a fight that bar is the more useful of the
+     * two. It is drawn here again, in the same place and size.
+     */
+    public final BooleanSetting attackIndicator = new BooleanSetting("Attack Indicator", true);
+
     /** Also show it in third person. */
     public final BooleanSetting thirdPerson = new BooleanSetting("Show in Third Person", false);
 
@@ -48,6 +57,7 @@ public class CrosshairModule extends Module {
         addSetting(gap);
         addSetting(color);
         addSetting(outline);
+        addSetting(attackIndicator);
         addSetting(thirdPerson);
     }
 }

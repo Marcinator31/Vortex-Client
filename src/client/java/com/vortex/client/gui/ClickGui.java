@@ -1301,29 +1301,40 @@ public class ClickGui extends Screen {
      * Wartet ein KeySetting auf eine Taste, wird GLFW direkt abgefragt und die
      * erste gedrueckte Taste uebernommen. Escape bricht ab.
      */
-    private void pvpclient$captureKeyIfListening() {
-        KeySetting listening = null;
-        outer:
+    /** The setting waiting for a key, or null. */
+    private KeySetting pvpclient$listeningSetting() {
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             for (Setting s : m.getSettings()) {
-                if (s instanceof KeySetting k && k.isListening()) {
-                    listening = k;
-                    break outer;
-                }
+                if (s instanceof KeySetting k && k.isListening()) return k;
             }
         }
-        // WICHTIG: Auch Bereiche ausserhalb der Module beruecksichtigen.
-        // Die Waypoint-Tasten liessen sich sonst gar nicht zuweisen -- man
-        // klickte darauf, und es passierte nichts.
-        if (listening == null) {
-            for (Setting s : com.vortex.client.waypoint.WaypointSettings
-                    .INSTANCE.getSettings()) {
-                if (s instanceof KeySetting k && k.isListening()) {
-                    listening = k;
-                    break;
-                }
-            }
+        // Areas outside the modules count too. Without this the waypoint keys
+        // could not be assigned at all -- you clicked, and nothing happened.
+        for (Setting s : com.vortex.client.waypoint.WaypointSettings
+                .INSTANCE.getSettings()) {
+            if (s instanceof KeySetting k && k.isListening()) return k;
         }
+        return null;
+    }
+
+    /**
+     * Escape must not close the menu while a key is being assigned.
+     *
+     * This was the whole bug: Minecraft closes a screen on Escape before
+     * anything else gets a look, so the handling that clears a binding never
+     * ran -- the menu simply shut and the key stayed as it was.
+     *
+     * Blocking the close for that moment lets the existing handling see the
+     * key and clear it. Deliberately done this way rather than through the
+     * key event, whose new argument type does not expose what it holds.
+     */
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return pvpclient$listeningSetting() == null;
+    }
+
+    private void pvpclient$captureKeyIfListening() {
+        KeySetting listening = pvpclient$listeningSetting();
         if (listening == null) return;
 
         MinecraftClient mc = MinecraftClient.getInstance();

@@ -283,23 +283,21 @@ public class ColorPickerScreen extends Screen {
 
     @Override
     public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+        // Our own areas are tested BEFORE the screen's own handling.
+        //
+        // The other way round, the first press went to the widgets -- focus
+        // changes and the hex field -- and the hue bar only started working
+        // after something else had taken that first click. Which is exactly
+        // what "I have to click the big square first" looked like.
+        int mode = regionAt(mx, my);
+        if (mode != 0) {
+            dragMode = mode;
+            applyDrag();
+            return true;
+        }
+
         if (super.mouseClicked(click, doubled)) return true;
 
-        if (inRect(mx, my, fieldX, fieldY, fieldW, fieldH)) {
-            dragMode = 1;
-            updateField();
-            return true;
-        }
-        if (inRect(mx, my, hueX, hueY - 2, hueW, hueH + 4)) {
-            dragMode = 2;
-            updateHue();
-            return true;
-        }
-        if (inRect(mx, my, alphaX, alphaY - 2, alphaW, alphaH + 4)) {
-            dragMode = 3;
-            updateAlpha();
-            return true;
-        }
         // Voreinstellungen
         for (int i = 0; i < PRESETS.length; i++) {
             int px = presetX + i * (presetCell + 4);
@@ -327,11 +325,39 @@ public class ColorPickerScreen extends Screen {
 
     @Override
     public boolean mouseDragged(net.minecraft.client.gui.Click click, double dx, double dy) {
+        // Dragging without a press we saw: pick up whatever is under the
+        // cursor. Belt and braces -- if the press was swallowed somewhere,
+        // the slider still follows the mouse instead of doing nothing.
+        if (dragMode == 0) {
+            dragMode = regionAt(mx, my);
+        }
+        if (dragMode != 0) {
+            applyDrag();
+            return true;
+        }
+        return super.mouseDragged(click, dx, dy);
+    }
+
+    /**
+     * Which of the three areas is at this point.
+     *
+     * @return 1 field, 2 hue, 3 opacity, 0 none
+     */
+    private int regionAt(int px, int py) {
+        if (inRect(px, py, fieldX, fieldY, fieldW, fieldH)) return 1;
+        // A little taller than drawn, so the thin bars are easy to grab.
+        if (inRect(px, py, hueX, hueY - 3, hueW, hueH + 6)) return 2;
+        if (inRect(px, py, alphaX, alphaY - 3, alphaW, alphaH + 6)) return 3;
+        return 0;
+    }
+
+    /** Runs the change for whatever is being dragged. */
+    private void applyDrag() {
         switch (dragMode) {
-            case 1: updateField(); return true;
-            case 2: updateHue(); return true;
-            case 3: updateAlpha(); return true;
-            default: return super.mouseDragged(click, dx, dy);
+            case 1: updateField(); break;
+            case 2: updateHue(); break;
+            case 3: updateAlpha(); break;
+            default: break;
         }
     }
 

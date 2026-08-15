@@ -730,6 +730,17 @@ public class MacroScreen extends Screen {
                 | ((int) (ab + (bb - ab) * t));
     }
 
+    /**
+     * Escape must not close the screen while a key is being assigned.
+     *
+     * Same trap as in the main menu: Minecraft closes on Escape before the
+     * clearing can happen, so the binding never went away.
+     */
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return bindingKey == null;
+    }
+
     @Override
     public boolean shouldPause() {
         return false;

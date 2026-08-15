@@ -33,12 +33,16 @@ public class ZoomModule extends Module {
     public final NumberSetting step = new NumberSetting("Wheel Step", 1.0, 0.1, 5.0, 0.1);
 
     /**
-     * How quickly the view follows, per frame.
+     * How quickly the view follows, per second.
      *
-     * Lower is smoother and slower. Anything above about 0.4 starts to feel
-     * like a jump rather than a movement.
+     * Lower is smoother and slower; higher gets closer to a snap. Now measured
+     * against time rather than frames, so the movement feels the same at 60 as
+     * at 240 frames a second -- before, a higher frame rate made it faster.
+     *
+     * The default is gentler than it used to be. Around 5 the movement is
+     * clearly a movement; above 15 it starts to read as a jump.
      */
-    public final NumberSetting smoothness = new NumberSetting("Smoothness", 0.18, 0.03, 0.6, 0.01);
+    public final NumberSetting smoothness = new NumberSetting("Zoom Speed", 5.0, 1.0, 25.0, 0.5);
 
     /** Slow the mouse down while zoomed, in proportion to the zoom. */
     public final BooleanSetting slowMouse = new BooleanSetting("Slow Mouse While Zoomed", true);
