@@ -48,7 +48,8 @@ public class ItemCounterScreen extends Screen {
     private float scroll = 0f, scrollTarget = 0f;
     private int winX, winY, winW, winH, listH;
 
-    private enum Act { BACK, NEW, PICK, RENAME, DELETE, STYLE, HIDE, COLOR, APPLY }
+    private enum Act { BACK, NEW, PICK, RENAME, DELETE, STYLE, HIDE, COLOR,
+                       COLOR_ALL, APPLY }
 
     private static final class Hit {
         final int x, y, w, h; final Act act; final ItemCounter data;
@@ -117,6 +118,14 @@ public class ItemCounterScreen extends Screen {
 
         button(ctx, winX + 12, winY + 30, "New counter", Act.NEW, null, accent, false);
 
+        // Only offered when there is more than one, since applying a colour to
+        // a single counter is just setting its colour.
+        ItemCounterModule mAll = mod();
+        if (mAll != null && mAll.getCounters().size() > 1) {
+            int nx = winX + 12 + this.textRenderer.getWidth("New counter") + 16 + 6;
+            button(ctx, nx, winY + 30, "One colour for all", Act.COLOR_ALL, null, accent, false);
+        }
+
         ItemCounterModule m = mod();
         List<ItemCounter> list = (m == null) ? List.of() : m.getCounters();
 
@@ -160,13 +169,20 @@ public class ItemCounterScreen extends Screen {
                 ctx.drawText(this.textRenderer, Text.literal("S"),
                         bx - 66, y + 9, 0xFF9AD8FF, false);
 
+                // Colour swatch: shows the colour and opens the picker.
+                // A square of the actual colour says more than any label.
+                int swx = bx - 90;
+                roundRect(ctx, swx, y + 6, 16, 14, 0xFF000000);
+                ctx.fill(swx + 1, y + 7, swx + 15, y + 19, counter.color.get());
+
                 String pick = "Items";
                 int pw = this.textRenderer.getWidth(pick) + 14;
-                roundRect(ctx, bx - 70 - pw, y + 5, pw, 16, C_INNER);
+                roundRect(ctx, bx - 94 - pw, y + 5, pw, 16, C_INNER);
                 ctx.drawText(this.textRenderer, Text.literal(pick),
-                        bx - 63 - pw, y + 9, 0xFFD0D0DA, false);
+                        bx - 87 - pw, y + 9, 0xFFD0D0DA, false);
 
-                hits.add(new Hit(bx - 70 - pw, y + 5, pw, 16, Act.PICK, counter));
+                hits.add(new Hit(bx - 94 - pw, y + 5, pw, 16, Act.PICK, counter));
+                hits.add(new Hit(swx, y + 6, 16, 14, Act.COLOR, counter));
                 hits.add(new Hit(bx - 68, y + 7, 14, 12, Act.STYLE, counter));
                 hits.add(new Hit(bx - 50, y + 7, 14, 12, Act.HIDE, counter));
                 hits.add(new Hit(bx - 32, y + 7, 14, 12, Act.RENAME, counter));
@@ -195,7 +211,7 @@ public class ItemCounterScreen extends Screen {
             hits.add(new Hit(winX + 282, fy + 4, okw, 16, Act.APPLY, null));
         } else {
             String hint = status.isEmpty()
-                    ? "S style  ·  H hide at zero  ·  R rename  ·  position in the HUD editor"
+                    ? "Square = colour  ·  S style  ·  H hide at zero  ·  R rename  ·  position in the HUD editor"
                     : status;
             ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 12, fy + 8, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
@@ -268,6 +284,27 @@ public class ItemCounterScreen extends Screen {
                     com.vortex.client.core.ConfigManager.save();
                     status = "Deleted.";
                     return true;
+                case COLOR:
+                    // The picker writes straight into this counter's setting.
+                    MinecraftClient.getInstance().setScreen(
+                            new ColorPickerScreen(this, h.data.color));
+                    return true;
+                case COLOR_ALL: {
+                    // Picks on the first counter, and every change is copied to
+                    // the rest -- so the result is visible while choosing,
+                    // rather than only after closing the picker.
+                    if (m == null || m.getCounters().isEmpty()) return true;
+                    ItemCounter first = m.getCounters().get(0);
+                    MinecraftClient.getInstance().setScreen(
+                            new ColorPickerScreen(this, first.color, () -> {
+                                int col = first.color.get();
+                                for (ItemCounter other : m.getCounters()) {
+                                    other.color.set(col);
+                                }
+                                com.vortex.client.core.ConfigManager.save();
+                            }));
+                    return true;
+                }
                 case APPLY:
                     applyName();
                     return true;

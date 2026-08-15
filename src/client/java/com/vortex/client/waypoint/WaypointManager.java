@@ -183,7 +183,23 @@ public final class WaypointManager {
      * vanish because of it. The rule is: place and dimension always have to
      * match, the seed only when both sides actually have one.
      */
+    /**
+     * Same test, but never hiding markers that carry no server.
+     *
+     * The manager uses this one. With the strict test it filtered out exactly
+     * the markers that still need assigning -- so they could not be seen, and
+     * therefore not be assigned either. A chicken and egg problem: the strict
+     * rule is right in the world, and wrong in the list you fix things from.
+     */
+    public static boolean matchesForList(Waypoint w, String worldKey) {
+        return matches(w, worldKey, false);
+    }
+
     public static boolean matches(Waypoint w, String worldKey) {
+        return matches(w, worldKey, WaypointSettings.INSTANCE.strictWorld.get());
+    }
+
+    private static boolean matches(Waypoint w, String worldKey, boolean strict) {
         if (w.dimension == null || worldKey == null) return true;
         if (w.dimension.equals(worldKey)) return true;
 
@@ -212,7 +228,7 @@ public final class WaypointManager {
         // Strict mode hides them rather than showing them in the wrong place.
         // They stay in the manager, marked "not pinned", and W pins them here.
         if (a[1].isEmpty() && a[2].isEmpty() && !(b[1].isEmpty() && b[2].isEmpty())) {
-            return !WaypointSettings.INSTANCE.strictWorld.get();
+            return !strict;
         }
         return true;
     }

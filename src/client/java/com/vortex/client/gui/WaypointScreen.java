@@ -735,7 +735,10 @@ public class WaypointScreen extends Screen {
         List<WaypointManager.Waypoint> out = new java.util.ArrayList<>();
         var me = MinecraftClient.getInstance().player;
         for (var w : all) {
-            if (!"*".equals(worldFilter) && !WaypointManager.matches(w, key)) continue;
+            // The lenient test on purpose: markers without a server have to
+            // stay visible here, otherwise they cannot be assigned at all.
+            if (!"*".equals(worldFilter)
+                    && !WaypointManager.matchesForList(w, key)) continue;
             if (dimFilter != null) {
                 String d = (w.dimension == null) ? "" : w.dimension;
                 if (!d.contains(dimFilter)) continue;

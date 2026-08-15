@@ -30,6 +30,14 @@ public final class AutoTotem {
 
     private static final int OFFHAND_SLOT = 45;
     private static long lastActionTick = 0;
+
+    /** How long to wait this time -- rerolled after every swap. */
+    private static int nextDelay = 3;
+
+    /** Set once the warning has been given, cleared when a totem turns up. */
+    private static boolean warnedEmpty = false;
+
+    private static final java.util.Random RANDOM = new java.util.Random();
     private static long tickCounter = 0;
 
     private AutoTotem() {}
@@ -48,12 +56,35 @@ public final class AutoTotem {
             // Nur handeln, wenn die Off-Hand wirklich leer ist.
             if (!player.getOffHandStack().isEmpty()) return;
 
+            // Only below a certain health, if that is what was asked for.
+            // Twenty means the check is off, since that is full health.
+            int below = mod.healthBelow.getInt();
+            if (below < 20 && player.getHealth() > below) return;
+
+            // Only while holding a weapon, if that is what was asked for.
+            //
+            // Swapping the off hand while you are placing blocks is rarely what
+            // anyone meant, and it costs the slot you were using.
+            if (mod.onlyWithWeapon.get() && !holdingWeapon(player)) return;
+
             // Kleiner Cooldown (ein paar Ticks), damit nicht mehrfach geklickt
             // wird, waehrend der Wechsel noch synchronisiert.
-            if (tickCounter - lastActionTick < 3) return;
+            // Delay from the setting, plus the spread that was rolled last time.
+            if (tickCounter - lastActionTick < nextDelay) return;
 
             // Ein Totem im Inventar suchen (Hauptinventar + Hotbar).
             int totemSlot = findTotemInventorySlot(player);
+            if (totemSlot < 0) {
+                // Out of totems -- worth knowing before you find out the hard
+                // way. Said once, not every tick.
+                if (mod.warnEmpty.get() && !warnedEmpty) {
+                    warnedEmpty = true;
+                    player.sendMessage(net.minecraft.text.Text.literal(
+                            "\u00a7c[Auto Totem] No totems left."), true);
+                }
+            } else {
+                warnedEmpty = false;
+            }
             if (totemSlot < 0) return; // kein Totem vorhanden -> nichts tun
 
             try {
@@ -76,6 +107,10 @@ public final class AutoTotem {
                 }
 
                 lastActionTick = tickCounter;
+                // Roll the next wait now, so each swap has its own.
+                int base = mod.delay.getInt();
+                int spread = mod.jitter.getInt();
+                nextDelay = base + ((spread > 0) ? RANDOM.nextInt(spread + 1) : 0);
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("AutoTotem", pvpErr);
             }
@@ -90,6 +125,30 @@ public final class AutoTotem {
      * Sucht einen Totem-Stack im Spieler-Inventar und gibt den Inventar-Index
      * (0..35) zurueck, oder -1 wenn keiner da ist.
      */
+    /**
+     * Is a weapon in the main hand?
+     *
+     * Decided by the item's id rather than its class. SwordItem no longer
+     * exists in this version -- the classes were merged -- and the tags that
+     * replaced it are not reliably reachable from here. Matching on the name
+     * is crude, but it is stable across versions and cannot fail to compile,
+     * which the alternatives just did.
+     */
+    private static boolean holdingWeapon(ClientPlayerEntity player) {
+        try {
+            ItemStack held = player.getMainHandStack();
+            if (held == null || held.isEmpty()) return false;
+            var id = net.minecraft.registry.Registries.ITEM.getId(held.getItem());
+            if (id == null) return false;
+            String path = id.getPath();
+            return path.endsWith("_sword") || path.endsWith("_axe")
+                    || path.equals("trident") || path.equals("mace");
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("AutoTotem.weapon", pvpErr);
+            return true;   // in doubt, do not block the swap
+        }
+    }
+
     private static int findTotemInventorySlot(ClientPlayerEntity player) {
         // getInventory().size() deckt Hauptinventar + Hotbar + Ruestung + Off-Hand
         // ab; wir interessieren uns fuer die normalen Slots 0..35.
