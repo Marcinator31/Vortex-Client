@@ -41,6 +41,15 @@ public final class MacroManager {
     private static int stepIndex = 0;
     /** How many passes are done, for the repeat count. */
     private static int passesDone = 0;
+    /**
+     * When the next step is due, in nanoseconds.
+     *
+     * Milliseconds were too coarse: a delay of one was rounded up to a whole
+     * tick, so the macro managed a single step every fifty milliseconds no
+     * matter what was configured. A keyboard queues about fifty presses in
+     * that time, and the game works through all of them at once -- which is
+     * exactly why the hardware macro felt so much faster.
+     */
     private static long nextStepAt = 0L;
     private static int heldKey = GLFW.GLFW_KEY_UNKNOWN;
     private static long releaseHeldAt = 0L;
@@ -134,7 +143,7 @@ public final class MacroManager {
         passesDone = 0;
         // The start delay is the pause between pressing the key and the first
         // action -- useful when the macro should not fire the instant you press.
-        nextStepAt = System.currentTimeMillis() + Math.max(0, m.startDelay);
+        nextStepAt = System.nanoTime() + Math.max(0, m.startDelay) * 1_000_000L;
     }
 
     public static synchronized void stop() {
@@ -314,10 +323,10 @@ public final class MacroManager {
             return;
         }
 
-        long now = System.currentTimeMillis();
+        long now = System.nanoTime();
 
         // Release a key whose hold time is up before anything else runs.
-        if (heldKey != GLFW.GLFW_KEY_UNKNOWN && now >= releaseHeldAt) {
+        if (heldKey != GLFW.GLFW_KEY_UNKNOWN && System.currentTimeMillis() >= releaseHeldAt) {
             releaseHeldKey();
         }
 
@@ -331,10 +340,12 @@ public final class MacroManager {
         // cap is generous enough that normal macros never touch it.
         // Steps allowed in a single tick.
         //
-        // Kept low on purpose. More than a handful of actions inside one tick
-        // is something no hardware can produce, and the game would not process
-        // them separately anyway -- it handles input once per tick.
-        int budget = 4;
+        // A keyboard queues its presses between ticks and the game works
+        // through the lot in one go, so several steps per tick is exactly what
+        // the hardware does. The cap keeps an endless macro without any delay
+        // from locking the game up inside one tick; a macro with real delays
+        // never reaches it, because the delay decides the pace, not this.
+        int budget = 25;
 
         while (playing != null && now >= nextStepAt && budget-- > 0) {
             if (stepIndex >= playing.steps.size()) {
@@ -369,8 +380,8 @@ public final class MacroManager {
                 varied = base + RANDOM.nextInt(range * 2 + 1) - range;
                 if (varied < 0) varied = 0;
             }
-            nextStepAt = now + varied;
-            now = System.currentTimeMillis();
+            nextStepAt = now + varied * 1_000_000L;
+            now = System.nanoTime();
         }
     }
 
