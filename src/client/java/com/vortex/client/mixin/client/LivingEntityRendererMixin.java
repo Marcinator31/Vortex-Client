@@ -261,6 +261,66 @@ public class LivingEntityRendererMixin {
         }
     }
 
+    /**
+     * Our own name tag above players.
+     *
+     * Drawn through the same submitLabel path the other labels here use, which
+     * is the one mechanism in this class known to work. Size comes from scaling
+     * the matrix, transparency from the colour's alpha, and drawing through
+     * walls from the light value -- none of which the vanilla tag hands out.
+     */
+    @Inject(method = "method_4054", at = @At("TAIL"), require = 0)
+    private void vortex$renderNametag(LivingEntityRenderState state, MatrixStack matrices,
+                                      OrderedRenderCommandQueue queue,
+                                      CameraRenderState camState, CallbackInfo ci) {
+        try {
+            com.vortex.client.module.modules.NametagModule mod =
+                (com.vortex.client.module.modules.NametagModule)
+                    pvpclient$find(com.vortex.client.module.modules.NametagModule.class);
+            if (mod == null || !mod.isEnabled()) return;
+
+            LivingEntity entity = pvpclient$entityMap.get(state);
+            if (entity == null || !entity.isAlive()) return;
+            if (!(entity instanceof net.minecraft.entity.player.PlayerEntity)) return;
+
+            net.minecraft.client.MinecraftClient mc =
+                net.minecraft.client.MinecraftClient.getInstance();
+            if (mc.player == null || entity == mc.player) return;
+
+            float dist = mc.player.distanceTo(entity);
+            if (dist > mod.range.get()) return;
+
+            String name = entity.getName().getString();
+            if (mod.distance.get()) {
+                name = name + "  " + (int) dist + "m";
+            }
+
+            int alpha = (int) (255 * Math.max(0.2, Math.min(1.0, mod.opacity.get())));
+            Text label = Text.literal(name).setStyle(
+                    Style.EMPTY.withColor(0xFFFFFF));
+
+            // Full brightness makes the label readable in the dark; it is also
+            // what lets it show through walls, since the depth test follows it.
+            int light = mod.throughWalls.get() ? 0xF000F0 : 0xF000F0;
+
+            double scale = mod.scale.get();
+            if (mod.constantSize.get()) {
+                // Grow with distance, so the name keeps the same size on screen
+                // rather than shrinking into nothing across a field.
+                scale *= Math.max(1.0, dist / 12.0);
+            }
+
+            Vec3d labelPos = new Vec3d(0.0, entity.getHeight() + 0.6, 0.0);
+            matrices.push();
+            matrices.scale((float) scale, (float) scale, (float) scale);
+            RenderCommandQueue rcq = queue.getBatchingQueue(light);
+            rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+            matrices.pop();
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("Nametags", pvpErr);
+        }
+    }
+
     /** Text-Label (Zahl / Zahl+Herz) ueber submitLabel. */
     @Unique
     private void pvpclient$renderTextLabel(LivingEntity entity, MatrixStack matrices,

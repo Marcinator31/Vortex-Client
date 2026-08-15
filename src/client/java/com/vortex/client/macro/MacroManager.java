@@ -510,6 +510,52 @@ public final class MacroManager {
         heldKey = GLFW.GLFW_KEY_UNKNOWN;
     }
 
+    // ------------------------------------------------------------- sharing
+
+    /**
+     * Puts one macro on the clipboard as text.
+     *
+     * The same form used in the config file, with a short marker in front so a
+     * pasted line can be recognised for what it is. Everything is there --
+     * steps, delays, trigger, speed -- so what your friend gets behaves exactly
+     * like yours.
+     */
+    public static synchronized String export(Macro m) {
+        if (m == null) return "";
+        return "vortex-macro:" + m.serialize();
+    }
+
+    /**
+     * Reads a macro from text and adds it.
+     *
+     * @return the new macro, or null if the text was not one
+     */
+    public static synchronized Macro importFrom(String text) {
+        if (text == null) return null;
+        String t = text.trim();
+        if (!t.startsWith("vortex-macro:")) return null;
+        Macro m = Macro.deserialize(t.substring("vortex-macro:".length()));
+        if (m == null) return null;
+
+        // A name that is already taken gets a number, so an import never
+        // quietly overwrites something you already had.
+        String base = m.name;
+        int n = 2;
+        while (nameTaken(m.name)) {
+            m.name = base + " " + n;
+            n++;
+        }
+        MACROS.add(m);
+        return m;
+    }
+
+    private static boolean nameTaken(String name) {
+        for (Macro m : MACROS) {
+            if (m.name.equals(name)) return true;
+        }
+        return false;
+    }
+
     // --------------------------------------------------------- save and load
 
     public static synchronized String serialize() {

@@ -176,6 +176,20 @@ public class WaypointScreen extends Screen {
         ctx.drawText(this.textRenderer, Text.literal(pl),
                 plx + 8, winY + 62, 0xFFD0D0DA, false);
 
+        // Paste button, next to the world and dimension filters.
+        String pl3 = "Paste";
+        int plw3 = this.textRenderer.getWidth(pl3) + 16;
+        int plx3 = dlx + dlw + 8 + this.textRenderer.getWidth(
+                "Profil: " + (WorldProfiles.getActive() == null
+                        ? "auto" : WorldProfiles.getActive())) + 16 + 8;
+        if (plx3 + plw3 < winX + WIN_W - 90) {
+            boolean pHov = inRect(plx3, winY + 56, plw3, 20);
+            roundRect(ctx, plx3, winY + 56, plw3, 20,
+                    pHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
+            ctx.drawText(this.textRenderer, Text.literal(pl3),
+                    plx3 + 8, winY + 62, 0xFFD0D0DA, false);
+        }
+
         String count = list.size() + " Marker";
         int cw = this.textRenderer.getWidth(count);
         ctx.drawText(this.textRenderer, Text.literal(count),
@@ -263,6 +277,8 @@ public class WaypointScreen extends Screen {
                         bx - 74, y + 8, 0xFF9A9AA6, false);
                 ctx.drawText(this.textRenderer, Text.literal("K"),
                         bx - 90, y + 8, 0xFF9A9AA6, false);
+                ctx.drawText(this.textRenderer, Text.literal("S"),
+                        bx - 186, y + 8, 0xFFD8A0FF, false);
                 ctx.drawText(this.textRenderer, Text.literal("W"),
                         bx - 170, y + 8, 0xFF9AD8FF, false);
                 ctx.drawText(this.textRenderer, Text.literal("G"),
@@ -318,7 +334,7 @@ public class WaypointScreen extends Screen {
                     winX + 257, fy + 6, 0xFFFFFFFF, false);
         } else {
             String hint = status.isEmpty()
-                    ? "W world (right click = pin here)   G go to   R rename   C coords   T tracer   B blocks   N nether   K copy"
+                    ? "S share   W world   G go to   R rename   C coords   T tracer   B blocks   N nether   K copy"
                     : status;
             ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 10, fy + 6,
@@ -381,6 +397,26 @@ public class WaypointScreen extends Screen {
             dimFilter = nextDim(dimFilter);
             scrollTarget = 0f;
             scroll = 0f;
+            return true;
+        }
+
+        // Paste: reads a shared marker from the clipboard.
+        String pst = "Paste";
+        int pstw = this.textRenderer.getWidth(pst) + 16;
+        int pstx = dlx + dlw + 8 + this.textRenderer.getWidth(
+                "Profil: " + (WorldProfiles.getActive() == null
+                        ? "auto" : WorldProfiles.getActive())) + 16 + 8;
+        if (inRect(pstx, winY + 56, pstw, 20)) {
+            String text = MinecraftClient.getInstance().keyboard.getClipboard();
+            String world = com.vortex.client.hud.WaypointRenderer.currentWorldKey(
+                    MinecraftClient.getInstance());
+            var imported = WaypointManager.importFrom(text, world);
+            if (imported == null) {
+                status = "Clipboard holds no Vortex marker.";
+            } else {
+                com.vortex.client.core.ConfigManager.save();
+                status = "Imported: " + imported.name;
+            }
             return true;
         }
 
@@ -468,6 +504,13 @@ public class WaypointScreen extends Screen {
                 if (inRect(bx - 76, y + 6, 14, 12)) {
                     com.vortex.client.waypoint.WaypointActions
                             .createCounterpart(MinecraftClient.getInstance(), w);
+                    return true;
+                }
+                // S: Marker als Text kopieren, zum Weitergeben.
+                if (inRect(bx - 188, y + 6, 14, 12)) {
+                    MinecraftClient.getInstance().keyboard.setClipboard(
+                            WaypointManager.export(w));
+                    status = "Copied. A friend can paste it with the Paste button.";
                     return true;
                 }
                 // W: Welt des Markers aendern.

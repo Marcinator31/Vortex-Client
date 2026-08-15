@@ -135,6 +135,16 @@ public final class WaypointHud {
         }
         if (fov < 30.0 || fov > 150.0) fov = 70.0;
 
+        // The zoom narrows the angle of view, and the markers have to follow.
+        //
+        // Without this they keep the positions they had at the normal angle
+        // while the world underneath them pulls in -- so the further from the
+        // centre a marker sits, the further it drifts from the place it marks.
+        double zoom = com.vortex.client.hud.Zoom.factor();
+        if (zoom > 1.001) {
+            fov = fov / zoom;
+        }
+
         int w = ctx.getScaledWindowWidth();
         int h = ctx.getScaledWindowHeight();
         double maxDist = mod.maxDistance.get();

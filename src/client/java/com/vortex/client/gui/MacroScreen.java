@@ -59,7 +59,8 @@ public class MacroScreen extends Screen {
 
     private enum Act { BACK, NEW, PICK, RECORD, PLAY, TRIGGER, BIND, RENAME, DELETE,
                        STEP_DELAY, STEP_HOLD, STEP_DEL, STEP_UP, STEP_DOWN,
-                       ADD_WAIT, JITTER, REPEAT, SPEED, START_DELAY, APPLY }
+                       ADD_WAIT, JITTER, REPEAT, SPEED, START_DELAY, APPLY,
+                       SHARE, PASTE }
 
     private static final class Hit {
         final int x, y, w, h; final Act act; final Object data;
@@ -194,7 +195,10 @@ public class MacroScreen extends Screen {
             String keyLabel = "Key: " + (bindingKey == selected ? "press a key" : keyName(selected.key));
             wrapButton(ctx, pos, right, keyLabel, Act.BIND, selected, accent,
                     bindingKey == selected);
+
+            wrapButton(ctx, pos, right, "Copy", Act.SHARE, selected, accent, false);
         }
+        wrapButton(ctx, pos, right, "Paste", Act.PASTE, null, accent, false);
 
         // How tall the header actually turned out.
         headerH = (pos[1] + 20 + 8) - winY;
@@ -555,6 +559,25 @@ public class MacroScreen extends Screen {
                         }
                     }
                     return true;
+                case SHARE: {
+                    Macro m = (Macro) h.data;
+                    MinecraftClient.getInstance().keyboard.setClipboard(
+                            MacroManager.export(m));
+                    status = "Copied. Send it to a friend, they press Paste.";
+                    return true;
+                }
+                case PASTE: {
+                    String text = MinecraftClient.getInstance().keyboard.getClipboard();
+                    Macro m = MacroManager.importFrom(text);
+                    if (m == null) {
+                        status = "Clipboard holds no Vortex macro.";
+                    } else {
+                        selected = m;
+                        save();
+                        status = "Imported: " + m.name;
+                    }
+                    return true;
+                }
                 case APPLY:
                     applyInput();
                     return true;

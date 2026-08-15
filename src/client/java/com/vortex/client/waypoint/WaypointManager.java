@@ -102,6 +102,50 @@ public final class WaypointManager {
         return out;
     }
 
+    /** Adds a ready-made marker. Used by the import. */
+    public static synchronized void add(Waypoint w) {
+        if (w != null) LIST.add(w);
+    }
+
+    // ------------------------------------------------------------- sharing
+
+    /**
+     * Puts one marker on the clipboard as text.
+     *
+     * Includes the marked blocks, so a shared base arrives with its chests and
+     * traps already in place rather than as a bare coordinate.
+     */
+    public static String export(Waypoint w) {
+        if (w == null) return "";
+        return "vortex-wp:" + serializeOne(w);
+    }
+
+    /**
+     * Reads a marker from text and adds it.
+     *
+     * The world is deliberately dropped: the sender's world key means nothing
+     * here, and keeping it would leave the marker invisible in the world you
+     * are standing in -- which looks like the import failed. It is attached to
+     * where you are instead.
+     *
+     * @return the new marker, or null if the text was not one
+     */
+    public static Waypoint importFrom(String text, String worldKey) {
+        if (text == null) return null;
+        String t = text.trim();
+        if (!t.startsWith("vortex-wp:")) return null;
+        try {
+            Waypoint w = deserializeOne(t.substring("vortex-wp:".length()));
+            if (w == null) return null;
+            w.dimension = worldKey;
+            add(w);
+            return w;
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("WaypointManager.import", pvpErr);
+            return null;
+        }
+    }
+
     /**
      * Does this marker belong to the given world?
      *
@@ -221,24 +265,34 @@ public final class WaypointManager {
         StringBuilder sb = new StringBuilder();
         for (Waypoint w : LIST) {
             if (sb.length() > 0) sb.append(';');
-            // Trennzeichen in ALLEN Textwerten maskieren.
-            //
-            // Hier steckte ein boeser Fehler: Die Welt-Kennung enthaelt selbst
-            // ein "|" (z.B. "mp:server.net|minecraft:overworld") -- also genau
-            // das Zeichen, das die Felder trennt. Beim Laden verschob sich
-            // dadurch alles um eine Stelle: die Sichtbarkeit las die Dimension,
-            // die Art las die Sichtbarkeit, und so weiter. Genau das war der
-            // Grund, warum Marker nach einem Neustart "vertauscht" wirkten.
-            String safe = esc(w.name);
-            sb.append(safe).append('|')
-              .append(w.x).append('|').append(w.y).append('|').append(w.z).append('|')
-              .append(w.color).append('|')
-              .append(w.dimension == null ? "" : esc(w.dimension)).append('|')
-              .append(w.visible ? '1' : '0').append('|')
-              .append(w.kind.name()).append('|')
-              .append(serializeBlocks(w)).append('|')
-              .append(w.tracer ? '1' : '0');
+            sb.append(serializeOne(w));
         }
+        return sb.toString();
+    }
+
+    /**
+     * One marker as text.
+     *
+     * Pulled out of serialize() so sharing and saving use the very same form.
+     * Two separate versions of this would drift apart, and a marker exported
+     * by one and read by the other would come back wrong.
+     *
+     * Separators are escaped in every text field. That was a real bug once: the
+     * world key contains a "|" itself, the same character that separates the
+     * fields, so on loading everything after it shifted by one -- visibility
+     * read the dimension, the type read the visibility, and markers came back
+     * scrambled.
+     */
+    public static String serializeOne(Waypoint w) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(esc(w.name)).append('|')
+          .append(w.x).append('|').append(w.y).append('|').append(w.z).append('|')
+          .append(w.color).append('|')
+          .append(w.dimension == null ? "" : esc(w.dimension)).append('|')
+          .append(w.visible ? '1' : '0').append('|')
+          .append(w.kind.name()).append('|')
+          .append(serializeBlocks(w)).append('|')
+          .append(w.tracer ? '1' : '0');
         return sb.toString();
     }
 
@@ -293,52 +347,65 @@ public final class WaypointManager {
         LIST.clear();
         if (data == null || data.isEmpty()) return;
         for (String entry : data.split(";")) {
-            String[] p = entry.split("\\|");
-            if (p.length < 7) continue;
+            Waypoint w = deserializeOne(entry);
+            if (w != null) LIST.add(w);
+        }
+    }
 
-            // RETTUNG ALTER DATEN: Frueher wurde die Welt-Kennung unmaskiert
-            // geschrieben, wodurch ein zusaetzliches Feld entstand. Ist die
-            // Zeile laenger als erwartet, gehoeren die ueberzaehligen Stuecke
-            // zur Dimension und werden wieder zusammengefuegt.
-            final int ERWARTET = 10;
-            if (p.length > ERWARTET) {
-                int zuviel = p.length - ERWARTET;
-                StringBuilder dim = new StringBuilder(p[5]);
-                for (int k = 1; k <= zuviel; k++) {
-                    dim.append('|').append(p[5 + k]);
-                }
-                String[] fixed = new String[ERWARTET];
-                System.arraycopy(p, 0, fixed, 0, 5);
-                fixed[5] = dim.toString();
-                for (int k = 6; k < ERWARTET; k++) {
-                    fixed[k] = p[k + zuviel];
-                }
-                p = fixed;
-            }
+    /**
+     * One marker from text, or null if the line cannot be read.
+     *
+     * Shared by loading and importing, so a marker that survives a restart also
+     * survives being sent to someone -- two separate readers would drift apart
+     * and one of them would eventually get it wrong.
+     */
+    public static Waypoint deserializeOne(String entry) {
+        if (entry == null || entry.isEmpty()) return null;
+        String[] p = entry.split("\\|");
+        if (p.length < 7) return null;
 
-            try {
-                Waypoint w = new Waypoint(unesc(p[0]),
-                        Integer.parseInt(p[1].trim()),
-                        Integer.parseInt(p[2].trim()),
-                        Integer.parseInt(p[3].trim()),
-                        Integer.parseInt(p[4].trim()),
-                        unesc(p[5]));
-                w.visible = "1".equals(p[6].trim());
-                // Feld 8 (Art) kam spaeter dazu -- aeltere Dateien haben es nicht.
-                if (p.length > 7) {
-                    try {
-                        w.kind = Kind.valueOf(p[7].trim());
-                    } catch (Throwable ignored) {
-                        w.kind = Kind.ALLGEMEIN;
-                    }
-                }
-                // Feld 9 (markierte Bloecke) kam noch spaeter dazu.
-                if (p.length > 8) deserializeBlocks(w, p[8]);
-                if (p.length > 9) w.tracer = "1".equals(p[9].trim());
-                LIST.add(w);
-            } catch (Throwable ignored) {
-                // Kaputte Zeile ueberspringen statt alles zu verlieren.
+        // RESCUING OLD DATA: the world key used to be written unescaped, which
+        // produced one field too many. A line longer than expected has its
+        // extra pieces put back together into the dimension.
+        final int EXPECTED = 10;
+        if (p.length > EXPECTED) {
+            int extra = p.length - EXPECTED;
+            StringBuilder dim = new StringBuilder(p[5]);
+            for (int k = 1; k <= extra; k++) {
+                dim.append('|').append(p[5 + k]);
             }
+            String[] fixed = new String[EXPECTED];
+            System.arraycopy(p, 0, fixed, 0, 5);
+            fixed[5] = dim.toString();
+            for (int k = 6; k < EXPECTED; k++) {
+                fixed[k] = p[k + extra];
+            }
+            p = fixed;
+        }
+
+        try {
+            Waypoint w = new Waypoint(unesc(p[0]),
+                    Integer.parseInt(p[1].trim()),
+                    Integer.parseInt(p[2].trim()),
+                    Integer.parseInt(p[3].trim()),
+                    Integer.parseInt(p[4].trim()),
+                    unesc(p[5]));
+            w.visible = "1".equals(p[6].trim());
+            // Field 8 (kind) came later -- older files do not have it.
+            if (p.length > 7) {
+                try {
+                    w.kind = Kind.valueOf(p[7].trim());
+                } catch (Throwable ignored) {
+                    w.kind = Kind.ALLGEMEIN;
+                }
+            }
+            // Field 9 (marked blocks) came later still.
+            if (p.length > 8) deserializeBlocks(w, p[8]);
+            if (p.length > 9) w.tracer = "1".equals(p[9].trim());
+            return w;
+        } catch (Throwable pvpErr) {
+            // A broken line is skipped rather than losing everything.
+            return null;
         }
     }
 }

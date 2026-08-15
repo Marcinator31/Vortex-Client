@@ -70,6 +70,7 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.PingMeter.start();
         com.vortex.client.macro.MacroManager.register();
         com.vortex.client.hud.AutoReconnect.register();
+        com.vortex.client.hud.ChatCopy.register();
         com.vortex.client.hud.WaypointRenderer.register();
         com.vortex.client.waypoint.WaypointActions.register();
         com.vortex.client.hud.CrystalMacro.register();
