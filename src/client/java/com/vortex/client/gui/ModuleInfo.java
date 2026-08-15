@@ -47,6 +47,8 @@ public final class ModuleInfo {
         put("Fly", "Lets you fly. Detected almost immediately on most servers.");
         put("Crystal Macro", "Places end crystals on obsidian and breaks them instantly. Extreme ban risk.");
         put("Potato Mode", "Turns off expensive effects for more frames per second.");
+        put("Zoom", "Hold a key and zoom with the wheel. The hotbar stays put while you do.");
+        put("Auto Reconnect", "Counts down on the disconnect screen and dials back in.");
         put("No Render Blocks", "Hides the block types you pick, as if they were air. Nothing else changes.");
         put("Anti Render", "Hides selected entity types completely.");
         put("Fullbright", "Brightens everything, no torches needed.");

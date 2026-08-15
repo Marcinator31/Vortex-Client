@@ -3,11 +3,13 @@
 	"package": "com.vortex.client.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"AutoReconnectMixin",
 		"BiomeAccessSeedAccessor",
 		"BlockRenderTypeMixin",
 		"CameraMixin",
 		"CameraPosAccessor",
 		"CrosshairTargetMixin",
+		"DisconnectInfoAccessor",
 		"EntityEspMixin",
 		"EntityLookMixin",
 		"EntityRenderShouldRenderMixin",
@@ -29,7 +31,9 @@
 		"MouseMixin",
 		"NoPumpkinBlurMixin",
 		"ParticleManagerMixin",
-		"SkinOverrideMixin"
+		"SkinOverrideMixin",
+		"ZoomFovMixin",
+		"ZoomScrollMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
