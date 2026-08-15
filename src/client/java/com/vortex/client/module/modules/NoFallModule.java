@@ -23,8 +23,16 @@ public class NoFallModule extends Module {
      * besser als sofort ab dem ersten Block: normales Huepfen und kleine Stufen
      * bleiben dadurch voellig unauffaellig.
      */
+    /**
+     * Fall distance from which it takes effect.
+     *
+     * Vanilla starts hurting above three blocks, so anything below that needs
+     * no help. Keeping the floor there means the client tells the truth for
+     * every ordinary step and hop -- and every packet that says something
+     * untrue is one more chance to be noticed.
+     */
     public final NumberSetting minHeight =
-            new NumberSetting("Min Fall Height", 3.0, 1.0, 10.0, 0.5);
+            new NumberSetting("Min Fall Height", 3.0, 0.5, 10.0, 0.5);
 
     public NoFallModule() {
         super("No Fall", Category.CHEATS);

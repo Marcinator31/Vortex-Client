@@ -38,12 +38,14 @@ public final class NoFall {
             if (self.isTouchingWater() || self.isInLava()) return;
 
             // fallDistance ist in 1.21.11 ein double.
-            double fallen = self.fallDistance;
-            if (fallen > mod.minHeight.get()) {
-                // Bodenkontakt melden + Fallhoehe zuruecksetzen. Beides geht in
-                // das naechste Bewegungspaket ein -> der Server zaehlt neu.
-                self.setOnGround(true);
-                self.fallDistance = 0.0;
+            // The flag is set in NoFallMixin now, at the moment the movement
+            // packet is built. Setting it here happened after the packet had
+            // already gone -- too late to change anything the server saw.
+            //
+            // Clearing the fall distance stays: it keeps the client's own idea
+            // of the fall in step with what was reported.
+            if (self.fallDistance > mod.minHeight.get()) {
+                self.fallDistance = 0.0f;
             }
                     } finally {
                 com.vortex.client.core.Profiler.record("NoFall",

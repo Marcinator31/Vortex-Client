@@ -33,6 +33,7 @@
 		"MixinFogRenderer",
 		"MouseMixin",
 		"NametagHideMixin",
+		"NoFallMixin",
 		"NoPumpkinBlurMixin",
 		"ParticleManagerMixin",
 		"SkinOverrideMixin",
