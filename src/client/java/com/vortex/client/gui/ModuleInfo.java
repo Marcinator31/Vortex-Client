@@ -81,6 +81,18 @@ public final class ModuleInfo {
         DESCRIPTIONS.put(module, description);
     }
 
+    /**
+     * Lets an addon supply descriptions for the modules it brings.
+     *
+     * Without this an addon's modules sit in the list with nothing under the
+     * name, which looks like an oversight rather than an addon. Addons call
+     * this once when they start.
+     */
+    public static void register(String module, String description) {
+        if (module == null || module.isEmpty()) return;
+        DESCRIPTIONS.put(module, (description == null) ? "" : description);
+    }
+
     /** Description for a module, or an empty string if none is known. */
     public static String get(String moduleName) {
         String d = DESCRIPTIONS.get(moduleName);

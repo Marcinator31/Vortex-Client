@@ -145,7 +145,15 @@ public final class ModuleManager {
         // Weitere kommen einfach hier dazu.
     }
 
-    private void register(Module module) {
+    /**
+     * Adds a module.
+     *
+     * Public so an addon can bring its own. It was private before, which left
+     * addons reaching into the internal list directly -- that skips the type
+     * table used for lookups, and any mistake there shows up much later as a
+     * module that cannot be found.
+     */
+    public void register(Module module) {
         modules.add(module);
         byType.put(module.getClass(), module);
     }

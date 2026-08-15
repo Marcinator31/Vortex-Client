@@ -265,9 +265,14 @@ public class ClickGui extends Screen {
         ctx.fill(x, y, x + w, y + HEADER_H, fade(C_SIDEBAR, openAnim));
         ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
 
-        ctx.fill(x + PAD, y + 11, x + PAD + 3, y + 23, fade(accent, openAnim));
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("VORTEX"),
-                x + PAD + 9, y + 8, fade(t.text.get(), openAnim));
+        // The mark: a hollow ring, the same shape as the icon and as the
+        // waypoint markers. Red once the addon is installed, so which of the
+        // two you are running is visible at a glance rather than a surprise.
+        int markColor = fade(Branding.accent(), openAnim);
+        drawRingMark(ctx, x + PAD + 6, y + 17, 6, markColor);
+
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(Branding.title()),
+                x + PAD + 17, y + 8, fade(t.text.get(), openAnim));
 
         int active = 0;
         for (Module m : ModuleManager.INSTANCE.getModules()) {
@@ -1232,6 +1237,36 @@ public class ClickGui extends Screen {
      * reads like a typo. Acronyms keep their form; everything else gets the
      * normal treatment, so a category added later needs no change here.
      */
+    /**
+     * Draws the ring mark.
+     *
+     * Built from horizontal strips, the same way the waypoint markers are: only
+     * the two edge pieces of each row are filled, so the middle stays open.
+     */
+    private static void drawRingMark(DrawContext ctx, int cx, int cy, int r, int color) {
+        int inner = Math.max(1, r - 2);
+        for (int dy = -r; dy <= r; dy++) {
+            int outerHalf = rowHalf(dy, r);
+            if (outerHalf <= 0) continue;
+            int innerHalf = rowHalf(dy, inner);
+            int py = cy + dy;
+            if (innerHalf <= 0) {
+                ctx.fill(cx - outerHalf, py, cx + outerHalf, py + 1, color);
+            } else {
+                ctx.fill(cx - outerHalf, py, cx - innerHalf, py + 1, color);
+                ctx.fill(cx + innerHalf, py, cx + outerHalf, py + 1, color);
+            }
+        }
+    }
+
+    /** Half width of a circle row at distance dy from the centre. */
+    private static int rowHalf(int dy, int radius) {
+        double t2 = (double) dy / radius;
+        double v = 1.0 - t2 * t2;
+        if (v <= 0) return 0;
+        return (int) Math.round(Math.sqrt(v) * radius);
+    }
+
     private static String pretty(String name) {
         if (name == null || name.isEmpty()) return "";
         switch (name) {
