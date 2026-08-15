@@ -280,6 +280,9 @@ public final class ConfigManager {
                 if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
                     lines.add(m.getName() + "\t__hiddenblocks__\t" + nrb.serializeBlocks());
                 }
+                if (m instanceof com.vortex.client.module.modules.ItemCounterModule icm) {
+                    lines.add(m.getName() + "\t__counters__\t" + icm.serializeCounters());
+                }
                 if (m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
                     lines.add(m.getName() + "\t__antirender__\t" + ar.serialize());
                 }
@@ -422,6 +425,17 @@ public final class ConfigManager {
                     }
                     continue;
                 }
+                // Sonderfall: Item-Zaehler.
+                if (settingName.equals("__counters__")) {
+                    for (Module m : ModuleManager.INSTANCE.getModules()) {
+                        if (m.getName().equals(modName)
+                                && m instanceof com.vortex.client.module.modules.ItemCounterModule icm) {
+                            icm.deserializeCounters(value);
+                        }
+                    }
+                    continue;
+                }
+
                 // Sonderfall: Liste der ausgeblendeten Bloecke.
                 if (settingName.equals("__hiddenblocks__")) {
                     for (Module m : ModuleManager.INSTANCE.getModules()) {

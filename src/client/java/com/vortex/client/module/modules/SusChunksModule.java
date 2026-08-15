@@ -26,7 +26,7 @@ public class SusChunksModule extends Module {
     public final NumberSetting maxScore = new NumberSetting("Max Score", 60, 10, 300, 5);
 
     public SusChunksModule() {
-        super("Sus Chunks", Category.MISC);
+        super("Sus Chunks", Category.CHEATS);
         addSetting(minScore);
         addSetting(maxScore);
     }

@@ -27,7 +27,7 @@ public class NoFallModule extends Module {
             new NumberSetting("Min Fall Height", 3.0, 1.0, 10.0, 0.5);
 
     public NoFallModule() {
-        super("No Fall", Category.MISC);
+        super("No Fall", Category.CHEATS);
         addSetting(minHeight);
     }
 }

@@ -190,6 +190,23 @@ public class WaypointScreen extends Screen {
                     plx3 + 8, winY + 62, 0xFFD0D0DA, false);
         }
 
+        // Pin-all button, only while there is something to pin.
+        int loose2 = 0;
+        for (var w3 : WaypointManager.all()) {
+            if (w3.dimension != null && w3.dimension.contains("|")
+                    && !w3.dimension.contains("|s")) loose2++;
+        }
+        if (loose2 > 0) {
+            String pin = "Pin " + loose2 + " here";
+            int pinw = this.textRenderer.getWidth(pin) + 16;
+            int pinx = winX + WIN_W - pinw - 12;
+            boolean pinHov = inRect(pinx, winY + 56, pinw, 20);
+            roundRect(ctx, pinx, winY + 56, pinw, 20,
+                    pinHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
+            ctx.drawText(this.textRenderer, Text.literal(pin),
+                    pinx + 8, winY + 62, 0xFFFFD070, false);
+        }
+
         String count = list.size() + " Marker";
         int cw = this.textRenderer.getWidth(count);
         ctx.drawText(this.textRenderer, Text.literal(count),
@@ -398,6 +415,26 @@ public class WaypointScreen extends Screen {
             scrollTarget = 0f;
             scroll = 0f;
             return true;
+        }
+
+        // Pin all: assigns every loose marker of this address to this world.
+        int loose = 0;
+        for (var w2 : WaypointManager.all()) {
+            if (w2.dimension != null && w2.dimension.contains("|")
+                    && !w2.dimension.contains("|s")) loose++;
+        }
+        if (loose > 0) {
+            String pin = "Pin " + loose + " here";
+            int pinw = this.textRenderer.getWidth(pin) + 16;
+            int pinx = winX + WIN_W - pinw - 12;
+            if (inRect(pinx, winY + 56, pinw, 20)) {
+                String world = com.vortex.client.hud.WaypointRenderer.currentWorldKey(
+                        MinecraftClient.getInstance());
+                int n = WaypointManager.pinLooseHere(world);
+                com.vortex.client.core.ConfigManager.save();
+                status = n + " markers pinned to this world.";
+                return true;
+            }
         }
 
         // Paste: reads a shared marker from the clipboard.

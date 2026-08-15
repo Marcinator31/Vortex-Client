@@ -47,6 +47,8 @@ public final class ModuleInfo {
         put("Fly", "Lets you fly. Detected almost immediately on most servers.");
         put("Crystal Macro", "Places end crystals on obsidian and breaks them instantly. Extreme ban risk.");
         put("Potato Mode", "Turns off expensive effects for more frames per second.");
+        put("Item Counter", "Counts chosen items. Several displays, each with its own place and items.");
+        put("Armor Warning", "Says something before a piece of armour breaks, with a sound.");
         put("Toggle Sneak", "Keeps you crouching without holding the key.");
         put("Crosshair", "Your own crosshair: shape, size, colour, and a gap in the middle.");
         put("Chat", "Timestamps, a much longer history, and a key to copy it all.");

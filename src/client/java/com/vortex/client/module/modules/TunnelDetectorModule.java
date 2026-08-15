@@ -24,7 +24,7 @@ public class TunnelDetectorModule extends Module {
     public final ColorSetting color = new ColorSetting("Color", 0xFF00FFFF);
 
     public TunnelDetectorModule() {
-        super("Tunnel Detector", Category.MISC);
+        super("Tunnel Detector", Category.CHEATS);
         addSetting(minLength);
         addSetting(maxY);
         addSetting(color);

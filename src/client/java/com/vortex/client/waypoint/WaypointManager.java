@@ -107,6 +107,32 @@ public final class WaypointManager {
         if (w != null) LIST.add(w);
     }
 
+    /**
+     * Pins every unassigned marker of this address to the world you are in.
+     *
+     * Saves going through them one at a time with W. Only markers that carry
+     * the same address are touched -- a marker from a different server is left
+     * alone, because it certainly does not belong here.
+     *
+     * @return how many were pinned
+     */
+    public static synchronized int pinLooseHere(String worldKey) {
+        if (worldKey == null) return 0;
+        String[] here = split(worldKey);
+        int n = 0;
+        for (Waypoint w : LIST) {
+            if (w.dimension == null) continue;
+            String[] a = split(w.dimension);
+            // Same place and dimension, but no seed and no fingerprint yet.
+            if (!a[1].isEmpty() || !a[2].isEmpty()) continue;
+            if (!a[0].equals(here[0])) continue;
+            if (!a[3].equals(here[3])) continue;
+            w.dimension = worldKey;
+            n++;
+        }
+        return n;
+    }
+
     // ------------------------------------------------------------- sharing
 
     /**
@@ -172,10 +198,22 @@ public final class WaypointManager {
 
         if (!a[0].equals(b[0])) return false;
 
-        // Seed and fingerprint only count when both sides know them. Either one
-        // differing is enough to say "different server".
+        // Seed and fingerprint: a difference always means a different server.
         if (!a[1].isEmpty() && !b[1].isEmpty() && !a[1].equals(b[1])) return false;
         if (!a[2].isEmpty() && !b[2].isEmpty() && !a[2].equals(b[2])) return false;
+
+        // A marker that has neither, in a world that has both.
+        //
+        // These come from before the client could tell the servers of a network
+        // apart. They carry the address, which on a proxy is the same for every
+        // server -- so they turn up everywhere, and a base marked on one server
+        // floats over the spawn of another.
+        //
+        // Strict mode hides them rather than showing them in the wrong place.
+        // They stay in the manager, marked "not pinned", and W pins them here.
+        if (a[1].isEmpty() && a[2].isEmpty() && !(b[1].isEmpty() && b[2].isEmpty())) {
+            return !WaypointSettings.INSTANCE.strictWorld.get();
+        }
         return true;
     }
 

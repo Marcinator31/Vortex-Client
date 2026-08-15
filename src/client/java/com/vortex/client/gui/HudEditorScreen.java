@@ -64,6 +64,13 @@ public class HudEditorScreen extends Screen {
         List<HudElement> list = new ArrayList<>();
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             if (m instanceof HudElement he && m.isEnabled()) list.add(he);
+            // Item counters are HudElements too, but there are several per
+            // module -- so they are added by hand rather than found by the
+            // instanceof above, which only ever sees the module itself.
+            if (m instanceof com.vortex.client.module.modules.ItemCounterModule ic
+                    && m.isEnabled()) {
+                list.addAll(ic.getCounters());
+            }
         }
         return list;
     }

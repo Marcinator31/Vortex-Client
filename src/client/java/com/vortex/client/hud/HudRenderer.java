@@ -70,6 +70,8 @@ public final class HudRenderer {
         drawKeystrokes(context, client);
         drawTotemPopper(context, client);
         drawRecordingHint(context, client);
+        ArmorWarning.render(context, client);
+        ItemCounterRenderer.render(context, client);
         drawSessionStats(context, client);
 
         // --- CPS ---
@@ -460,7 +462,14 @@ public final class HudRenderer {
                 x + (w - tw) / 2, y + (h - 8) / 2, col);
     }
 
-    private static void pushScale(DrawContext context, float anchorX, float anchorY, float scale) {
+    /**
+     * Scaling helper, shared with the other HUD parts.
+     *
+     * Package visible rather than private so ArmorWarning uses the very same
+     * one -- a second copy of this would drift, and elements would then behave
+     * differently in the editor for no reason anyone could see.
+     */
+    static void pushScale(DrawContext context, float anchorX, float anchorY, float scale) {
         var m = context.getMatrices();
         m.pushMatrix();
         m.translate(anchorX, anchorY);
@@ -468,7 +477,7 @@ public final class HudRenderer {
         m.translate(-anchorX, -anchorY);
     }
 
-    private static void popScale(DrawContext context) {
+    static void popScale(DrawContext context) {
         context.getMatrices().popMatrix();
     }
 

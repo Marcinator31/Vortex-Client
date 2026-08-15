@@ -33,7 +33,7 @@ public class StashFinderModule extends Module {
     public final BooleanSetting notify = new BooleanSetting("Chat Message", true);
 
     public StashFinderModule() {
-        super("Stash Finder", Category.MISC);
+        super("Stash Finder", Category.CHEATS);
         addSetting(threshold);
         addSetting(tracer);
         addSetting(tracerColor);

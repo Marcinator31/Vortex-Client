@@ -27,6 +27,16 @@ public final class WaypointSettings {
     public final BooleanSetting enabled = new BooleanSetting("Show", true);
 
     /** Linienbreite der Tracer. */
+    /**
+     * Hide markers that are not tied to a specific server.
+     *
+     * Markers created before the client could tell the servers of a network
+     * apart carry only the address -- which on a proxy is the same everywhere.
+     * With this on they are hidden where they do not belong instead of hovering
+     * over the wrong spawn. They stay in the manager and can be pinned there.
+     */
+    public final BooleanSetting strictWorld = new BooleanSetting("Strict World Matching", true);
+
     public final NumberSetting lineWidth = new NumberSetting("Tracer Width", 2.0, 0.5, 5.0, 0.5);
 
     // ---- Markierte Bloecke -------------------------------------------------
@@ -126,7 +136,7 @@ public final class WaypointSettings {
     private final List<Setting> settings;
 
     private WaypointSettings() {
-        settings = List.of(enabled, lineWidth, maxDistance,
+        settings = List.of(enabled, strictWorld, lineWidth, maxDistance,
                 labels, edgeArrows, tracers,
                 dotSize, borderWidth, markerOpacity, borderColor,
                 showLetter, useActionBar,
