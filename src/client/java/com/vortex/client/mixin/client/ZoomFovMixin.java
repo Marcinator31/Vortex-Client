@@ -20,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ZoomFovMixin {
 
     @Inject(method = "method_3196", at = @At("RETURN"), cancellable = true, require = 0)
-    private void vortex$applyZoom(CallbackInfoReturnable<Float> cir) {
+    private void vortex$applyZoom(net.minecraft.client.render.Camera camera,
+                                  float tickProgress, boolean changingFov,
+                                  CallbackInfoReturnable<Float> cir) {
         try {
             // Advance the movement once per frame, right where the value is
             // needed -- that keeps it in step with what is on screen.

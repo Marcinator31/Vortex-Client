@@ -17,8 +17,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class NametagHideMixin {
 
     @Inject(method = "method_3926", at = @At("HEAD"), cancellable = true, require = 0)
-    private void vortex$hideVanillaNametag(Object state, Object matrices,
-                                           Object a, Object b, CallbackInfo ci) {
+    private void vortex$hideVanillaNametag(
+            net.minecraft.client.render.entity.state.EntityRenderState state,
+            net.minecraft.client.util.math.MatrixStack matrices,
+            net.minecraft.client.render.command.OrderedRenderCommandQueue queue,
+            net.minecraft.client.render.state.CameraRenderState camState,
+            CallbackInfo ci) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
                     com.vortex.client.module.modules.NametagModule.class);
