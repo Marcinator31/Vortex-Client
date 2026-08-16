@@ -77,7 +77,7 @@ public class ClickGui extends Screen {
      * Design und Skins gibt es aber Dinge, die keine Module sind -- die gehoeren
      * nicht in die Kategorie-Liste, sondern gleichberechtigt daneben.
      */
-    private enum Section { MODULE, WAYPOINTS, MACROS, KEYS, SKINS, DESIGN }
+    private enum Section { MODULE, WAYPOINTS, MACROS, COMMUNITY, KEYS, SKINS, DESIGN }
 
     private Section section = Section.MODULE;
     private Module.Category selected = Module.Category.values()[0];
@@ -414,6 +414,8 @@ public class ClickGui extends Screen {
         cy = drawSectionEntry(ctx, x, cy, "Macros", Section.MACROS,
                 String.valueOf(com.vortex.client.macro.MacroManager.all().size()),
                 accent, t, dt, searching);
+        cy = drawSectionEntry(ctx, x, cy, "Community", Section.COMMUNITY, null,
+                accent, t, dt, searching);
         cy = drawSectionEntry(ctx, x, cy, "Keys", Section.KEYS, null,
                 accent, t, dt, searching);
         cy = drawSectionEntry(ctx, x, cy, "Skins", Section.SKINS, null,
@@ -657,6 +659,26 @@ public class ClickGui extends Screen {
                 int n = com.vortex.client.macro.MacroManager.all().size();
                 ctx.drawText(this.textRenderer,
                         Text.literal(n == 0 ? "No macros yet" : n + " saved"),
+                        cx, cy, t.textDim.get(), false);
+                break;
+            }
+            case COMMUNITY: {
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Community"),
+                        cx, cy, t.text.get());
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Macros and presets shared by other players"),
+                        cx, cy + 11, t.textDim.get(), false);
+                cy += 28;
+                boolean ch = inRect(mx, my, cx, cy, cw, 20);
+                roundRect(ctx, cx, cy, cw, 20, ch ? mix(C_INNER, accent, 0.35f) : C_INNER);
+                ctx.drawText(this.textRenderer, Text.literal("Browse shared macros"),
+                        cx + 10, cy + 6, t.text.get(), false);
+                ctx.drawText(this.textRenderer, Text.literal(">"),
+                        cx + cw - 14, cy + 6, accent, false);
+                hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openCommunity"));
+                cy += 26;
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Share your own on the website"),
                         cx, cy, t.textDim.get(), false);
                 break;
             }
@@ -942,6 +964,10 @@ public class ClickGui extends Screen {
                     }
                     if ("openKeys".equals(hit.extra)) {
                         MinecraftClient.getInstance().setScreen(new KeyListScreen(this));
+                        break;
+                    }
+                    if ("openCommunity".equals(hit.extra)) {
+                        MinecraftClient.getInstance().setScreen(new CommunityScreen(this));
                         break;
                     }
                     section = (Section) hit.extra;

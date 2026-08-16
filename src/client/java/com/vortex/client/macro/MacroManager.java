@@ -537,6 +537,14 @@ public final class MacroManager {
         Macro m = Macro.deserialize(t.substring("vortex-macro:".length()));
         if (m == null) return null;
 
+        // An imported macro arrives without a key.
+        //
+        // The sharer's binding means nothing here: it would land on a key you
+        // already use for something else, and you would find out by pressing it
+        // mid-fight. You pick the key, and until you do the macro simply sits
+        // there doing nothing.
+        m.key = org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN;
+
         // A name that is already taken gets a number, so an import never
         // quietly overwrites something you already had.
         String base = m.name;

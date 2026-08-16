@@ -118,6 +118,48 @@ public final class ConfigManager {
      * Einstellungen, die Auswahllisten (Mobs, Bloecke, Entities), das
      * Farbschema, Favoriten, Fensterposition und die Marker.
      */
+    /**
+     * Writes shared preset content into one of the three slots and switches to it.
+     *
+     * The slot is overwritten, so the caller has to be sure -- the community
+     * screen asks first. Switching straight afterwards is the point: importing
+     * something and then having to go and select it is a step nobody wants,
+     * and forgetting it looks exactly like the import failed.
+     *
+     * The current settings are saved first, so whatever was open before is not
+     * lost just because it happened to be in the slot next door.
+     *
+     * @param index 0, 1 or 2
+     * @return true if it was written
+     */
+    public static boolean importInto(int index, String content) {
+        if (index < 0 || index >= PRESET_COUNT) return false;
+        if (content == null || content.isBlank()) return false;
+        try {
+            // Keep the current state before anything is overwritten.
+            save();
+
+            Path target = dir().resolve("preset" + (index + 1) + ".txt");
+            Files.createDirectories(target.getParent());
+            Files.writeString(target, content, StandardCharsets.UTF_8);
+
+            // Switching to a slot we are already on does nothing, so that case
+            // is loaded directly -- otherwise importing into the active slot
+            // would write the file and leave the old settings running.
+            if (index == activePreset) {
+                load();
+            } else {
+                activePreset = index;
+                writeActive();
+                load();
+            }
+            return true;
+        } catch (Throwable pvpErr) {
+            Errors.report("ConfigManager.importInto", pvpErr);
+            return false;
+        }
+    }
+
     public static void resetAll() {
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             try {
