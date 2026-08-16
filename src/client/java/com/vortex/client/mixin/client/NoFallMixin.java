@@ -42,7 +42,14 @@ public abstract class NoFallMixin {
 
             if (self.fallDistance <= mod.minHeight.get()) return;
 
-            // A packet of its own that says "on the ground".
+            // A packet of its own that says "on the ground" -- and nothing else.
+            //
+            // The flag on the player itself is deliberately left alone. Setting
+            // it was the side effect you noticed: your own client then believes
+            // you are standing on something and lets you jump in mid-air. That
+            // looks absurd and is a far louder giveaway than the fall damage
+            // ever was. Only the server is told; your own physics keep the
+            // truth, so you fall as always and simply do not get hurt for it.
             //
             // Setting the flag on the player was not enough: the server works
             // out the fall from the movement it receives, and by the time the
@@ -56,7 +63,6 @@ public abstract class NoFallMixin {
                         new net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
                                 .OnGroundOnly(true, self.horizontalCollision));
             }
-            self.setOnGround(true);
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("NoFallMixin", pvpErr);
         }
