@@ -75,10 +75,33 @@ public final class AutoReconnect {
         }
     }
 
+    /**
+     * Skips the next reconnect entirely.
+     *
+     * For a module that leaves on purpose -- Spawner Safer packs up and logs
+     * out precisely so as not to be there. Reconnecting straight afterwards
+     * would undo the whole point of it.
+     *
+     * Cleared once it has been used, so it only ever affects that one leave.
+     */
+    public static void suppressNext() {
+        suppressed = true;
+    }
+
+    /** Set by suppressNext, cleared on the next disconnect screen. */
+    private static boolean suppressed = false;
+
     /** Called when the disconnect screen opens. */
     public static void onDisconnected(DisconnectedScreen screen) {
         cancelled = false;
         ticksLeft = -1;
+
+        if (suppressed) {
+            // Someone left deliberately. Nothing to do, and the flag goes now
+            // so a later, ordinary disconnect still reconnects as usual.
+            suppressed = false;
+            return;
+        }
 
         AutoReconnectModule mod = module();
         if (mod == null || !mod.isEnabled()) return;
