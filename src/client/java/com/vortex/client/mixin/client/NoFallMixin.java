@@ -40,13 +40,23 @@ public abstract class NoFallMixin {
             // only makes the movement look odd for no gain.
             if (self.isTouchingWater() || self.isInLava()) return;
 
-            // Only once the fall is far enough to hurt. Vanilla starts at more
-            // than three blocks, so below that there is nothing to prevent --
-            // and every packet that says something untrue is one more chance to
-            // be noticed.
-            if (self.fallDistance > mod.minHeight.get()) {
-                self.setOnGround(true);
+            if (self.fallDistance <= mod.minHeight.get()) return;
+
+            // A packet of its own that says "on the ground".
+            //
+            // Setting the flag on the player was not enough: the server works
+            // out the fall from the movement it receives, and by the time the
+            // real packet is built the flag has often been recomputed. Sending
+            // one explicitly leaves nothing to timing -- the server is told
+            // plainly, and the landing costs nothing.
+            var handler = net.minecraft.client.MinecraftClient.getInstance()
+                    .getNetworkHandler();
+            if (handler != null) {
+                handler.sendPacket(
+                        new net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
+                                .OnGroundOnly(true, self.horizontalCollision));
             }
+            self.setOnGround(true);
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("NoFallMixin", pvpErr);
         }
