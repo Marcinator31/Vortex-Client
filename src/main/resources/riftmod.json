@@ -1,0 +1,13 @@
+{
+  "id": "vortexclient",
+  "name": "Vortex Client",
+  "authors": [
+    "Marcinator31"
+  ],
+  "listeners": [
+    {
+      "class": "com.vortex.rift.VortexRiftClient",
+      "side": "CLIENT"
+    }
+  ]
+}
