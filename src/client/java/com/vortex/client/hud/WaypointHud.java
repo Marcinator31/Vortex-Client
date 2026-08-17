@@ -89,6 +89,84 @@ public final class WaypointHud {
     /** When that list was last rebuilt, and for which world. */
     private static long visibleBuilt = 0L;
     private static String visibleFor = "";
+
+    /**
+     * Per-waypoint text memo.
+     *
+     * Every marker rebuilt its letter (a trim + substring + toUpperCase) and
+     * two to four Text objects on EVERY FRAME. With fifty markers at 150 fps
+     * that is tens of thousands of allocations a second for strings that
+     * change when you walk a whole metre.
+     *
+     * Keyed on the Waypoint object, which has identity semantics (plain class,
+     * no equals override). The name is snapshotted because Waypoint.name is
+     * mutable -- renaming a marker must invalidate its letter and label.
+     */
+    private static final class Memo {
+        String name;
+        Text letter;
+        int dist = Integer.MIN_VALUE;
+        Text label;   // "name  123m"  (two spaces, as before)
+        Text edge;    // "name 123m"   (one space, as before)
+        int labelW;   // pixel width of label, see updateDist
+        int edgeW;
+    }
+
+    private static final java.util.Map<WaypointManager.Waypoint, Memo> MEMOS =
+            new java.util.HashMap<>();
+
+    /** The pending-area hint: constant text, width measured on first use. */
+    private static final String AREA_HINT_STR = "Area: pick the second corner";
+    private static final Text AREA_HINT = Text.literal(AREA_HINT_STR);
+    private static int areaHintW = -1;
+
+    /** The active block-group hint, rebuilt only when the group changes. */
+    private static String groupHintFor = null;
+    private static Text groupHint = null;
+    private static int groupHintW = 0;
+
+    /** The nearest-marker line, rebuilt only when its text would change. */
+    private static String nearestFor = null;
+    private static Text nearestText = null;
+    private static int nearestW = 0;
+
+    /** The memo for a waypoint, rebuilding the name-derived parts on rename. */
+    private static Memo memo(WaypointManager.Waypoint wp) {
+        Memo m = MEMOS.get(wp);
+        if (m == null) {
+            m = new Memo();
+            MEMOS.put(wp, m);
+        }
+        if (!java.util.Objects.equals(m.name, wp.name)) {
+            m.name = wp.name;
+            m.letter = Text.literal(initial(wp.name));
+            m.dist = Integer.MIN_VALUE; // force the distance texts to rebuild
+        }
+        return m;
+    }
+
+    /**
+     * Distance-dependent texts, rebuilt only when the whole metre changes.
+     *
+     * The widths are cached alongside: they were measured per marker per frame,
+     * and they only change when the string does. Measured with the String
+     * overload (getWidth(String), method_1727) rather than passing the Text --
+     * getWidth(StringVisitable) exists too, but the String one is the version
+     * this codebase already uses everywhere, so no inheritance assumption.
+     * Scaling happens via the matrix in pushScale, so a cached pixel width
+     * stays correct at any marker scale.
+     */
+    private static void updateDist(net.minecraft.client.font.TextRenderer tr,
+                                   Memo m, WaypointManager.Waypoint wp, int d) {
+        if (m.dist == d && m.label != null) return;
+        m.dist = d;
+        String labelStr = wp.name + "  " + d + "m";
+        String edgeStr = wp.name + " " + d + "m";
+        m.label = Text.literal(labelStr);
+        m.edge = Text.literal(edgeStr);
+        m.labelW = tr.getWidth(labelStr);
+        m.edgeW = tr.getWidth(edgeStr);
+    }
     private static long lastNano = 0L;
 
     public static void draw(DrawContext ctx, MinecraftClient client) {
@@ -162,17 +240,25 @@ public final class WaypointHud {
         // Hinweis, solange eine Bereichsauswahl laeuft oder eine Block-Gruppe
         // aktiv ist -- sonst vergisst man, dass die erste Ecke noch offen ist.
         if (com.vortex.client.waypoint.WaypointActions.hasPendingCorner()) {
-            String hint = "Area: pick the second corner";
-            int hw = client.textRenderer.getWidth(hint);
-            ctx.drawTextWithShadow(client.textRenderer, Text.literal(hint),
-                    (w - hw) / 2, h - 70, 0xFFFFD070);
+            // Constant string. Width measured on first use, not at class init:
+            // there is no TextRenderer yet when the class loads.
+            if (areaHintW < 0) {
+                areaHintW = client.textRenderer.getWidth(AREA_HINT_STR);
+            }
+            ctx.drawTextWithShadow(client.textRenderer, AREA_HINT,
+                    (w - areaHintW) / 2, h - 70, 0xFFFFD070);
         } else {
             String grp = com.vortex.client.waypoint.WaypointActions.activeGroupName();
             if (grp != null) {
-                String hint = "Block group: " + grp;
-                int hw = client.textRenderer.getWidth(hint);
-                ctx.drawText(client.textRenderer, Text.literal(hint),
-                        (w - hw) / 2, h - 70, 0x90FFFFFF, false);
+                // Rebuilt only when the active group changes.
+                if (!grp.equals(groupHintFor)) {
+                    groupHintFor = grp;
+                    String hint = "Block group: " + grp;
+                    groupHint = Text.literal(hint);
+                    groupHintW = client.textRenderer.getWidth(hint);
+                }
+                ctx.drawText(client.textRenderer, groupHint,
+                        (w - groupHintW) / 2, h - 70, 0x90FFFFFF, false);
             }
         }
 
@@ -186,9 +272,16 @@ public final class WaypointHud {
                 double dz = near.z - client.player.getZ();
                 int d = (int) Math.sqrt(dx * dx + dy * dy + dz * dz);
                 String line = near.name + "  " + d + "m";
-                int lw = client.textRenderer.getWidth(line);
-                ctx.drawTextWithShadow(client.textRenderer, Text.literal(line),
-                        (w - lw) / 2, h - 58, near.color | 0xFF000000);
+                // Rebuilt only when the text actually changes -- the string
+                // itself is the cache key, so a rename or a whole metre of
+                // movement invalidates it and nothing else does.
+                if (!line.equals(nearestFor)) {
+                    nearestFor = line;
+                    nearestText = Text.literal(line);
+                    nearestW = client.textRenderer.getWidth(line);
+                }
+                ctx.drawTextWithShadow(client.textRenderer, nearestText,
+                        (w - nearestW) / 2, h - 58, near.color | 0xFF000000);
             }
         }
 
@@ -209,9 +302,13 @@ public final class WaypointHud {
                     visibleHere.add(wp);
                 }
             }
+            // Drop memos for markers that are gone or no longer here, so the
+            // map stays the size of what is actually on screen.
+            MEMOS.keySet().retainAll(new java.util.HashSet<>(visibleHere));
         }
 
         for (WaypointManager.Waypoint wp : visibleHere) {
+            Memo memo = memo(wp);
             double wx = wp.x + 0.5, wy = wp.y + 1.0, wz = wp.z + 0.5;
 
             double ddx = wx - client.player.getX();
@@ -260,7 +357,6 @@ public final class WaypointHud {
                 // Buchstabe immer sichtbar -- neben dem Ring, damit er auch bei
                 // sehr kleinen Ringen lesbar bleibt und nichts verdeckt.
                 if (mod.showLetter.get()) {
-                    String letter = initial(wp.name);
                     // Buchstabe traegt IMMER die Farbe des Markers -- so gehoert
                     // beides sichtbar zusammen und man erkennt den Marker auch,
                     // wenn der Ring gerade von etwas verdeckt wird.
@@ -269,28 +365,30 @@ public final class WaypointHud {
                     int ly = cyI - 3;
                     pushScale(ctx, lx, ly, 0.8f);
                     // Zarter Schatten fuer Lesbarkeit auf hellem Untergrund.
-                    ctx.drawText(client.textRenderer, Text.literal(letter),
+                    // One Text from the memo, used for both draws -- it was
+                    // built twice per marker per frame for the same string.
+                    ctx.drawText(client.textRenderer, memo.letter,
                             lx + 1, ly + 1, fadeA(0xFF000000, alpha * 0.75f), false);
-                    ctx.drawText(client.textRenderer, Text.literal(letter),
+                    ctx.drawText(client.textRenderer, memo.letter,
                             lx, ly, lc, false);
                     popScale(ctx);
                 }
 
                 // --- Beim Anvisieren: voller Name und Entfernung darunter ---
                 if (a > 0.02f && mod.labels.get()) {
-                    String label = wp.name + "  " + (int) dist + "m";
+                    updateDist(client.textRenderer, memo, wp, (int) dist);
                     int ty = cyI + r + 5 + Math.round((1f - a) * 3f);
                     pushScale(ctx, cxI, ty, 0.8f);
-                    int tw = client.textRenderer.getWidth(label);
-                    int tx = cxI - tw / 2;
-                    ctx.drawText(client.textRenderer, Text.literal(label),
+                    int tx = cxI - memo.labelW / 2;
+                    ctx.drawText(client.textRenderer, memo.label,
                             tx + 1, ty + 1, fadeA(0xFF000000, a * 0.7f), false);
-                    ctx.drawText(client.textRenderer, Text.literal(label),
+                    ctx.drawText(client.textRenderer, memo.label,
                             tx, ty, fadeA(0xFFFFFFFF, a), false);
                     popScale(ctx);
                 }
             } else if (mod.edgeArrows.get()) {
-                drawEdgeArrow(ctx, client, s, w, h, color, wp.name, (int) dist);
+                updateDist(client.textRenderer, memo, wp, (int) dist);
+                drawEdgeArrow(ctx, client, s, w, h, color, memo.edge, memo.edgeW);
             }
         }
 
@@ -405,7 +503,7 @@ public final class WaypointHud {
      */
     private static void drawEdgeArrow(DrawContext ctx, MinecraftClient client,
                                       Screen s, int w, int h, int color,
-                                      String name, int dist) {
+                                      Text txt, int tw) {
         double cx = w / 2.0, cy = h / 2.0;
         double dx = s.x - cx;
         double dy = s.y - cy;
@@ -435,10 +533,9 @@ public final class WaypointHud {
             ctx.fill(px + ox - half, py + oy - 1, px + ox + half, py + oy + 1, color);
         }
 
-        String txt = name + " " + dist + "m";
-        int tw = client.textRenderer.getWidth(txt);
+        // Width comes from the memo, measured when the text last changed.
         int tx = Math.max(2, Math.min(w - tw - 2, px - tw / 2));
         int ty = Math.max(2, Math.min(h - 12, py + 8));
-        ctx.drawTextWithShadow(client.textRenderer, Text.literal(txt), tx, ty, color);
+        ctx.drawTextWithShadow(client.textRenderer, txt, tx, ty, color);
     }
 }
