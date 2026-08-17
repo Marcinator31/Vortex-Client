@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "vortexclient",
+  "version": "${version}",
+  "name": "Vortex Client",
+  "description": "Vortex Client -- a Fabric client with HUD modules, ESP, a waypoint system, a skin wardrobe and performance tools.",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/vortexclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.vortex.client.VortexClient"
+    ],
+    "client": [
+      "com.vortex.client.VortexClientMod"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "vortexclient.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "sodium": "*",
+    "lithium": "*"
+  },
+  "recommends": {
+    "sodium": "*",
+    "lithium": "*"
+  }
+}
