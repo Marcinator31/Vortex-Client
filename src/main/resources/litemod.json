@@ -1,0 +1,9 @@
+{
+  "name": "Vortex Client",
+  "displayName": "Vortex Client",
+  "version": "2.28.2-liteloader.1",
+  "author": "Marcinator31",
+  "description": "Vortex Client port foundation for LiteLoader on Minecraft 1.12.2.",
+  "mcversion": "1.12.2",
+  "revision": "1"
+}
