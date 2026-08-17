@@ -32,5 +32,9 @@
   "suggests": {
     "sodium": "*",
     "lithium": "*"
+  },
+  "recommends": {
+    "sodium": "*",
+    "lithium": "*"
   }
 }

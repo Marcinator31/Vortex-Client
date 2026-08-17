@@ -44,7 +44,7 @@ def declared_in(body, params_src):
     # Parameter
     names |= set(re.findall(r'[\w.<>\[\]]+\s+(\w+)\s*(?:,|\))', params_src))
     # Lokale Deklarationen: Typ name = ...  /  var name = ...
-    names |= set(re.findall(r'(?:^|[;{)\s])(?:final\s+)?(?:var|[\w.]+(?:<[^;=]*?>)?(?:\[\])?)\s+(\w+)\s*[=;]', body))
+    names |= set(re.findall(r'(?:^|[;{)\s])(?:final\s+)?(?:var|[\w.]+(?:<[^;=]*?>)?(?:\[\])?)\s+([\w$]+)\s*[=;]', body))
     # for-each und for(...)
     names |= set(re.findall(r'for\s*\(\s*(?:final\s+)?[^:;()]+?(\w+)\s*[:=]', body))
     # catch
@@ -61,22 +61,28 @@ def declared_in(body, params_src):
 PROJECT_FIELDS = set()
 for _p in glob.glob('src/**/*.java', recursive=True):
     PROJECT_FIELDS |= set(re.findall(
-        r'^\s{1,8}(?:public|private|protected)\s+(?:static\s+)?(?:final\s+)?[\w.<>,\[\]?&\s]+?\s(\w+)\s*[=;]',
+        r'^\s{1,8}(?:public|private|protected)\s+(?:static\s+)?(?:final\s+)?[\w.<>,\[\]?&\s]+?\s([\w$]+)\s*[=;]',
         open(_p).read(), re.M))
 
 problems = []
 for path in sorted(glob.glob('src/**/*.java', recursive=True)):
     src = open(path).read()
     # Felder der Klasse (auch geerbte tolerieren wir projektweit)
-    fields = set(re.findall(r'^\s{1,8}(?:public|private|protected)\s+(?:static\s+)?(?:final\s+)?[\w.<>,\[\]?&\s]+?\s(\w+)\s*[=;]', src, re.M))
-        # Geerbte Felder stehen in einer anderen Datei. Projektweit sammeln:
-        # das kann den gesuchten Fehler nicht verdecken, denn dabei geht es
-        # immer um LOKALE Variablen, nie um Felder.
+    fields = set(re.findall(r'^\s{1,8}(?:public|private|protected)\s+(?:static\s+)?(?:final\s+)?[\w.<>,\[\]?&\s]+?\s([\w$]+)\s*[=;]', src, re.M))
+
+    # Geerbte Felder stehen in einer anderen Datei. Projektweit sammeln: das
+    # kann den gesuchten Fehler nicht verdecken, denn dabei geht es immer um
+    # LOKALE Variablen, nie um Felder.
     fields |= PROJECT_FIELDS
     for name, body, params in method_bodies(src):
         ok = fields | declared_in(body, params)
+
         # Benutzungen: variable.methode(
-        for use in re.finditer(r'(?<![\w.])([a-z]\w*)\.\w+\s*\(', body):
+        #
+        # Das Dollarzeichen gehoert zum Namen: Mixin- und Client-Felder heissen
+        # oft "praefix$name". Fehlt es im Muster, wird der Teil nach dem Dollar
+        # als eigene Variable gelesen und faelschlich gemeldet.
+        for use in re.finditer(r'(?<![\w.$])([a-z][\w$]*)\.\w+\s*\(', body):
             v = use.group(1)
             if v in ok: continue
             if v in ('this','super','java','javax','net','com','org','it'): continue

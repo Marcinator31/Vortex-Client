@@ -18,6 +18,41 @@ import net.minecraft.util.Identifier;
  */
 public final class ItemCounterRenderer {
 
+    /**
+     * Counts, refreshed a few times a second.
+     *
+     * Counting walks the whole inventory, and it was doing that for every
+     * counter on every frame. At four hundred frames a second with three
+     * counters that is over forty thousand slot reads a second to produce a
+     * number that changes when you pick something up.
+     */
+    private static final java.util.Map<ItemCounter, Cached> COUNTS =
+            new java.util.HashMap<>();
+
+    /**
+     * Everything the draw loop needs, built once per 200 ms window instead of
+     * per frame. Before this, EVERY FRAME did per counter: an Identifier.of
+     * string parse plus a registry lookup plus a new ItemStack (firstIcon),
+     * and one or two Text.literal allocations -- for values that only change
+     * when the recount runs anyway. Plain class rather than a record so the
+     * javalang session check keeps parsing this file.
+     */
+    private static final class Cached {
+        final int n;
+        final ItemStack icon;      // may be null
+        final Text numText;        // "42"
+        final Text nameText;       // "Pearls: 42"
+        Cached(int n, ItemStack icon, String name) {
+            this.n = n;
+            this.icon = icon;
+            this.numText = Text.literal(String.valueOf(n));
+            this.nameText = Text.literal(name + ": " + n);
+        }
+    }
+
+    /** When the counts were last worked out. */
+    private static long counted = 0L;
+
     private ItemCounterRenderer() {}
 
     /** How many of the chosen items are carried in total. */
@@ -46,13 +81,28 @@ public final class ItemCounterRenderer {
     }
 
     public static void render(DrawContext ctx, MinecraftClient client) {
+        long pvpT0 = System.nanoTime();
         try {
             ItemCounterModule mod = ModuleManager.INSTANCE.get(ItemCounterModule.class);
             if (mod == null || !mod.isEnabled()) return;
             if (client.player == null) return;
 
+            // Recount a few times a second, then draw from that. The icon and
+            // the Text objects are rebuilt here too -- the 200 ms staleness
+            // after editing a counter in the GUI is imperceptible.
+            long now = System.currentTimeMillis();
+            if (now - counted > 200) {
+                counted = now;
+                COUNTS.clear();
+                for (ItemCounter c : mod.getCounters()) {
+                    COUNTS.put(c, new Cached(count(client, c), firstIcon(c), c.name));
+                }
+            }
+
             for (ItemCounter c : mod.getCounters()) {
-                int n = count(client, c);
+                Cached cd = COUNTS.get(c);
+                if (cd == null) continue;
+                int n = cd.n;
                 if (n == 0 && c.hideEmpty.get()) continue;
 
                 int color = c.color.get();
@@ -66,13 +116,12 @@ public final class ItemCounterRenderer {
                 switch (c.style.getIndex()) {
                     case 1:
                         ctx.drawTextWithShadow(client.textRenderer,
-                                Text.literal(String.valueOf(n)), x, y, color);
+                                cd.numText, x, y, color);
                         break;
 
                     case 2: {
-                        String text = c.name + ": " + n;
                         ctx.drawTextWithShadow(client.textRenderer,
-                                Text.literal(text), x, y, color);
+                                cd.nameText, x, y, color);
                         break;
                     }
 
@@ -81,14 +130,14 @@ public final class ItemCounterRenderer {
                         // first is enough: a counter that adds several items
                         // together is about the total, and one icon says which
                         // group it is without a row of pictures.
-                        ItemStack icon = firstIcon(c);
-                        if (icon != null && !icon.isEmpty()) {
-                            ctx.drawItem(icon, x, y - 4);
+                        // Icon and texts come prebuilt from the cache.
+                        if (cd.icon != null && !cd.icon.isEmpty()) {
+                            ctx.drawItem(cd.icon, x, y - 4);
                             ctx.drawTextWithShadow(client.textRenderer,
-                                    Text.literal(String.valueOf(n)), x + 20, y, color);
+                                    cd.numText, x + 20, y, color);
                         } else {
                             ctx.drawTextWithShadow(client.textRenderer,
-                                    Text.literal(String.valueOf(n)), x, y, color);
+                                    cd.numText, x, y, color);
                         }
                         break;
                     }
@@ -97,6 +146,11 @@ public final class ItemCounterRenderer {
             }
         } catch (Throwable pvpErr) {
             Errors.report("ItemCounterRenderer", pvpErr);
+        } finally {
+            // Note for /lag readers: this is a SUBSET of the "HUD" section --
+            // HudRenderer wraps all HUD parts, this line attributes ours.
+            com.vortex.client.core.Profiler.record("ItemCounter",
+                    System.nanoTime() - pvpT0);
         }
     }
 

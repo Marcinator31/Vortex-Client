@@ -41,12 +41,31 @@ public final class ProjectilePath {
 
     private ProjectilePath() {}
 
+    /**
+     * One-entry memo for kindOf: the registry lookup, the id-string build and
+     * the string switch ran on EVERY FRAME for an item that changes at human
+     * speed. Identity compare on the Item is enough -- items are singletons.
+     * (Items.* constants were checked as an alternative: ENDER_PEARL etc. do
+     * NOT exist under those names in the 1.21.11 mappings, so the id strings
+     * stay and only run when the held item actually changes.)
+     */
+    private static net.minecraft.item.Item lastKindItem = null;
+    private static Kind lastKind = null;
+
+    /** bowKind memo: 0 = neither, 1 = bow, 2 = crossbow. */
+    private static net.minecraft.item.Item lastHeldItem = null;
+    private static int lastHeldType = 0;
+
     /** Ordnet einem Gegenstand seine Wurfeigenschaften zu (oder null). */
     private static Kind kindOf(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
+        net.minecraft.item.Item item = stack.getItem();
+        if (item == lastKindItem) return lastKind;
+
+        Kind k;
         String id;
         try {
-            id = Registries.ITEM.getId(stack.getItem()).toString();
+            id = Registries.ITEM.getId(item).toString();
         } catch (Throwable t) {
             return null;
         }
@@ -54,17 +73,23 @@ public final class ProjectilePath {
             case "minecraft:ender_pearl":
             case "minecraft:snowball":
             case "minecraft:egg":
-                return new Kind(1.5, 0.03, 0.0);
+                k = new Kind(1.5, 0.03, 0.0);
+                break;
             case "minecraft:splash_potion":
             case "minecraft:lingering_potion":
                 // Wurftraenke fliegen langsamer, faellen schneller und werden
                 // leicht nach oben geworfen.
-                return new Kind(0.5, 0.05, -20.0);
+                k = new Kind(0.5, 0.05, -20.0);
+                break;
             case "minecraft:experience_bottle":
-                return new Kind(0.7, 0.07, -20.0);
+                k = new Kind(0.7, 0.07, -20.0);
+                break;
             default:
-                return null;
+                k = null;
         }
+        lastKindItem = item;
+        lastKind = k;
+        return k;
     }
 
     /**
@@ -77,9 +102,18 @@ public final class ProjectilePath {
      */
     private static Kind bowKind(ClientPlayerEntity self) {
         try {
-            String held = Registries.ITEM.getId(self.getMainHandStack().getItem()).toString();
-            boolean crossbow = "minecraft:crossbow".equals(held);
-            boolean bow = "minecraft:bow".equals(held);
+            // Same one-entry memo as kindOf: classify the held ITEM once,
+            // re-run only when it changes. The draw progress below still
+            // updates per frame -- only the registry+string work is memoized.
+            net.minecraft.item.Item item = self.getMainHandStack().getItem();
+            if (item != lastHeldItem) {
+                String held = Registries.ITEM.getId(item).toString();
+                lastHeldType = "minecraft:crossbow".equals(held) ? 2
+                        : "minecraft:bow".equals(held) ? 1 : 0;
+                lastHeldItem = item;
+            }
+            boolean crossbow = lastHeldType == 2;
+            boolean bow = lastHeldType == 1;
             if (!crossbow && !bow) return null;
 
             if (crossbow) {

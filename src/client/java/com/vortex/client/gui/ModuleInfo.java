@@ -17,7 +17,7 @@ public final class ModuleInfo {
 
     static {
         put("FPS", "Shows your current frame rate.");
-        put("Ping", "Shows your connection delay to the server.");
+        put("Ping", "Your delay in milliseconds. A star means the figure came from the server and updates slowly.");
         put("CPS", "Counts your clicks per second.");
         put("Coordinates", "Shows your position and the direction you are facing.");
         put("Potion Effects", "Lists your active effects and how long they last.");
@@ -47,6 +47,7 @@ public final class ModuleInfo {
         put("Fly", "Lets you fly. Detected almost immediately on most servers.");
         put("Crystal Macro", "Places end crystals on obsidian and breaks them instantly. Extreme ban risk.");
         put("Potato Mode", "Turns off expensive effects for more frames per second.");
+        put("Debug Overlay", "A readable F3: position, biome, what you are looking at, how the game runs.");
         put("Item Counter", "Counts chosen items. Several displays, each with its own place and items.");
         put("Armor Warning", "Says something before a piece of armour breaks, with a sound.");
         put("Toggle Sneak", "Keeps you crouching without holding the key.");

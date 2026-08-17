@@ -81,6 +81,14 @@ public final class WaypointHud {
      * solange man drauf zielt, und faellt danach wieder ab.
      */
     private static final java.util.Map<Object, Float> AIM_ANIM = new java.util.HashMap<>();
+
+    /** Markers belonging to the world we are in, rebuilt a few times a second. */
+    private static final java.util.List<WaypointManager.Waypoint> visibleHere =
+            new java.util.ArrayList<>();
+
+    /** When that list was last rebuilt, and for which world. */
+    private static long visibleBuilt = 0L;
+    private static String visibleFor = "";
     private static long lastNano = 0L;
 
     public static void draw(DrawContext ctx, MinecraftClient client) {
@@ -184,8 +192,26 @@ public final class WaypointHud {
             }
         }
 
-        for (WaypointManager.Waypoint wp : WaypointManager.all()) {
-            if (!wp.visible || !WaypointManager.matches(wp, dim)) continue;
+        // The world check is done a few times a second, not per frame.
+        //
+        // matches() takes the world key apart -- splitting strings, allocating
+        // arrays -- and it was doing that for every marker on every frame. With
+        // fifty markers at a hundred and fifty frames a second that is seven
+        // thousand string splits a second to answer a question whose answer
+        // changes when you change server.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - visibleBuilt > 250 || !dim.equals(visibleFor)) {
+            visibleBuilt = nowMs;
+            visibleFor = dim;
+            visibleHere.clear();
+            for (WaypointManager.Waypoint wp : WaypointManager.all()) {
+                if (wp.visible && WaypointManager.matches(wp, dim)) {
+                    visibleHere.add(wp);
+                }
+            }
+        }
+
+        for (WaypointManager.Waypoint wp : visibleHere) {
             double wx = wp.x + 0.5, wy = wp.y + 1.0, wz = wp.z + 0.5;
 
             double ddx = wx - client.player.getX();

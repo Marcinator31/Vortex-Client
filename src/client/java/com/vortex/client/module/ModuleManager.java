@@ -47,6 +47,7 @@ import com.vortex.client.module.modules.ChatModule;
 import com.vortex.client.module.modules.NametagModule;
 import com.vortex.client.module.modules.ArmorWarningModule;
 import com.vortex.client.module.modules.ItemCounterModule;
+import com.vortex.client.module.modules.DebugOverlayModule;
 import com.vortex.client.module.modules.GlobalHudColorModule;
 import com.vortex.client.module.modules.HitboxModule;
 import com.vortex.client.module.modules.HealthIndicatorModule;
@@ -137,6 +138,7 @@ public final class ModuleManager {
         register(new NametagModule());
         register(new ArmorWarningModule());
         register(new ItemCounterModule());
+        register(new DebugOverlayModule());
         register(new NoParticlesModule());
         register(new SmallTotemModule());
         register(new NoPumpkinBlurModule());

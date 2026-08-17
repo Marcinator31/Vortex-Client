@@ -51,8 +51,16 @@ public final class ItemEsp {
                 org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
                 boolean tracer = mod.tracerEnabled();
 
-                for (Entity e : client.world.getEntities()) {
-                    if (!(e instanceof ItemEntity)) continue;
+                // From the shared list, built once per tick.
+                //
+                // This walked every entity in the world on every frame -- two
+                // hundred times a second for an answer that changes twenty
+                // times a second.
+                double maxSq = mod.maxDistance() * mod.maxDistance();
+                for (ItemEntity e : com.vortex.client.core.EntityCache.items()) {
+                    // Distant items are dots on the screen and cost the same to
+                    // draw as close ones. In a stash they are the whole cost.
+                    if (e.squaredDistanceTo(client.player) > maxSq) continue;
 
                     // Box aus Position + Groesse (kein getBoundingBox noetig).
                     double w = e.getWidth() / 2.0;

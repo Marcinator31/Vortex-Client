@@ -32,7 +32,31 @@ public final class RadarRenderer {
     private static final int COL_ANIMAL  = 0xFF55FF55; // gruen
     private static final int COL_ITEM    = 0xFF55FFFF; // cyan
 
+    /**
+     * One ItemStack per spawn-egg item, built on first use and kept.
+     * Same reasoning as HudRenderer's totemIcon: a new stack per icon per
+     * frame is a small object, but at 150+ fps with a dozen mobs on the
+     * radar that is thousands of allocations a second for pictures that
+     * never change. Bounded by the number of mob types (~80).
+     * Render thread only, so a plain HashMap is fine.
+     */
+    private static final java.util.Map<net.minecraft.item.Item, net.minecraft.item.ItemStack>
+            EGG_STACKS = new java.util.HashMap<>();
+
     public static void render(DrawContext context, MinecraftClient client) {
+        // Same wrapper pattern as HudRenderer.onHudRender: time everything,
+        // record in finally so early returns and errors are counted too.
+        // Subset of the "HUD" section in /lag.
+        long pvpT0 = System.nanoTime();
+        try {
+            renderInner(context, client);
+        } finally {
+            com.vortex.client.core.Profiler.record("Radar",
+                    System.nanoTime() - pvpT0);
+        }
+    }
+
+    private static void renderInner(DrawContext context, MinecraftClient client) {
         if (client.player == null || client.world == null) return;
 
         RadarModule mod = (RadarModule) module();
@@ -71,7 +95,9 @@ public final class RadarRenderer {
         double pz = client.player.getZ();
 
         // 4) Entities durchgehen und zeichnen.
-        for (Entity e : client.world.getEntities()) {
+        // From the shared list: the radar draws every frame, but entities
+        // only move on ticks.
+        for (Entity e : com.vortex.client.core.EntityCache.all()) {
             if (e == client.player) continue;
 
             // Typ bestimmen + Filter. dotColor fuer Punkt-Darstellung,
@@ -152,7 +178,6 @@ public final class RadarRenderer {
             var type = living.getType();
             var egg = net.minecraft.item.SpawnEggItem.forEntity(type);
             if (egg == null) return false;
-
             // Icon-Groesse klein halten (5px Basis), damit der Radar
             // uebersichtlich bleibt und sich die Icons nicht gegenseitig
             // (und den Mittel-Pfeil) verdecken.
@@ -166,7 +191,8 @@ public final class RadarRenderer {
             m.pushMatrix();
             m.translate(ix, iy);
             m.scale(factor, factor);
-            context.drawItem(new net.minecraft.item.ItemStack(egg), 0, 0);
+            context.drawItem(EGG_STACKS.computeIfAbsent(egg,
+                    net.minecraft.item.ItemStack::new), 0, 0);
             m.popMatrix();
             return true;
         } catch (Throwable ignored) {

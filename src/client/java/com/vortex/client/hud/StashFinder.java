@@ -98,6 +98,7 @@ public final class StashFinder {
             VertexConsumerProvider consumers = context.consumers();
             if (matrices == null || consumers == null) return;
 
+            long pvpT0 = System.nanoTime();
             try {
                 float tickDelta = client.getRenderTickCounter().getTickProgress(false);
                 // Via the shared helper, which uses the real render camera and
@@ -138,6 +139,12 @@ public final class StashFinder {
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("StashFinder", pvpErr);
+            } finally {
+                // Draw cost only. The chunk scanning itself runs on the worker
+                // thread and never touches the frame; what /lag shows here is
+                // the per-frame price of the tracer lines.
+                com.vortex.client.core.Profiler.record("StashFinder",
+                        System.nanoTime() - pvpT0);
             }
         });
     }

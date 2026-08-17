@@ -23,6 +23,38 @@ public final class ArmorWarning {
 
     private ArmorWarning() {}
 
+    /** One worn piece and how much is left of it. */
+    private record Piece(String name, int pct) {}
+
+    /** Pieces currently below the threshold. */
+    private static final java.util.List<Piece> LOW = new java.util.ArrayList<>();
+
+    /** When that list was last worked out. */
+    private static long checked = 0L;
+
+    /** Works out which pieces are running low. */
+    private static void rebuild(MinecraftClient client, int warnAt) {
+        LOW.clear();
+        if (client.player == null) return;
+
+        EquipmentSlot[] slots = {
+            EquipmentSlot.HEAD, EquipmentSlot.CHEST,
+            EquipmentSlot.LEGS, EquipmentSlot.FEET
+        };
+        String[] names = { "Helmet", "Chestplate", "Leggings", "Boots" };
+
+        for (int i = 0; i < slots.length; i++) {
+            int p = percent(client.player.getEquippedStack(slots[i]));
+            if (p >= 0 && p <= warnAt) LOW.add(new Piece(names[i], p));
+        }
+
+        var mod = ModuleManager.INSTANCE.get(ArmorWarningModule.class);
+        if (mod != null && mod.includeHand.get()) {
+            int p = percent(client.player.getMainHandStack());
+            if (p >= 0 && p <= warnAt) LOW.add(new Piece("Held item", p));
+        }
+    }
+
     /** Percentage of durability left, or -1 for things that do not wear. */
     private static int percent(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return -1;
@@ -42,23 +74,15 @@ public final class ArmorWarning {
             int warnAt = mod.threshold.getInt();
             int critAt = mod.critical.getInt();
 
-            record Piece(String name, int pct) {}
-            java.util.List<Piece> low = new java.util.ArrayList<>();
-
-            EquipmentSlot[] slots = {
-                EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-                EquipmentSlot.LEGS, EquipmentSlot.FEET
-            };
-            String[] names = { "Helmet", "Chestplate", "Leggings", "Boots" };
-
-            for (int i = 0; i < slots.length; i++) {
-                int p = percent(client.player.getEquippedStack(slots[i]));
-                if (p >= 0 && p <= warnAt) low.add(new Piece(names[i], p));
+            // Same idea as the item counters: the durability of your armour
+            // does not change between frames, so working it out five times a
+            // second is five times more often than anyone can notice.
+            long now = System.currentTimeMillis();
+            if (now - checked > 200) {
+                checked = now;
+                rebuild(client, warnAt);
             }
-            if (mod.includeHand.get()) {
-                int p = percent(client.player.getMainHandStack());
-                if (p >= 0 && p <= warnAt) low.add(new Piece("Held item", p));
-            }
+            java.util.List<Piece> low = LOW;
 
             // Nothing low: forget what was announced, so the sound plays again
             // once a fresh piece wears down.

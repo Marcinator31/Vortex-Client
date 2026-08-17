@@ -30,6 +30,12 @@ public final class PingMeter {
 
     private static volatile int lastPing = -1;
     private static volatile long lastMeasured = 0L;
+
+    /** Failed attempts in a row. */
+    private static volatile int failures = 0;
+
+    /** Do not try again before this time. */
+    private static volatile long backoffUntil = 0L;
     private static Thread worker = null;
     private static volatile boolean running = false;
 
@@ -85,6 +91,8 @@ public final class PingMeter {
     }
 
     private static void measureOnce() {
+        if (System.currentTimeMillis() < backoffUntil) return;
+
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.world == null) return;
 
@@ -123,10 +131,27 @@ public final class PingMeter {
             long ms = (System.nanoTime() - start) / 1_000_000L;
             lastPing = (int) Math.min(ms, 9999);
             lastMeasured = System.currentTimeMillis();
+            failures = 0;
         } catch (Throwable pvpErr) {
-            // Unreachable, blocked, or timed out -- keep the last reading rather
-            // than flashing a wrong number.
-            lastMeasured = System.currentTimeMillis();
+            // A failed measurement must NOT refresh the timestamp.
+            //
+            // It used to, and that is what made the number wrong: the reading
+            // stayed whatever it last was, while the age said "fresh", so the
+            // HUD kept showing a stale figure forever instead of falling back
+            // to the server's. On a server behind an SRV record -- where the
+            // real port is not 25565 -- every attempt fails, and the number you
+            // saw was simply the first one ever taken.
+            failures++;
+
+            // Back off after repeated failures.
+            //
+            // Most servers throttle repeated connections from one address, so
+            // knocking every second is a good way to be refused every time.
+            // Backing off both stops that and keeps us from hammering someone
+            // else's machine.
+            if (failures >= 3) {
+                backoffUntil = System.currentTimeMillis() + 30_000L;
+            }
         }
     }
 }

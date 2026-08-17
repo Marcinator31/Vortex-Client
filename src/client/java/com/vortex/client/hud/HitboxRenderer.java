@@ -47,6 +47,7 @@ public final class HitboxRenderer {
             VertexConsumerProvider consumers = context.consumers();
             if (matrices == null || consumers == null) return;
 
+            long pvpT0 = System.nanoTime();
             try {
                 // WICHTIG fuer ruckelfreie Hitboxen: denselben tickDelta fuer
                 // Kamera UND Entity-Position verwenden. Sonst ruckelt die Box
@@ -69,14 +70,24 @@ public final class HitboxRenderer {
 
                 float lineWidth = mod.lineWidth.getFloat();
 
-                // Alle Entities im Umkreis (getEntitiesByClass ist garantiert da).
+                // 2.28.0: entities from the per-tick EntityCache instead of a
+                // client.world.getEntitiesByClass(...) query on EVERY FRAME.
+                // That query walks the world's entity sections each time; the
+                // cache is built once per tick and shared by all renderers --
+                // which is exactly what core/EntityCache.java exists for.
+                // The old 128-block query box is kept as a cheap per-axis
+                // check. Trade-off: entities appear one tick late (50 ms),
+                // same as every other cache-based renderer here.
                 double range = 128.0;
-                Box query = new Box(
-                        client.player.getX() - range, client.player.getY() - range, client.player.getZ() - range,
-                        client.player.getX() + range, client.player.getY() + range, client.player.getZ() + range);
+                double px = client.player.getX();
+                double py = client.player.getY();
+                double pz = client.player.getZ();
 
-                for (Entity entity : client.world.getEntitiesByClass(
-                        Entity.class, query, e -> e != client.player)) {
+                for (Entity entity : com.vortex.client.core.EntityCache.all()) {
+                    if (entity == client.player) continue;
+                    if (Math.abs(entity.getX() - px) > range
+                            || Math.abs(entity.getY() - py) > range
+                            || Math.abs(entity.getZ() - pz) > range) continue;
                     // Kategorie + Farbe bestimmen.
                     // Reihenfolge wichtig: erst Spieler, dann Monster, dann Tiere.
                     // 'Monster' ist ein Interface, das ALLE feindlichen Mobs
@@ -124,6 +135,9 @@ public final class HitboxRenderer {
             } catch (Throwable ignored) {
                 // Falls eine Render-Methode in dieser Version doch abweicht:
                 // Hitboxen still ausfallen lassen, NICHT das Spiel crashen.
+            } finally {
+                com.vortex.client.core.Profiler.record("Hitboxes",
+                        System.nanoTime() - pvpT0);
             }
         });
     }

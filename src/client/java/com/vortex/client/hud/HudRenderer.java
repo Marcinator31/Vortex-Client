@@ -72,6 +72,7 @@ public final class HudRenderer {
         drawRecordingHint(context, client);
         ArmorWarning.render(context, client);
         ItemCounterRenderer.render(context, client);
+        DebugOverlay.render(context, client);
         drawSessionStats(context, client);
 
         // --- CPS ---
@@ -134,7 +135,13 @@ public final class HudRenderer {
                 } catch (Throwable ignored) {
                 }
             }
-            String text = latency + " ms";
+            // A star marks the server's own figure.
+            //
+            // That number is only refreshed about every thirty seconds, so it
+            // lags behind by design. Without the mark you cannot tell a stale
+            // reading from a live one -- which is exactly how a wrong-looking
+            // ping goes unexplained for weeks.
+            String text = own ? (latency + " ms") : (latency + " ms*");
             pushScale(context, ping.x.getInt(), ping.y.getInt(), ping.scale.getFloat());
             context.drawTextWithShadow(client.textRenderer, Text.literal(text),
                     ping.x.getInt(), ping.y.getInt(), ping.color.get());
@@ -230,14 +237,28 @@ public final class HudRenderer {
 
             // Totem-Icon links zeichnen (16x16). new ItemStack(Item) ist ok,
             // weil Item das ItemConvertible-Interface erfuellt.
+            // The stack is built once and kept.
+            //
+            // A new one per frame is a small object, but a small object a
+            // hundred and fifty times a second is still work for a picture
+            // that never changes.
             var totemItem = TotemCountModule.totem();
             if (totemItem != null) {
-                context.drawItem(new net.minecraft.item.ItemStack(totemItem), tx, ty);
+                if (totemIcon == null
+                        || !totemIcon.isOf(totemItem)) {
+                    totemIcon = new net.minecraft.item.ItemStack(totemItem);
+                }
+                context.drawItem(totemIcon, tx, ty);
             }
 
             // Anzahl rechts neben dem Icon, vertikal mittig zum 16px-Icon.
-            String text = "x" + count;
-            context.drawTextWithShadow(client.textRenderer, Text.literal(text),
+            // Text object rebuilt only when the count changes -- same idea as
+            // the icon above it.
+            if (count != lastTotemCount || totemCountText == null) {
+                lastTotemCount = count;
+                totemCountText = Text.literal("x" + count);
+            }
+            context.drawTextWithShadow(client.textRenderer, totemCountText,
                     tx + 20, ty + 4, totem.color.get());
 
             popScale(context);
@@ -260,14 +281,25 @@ public final class HudRenderer {
                 && client.world != null) {
             try {
                 // Spieler sammeln (ohne den eigenen) mit Distanz.
-                java.util.List<net.minecraft.client.network.AbstractClientPlayerEntity> players =
-                        client.world.getPlayers();
-                java.util.List<String> lines = new java.util.ArrayList<>();
-                for (net.minecraft.client.network.AbstractClientPlayerEntity p : players) {
-                    if (p == client.player) continue;
-                    int dist = (int) client.player.distanceTo(p);
-                    lines.add(p.getName().getString() + "  " + dist + "m");
+                // Rebuilt a few times a second, not on every frame.
+                //
+                // This used to build a fresh list and a fresh string for every
+                // player on every single frame. At 150 frames a second with
+                // twenty players nearby that is three thousand strings a
+                // second for a list nobody can read that fast -- distances in
+                // whole metres do not change meaningfully between frames.
+                long nowMs = System.currentTimeMillis();
+                if (nowMs - playerListBuilt > 200) {
+                    playerListBuilt = nowMs;
+                    playerLines.clear();
+                    for (net.minecraft.client.network.AbstractClientPlayerEntity p
+                            : client.world.getPlayers()) {
+                        if (p == client.player) continue;
+                        int dist = (int) client.player.distanceTo(p);
+                        playerLines.add(p.getName().getString() + "  " + dist + "m");
+                    }
                 }
+                java.util.List<String> lines = playerLines;
                 // Oben rechts anzeigen.
                 int screenW = client.getWindow().getScaledWidth();
                 int y = 2;
@@ -332,6 +364,9 @@ public final class HudRenderer {
                 x, y, alpha | 0xFF5555);
     }
 
+    /** Header of the totem popper list -- never changes, built once. */
+    private static final Text TOTEM_POPPER_TITLE = Text.literal("Totems");
+
     private static void drawTotemPopper(DrawContext ctx, MinecraftClient client) {
         TotemPopperModule mod = (TotemPopperModule) find(TotemPopperModule.class);
         if (mod == null || !mod.isEnabled()) return;
@@ -346,7 +381,7 @@ public final class HudRenderer {
         int by = mod.y.getInt();
         pushScale(ctx, bx, by, mod.scale.getFloat());
 
-        ctx.drawTextWithShadow(client.textRenderer, Text.literal("Totems"),
+        ctx.drawTextWithShadow(client.textRenderer, TOTEM_POPPER_TITLE,
                 bx, by, mod.color.get());
         int ly = by + 10;
         for (var e : list) {
@@ -372,31 +407,39 @@ public final class HudRenderer {
 
         int col = mod.color.get();
         int ly = by;
+
+        // Rebuilt twice a second: playtime is the fastest-moving of the four
+        // and only changes once a second -- four string concats plus four
+        // Text.literal per frame for that was pure allocation churn.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - sessionTextsBuilt > 500 || sessionTime == null) {
+            sessionTextsBuilt = nowMs;
+            sessionTime   = Text.literal("Time: " + com.vortex.client.hud.SessionStats.playtime());
+            sessionDeaths = Text.literal("Deaths: " + com.vortex.client.hud.SessionStats.getDeaths());
+            sessionTotems = Text.literal("Totems: " + com.vortex.client.hud.SessionStats.getOwnTotems());
+            sessionCps    = Text.literal("Max CPS: " + com.vortex.client.hud.SessionStats.getMaxCps());
+        }
+
         if (mod.showTime.get()) {
-            ctx.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Time: " + com.vortex.client.hud.SessionStats.playtime()),
-                    bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionTime, bx, ly, col);
             ly += 10;
         }
         if (mod.showDeaths.get()) {
-            ctx.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Deaths: " + com.vortex.client.hud.SessionStats.getDeaths()),
-                    bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionDeaths, bx, ly, col);
             ly += 10;
         }
         if (mod.showTotems.get()) {
-            ctx.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Totems: " + com.vortex.client.hud.SessionStats.getOwnTotems()),
-                    bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionTotems, bx, ly, col);
             ly += 10;
         }
         if (mod.showMaxCps.get()) {
-            ctx.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Max CPS: " + com.vortex.client.hud.SessionStats.getMaxCps()),
-                    bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionCps, bx, ly, col);
         }
         popScale(ctx);
     }
+
+    private static long sessionTextsBuilt = 0L;
+    private static Text sessionTime, sessionDeaths, sessionTotems, sessionCps;
 
     private static void drawKeystrokes(DrawContext ctx, MinecraftClient client) {
         KeystrokesModule mod = (KeystrokesModule) find(KeystrokesModule.class);
@@ -469,6 +512,17 @@ public final class HudRenderer {
      * one -- a second copy of this would drift, and elements would then behave
      * differently in the editor for no reason anyone could see.
      */
+    /** The totem icon, built once rather than every frame. */
+    private static net.minecraft.item.ItemStack totemIcon = null;
+    private static int lastTotemCount = Integer.MIN_VALUE;
+    private static Text totemCountText = null;
+
+    /** Cached player list, so it is not rebuilt on every frame. */
+    private static final java.util.List<String> playerLines = new java.util.ArrayList<>();
+
+    /** When that list was last rebuilt. */
+    private static long playerListBuilt = 0L;
+
     static void pushScale(DrawContext context, float anchorX, float anchorY, float scale) {
         var m = context.getMatrices();
         m.pushMatrix();

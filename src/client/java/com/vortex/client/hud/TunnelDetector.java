@@ -57,6 +57,7 @@ public final class TunnelDetector {
             VertexConsumerProvider consumers = context.consumers();
             if (matrices == null || consumers == null) return;
 
+            long pvpT0 = System.nanoTime();
             try {
                 float tickDelta = client.getRenderTickCounter().getTickProgress(false);
                 Vec3d cam = EspRender.cameraOffset(client, tickDelta);
@@ -71,6 +72,10 @@ public final class TunnelDetector {
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("TunnelDetector", pvpErr);
+            } finally {
+                // Draw cost only -- the scan runs on the worker thread.
+                com.vortex.client.core.Profiler.record("TunnelDetector",
+                        System.nanoTime() - pvpT0);
             }
         });
     }

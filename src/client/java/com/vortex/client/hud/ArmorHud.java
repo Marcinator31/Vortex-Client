@@ -27,6 +27,14 @@ public final class ArmorHud {
     private static final int SLOT = 16;
     private static final int PADDING = 2;
 
+    /**
+     * Reused offset array, so no new one is built every frame.
+     *
+     * Its contents only change when a setting is touched, but a fresh two
+     * dimensional array was being built for every single frame.
+     */
+    private static final int[][] OFFSETS = new int[5][2];
+
     private static ArmorHudModule module() {
         // Konstante Laufzeit statt die ganze Liste zu durchlaufen.
         return ModuleManager.INSTANCE.get(ArmorHudModule.class);
@@ -47,14 +55,23 @@ public final class ArmorHud {
             player.getMainHandStack()
         };
 
-        // Einzel-Offsets pro Teil (gleiche Reihenfolge wie stacks).
-        int[][] offsets = new int[][] {
+        // Offsets in ein wiederverwendetes Feld schreiben.
+        //
+        // Vorher entstand hier bei JEDEM Bild ein neues zweidimensionales Feld
+        // -- bei 400 Bildern je Sekunde sind das 2400 Objekte, deren Inhalt
+        // sich nur ändert, wenn du eine Einstellung anfasst.
+        int[][] offsets = OFFSETS;
+        int[][] werte = new int[][] {
             { mod.helmetOffsetX.getInt(), mod.helmetOffsetY.getInt() },
             { mod.chestOffsetX.getInt(),  mod.chestOffsetY.getInt()  },
             { mod.legsOffsetX.getInt(),   mod.legsOffsetY.getInt()   },
             { mod.bootsOffsetX.getInt(),  mod.bootsOffsetY.getInt()  },
             { mod.handOffsetX.getInt(),   mod.handOffsetY.getInt()   }
         };
+        for (int i = 0; i < offsets.length; i++) {
+            offsets[i][0] = werte[i][0];
+            offsets[i][1] = werte[i][1];
+        }
 
         int screenW = context.getScaledWindowWidth();
         int screenH = context.getScaledWindowHeight();

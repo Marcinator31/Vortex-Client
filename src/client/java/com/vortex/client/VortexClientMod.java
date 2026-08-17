@@ -71,6 +71,27 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.macro.MacroManager.register();
         com.vortex.client.hud.AutoReconnect.register();
         com.vortex.client.hud.ChatCopy.register();
+        com.vortex.client.core.EntityCache.register();
+
+        // Point out Sodium and Lithium once, a moment after joining.
+        //
+        // Not at launch: the message would scroll past before anyone reads it,
+        // and at that point there is no player to send it to.
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN
+                .register((handler, sender, client) -> {
+                    Thread t = new Thread(() -> {
+                        try {
+                            // Let the server's own greeting go first.
+                            Thread.sleep(3000);
+                        } catch (InterruptedException ignored) {
+                            return;
+                        }
+                        client.execute(() ->
+                                com.vortex.client.hud.PerformanceHint.maybeShow(client));
+                    }, "vortex-hint");
+                    t.setDaemon(true);
+                    t.start();
+                });
         com.vortex.client.hud.WaypointRenderer.register();
         com.vortex.client.waypoint.WaypointActions.register();
         com.vortex.client.hud.CrystalMacro.register();
