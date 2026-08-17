@@ -3,38 +3,23 @@
   "id": "vortexclient",
   "version": "${version}",
   "name": "Vortex Client",
-  "description": "Vortex Client -- a Fabric client with HUD modules, ESP, a waypoint system, a skin wardrobe and performance tools.",
-  "authors": [],
-  "contact": {},
-  "license": "MIT",
-  "icon": "assets/vortexclient/icon.png",
+  "description": "Vortex Client port foundation for Ornithe on Minecraft 1.14.4.",
+  "authors": [
+    "Marcinator31"
+  ],
+  "contact": {
+    "sources": "https://github.com/Marcinator31/Vortex-Client"
+  },
+  "license": "All Rights Reserved",
   "environment": "client",
   "entrypoints": {
-    "main": [
-      "com.vortex.client.VortexClient"
-    ],
-    "client": [
-      "com.vortex.client.VortexClientMod"
+    "init": [
+      "com.vortex.ornithe.VortexOrnitheClient"
     ]
   },
-  "mixins": [
-    {
-      "config": "vortexclient.client.mixins.json",
-      "environment": "client"
-    }
-  ],
   "depends": {
-    "fabricloader": ">=0.18.1",
-    "minecraft": "~1.21.11",
-    "java": ">=21",
-    "fabric-api": "*"
-  },
-  "suggests": {
-    "sodium": "*",
-    "lithium": "*"
-  },
-  "recommends": {
-    "sodium": "*",
-    "lithium": "*"
+    "fabricloader": ">=0.19.3",
+    "minecraft": "1.14.4",
+    "osl-entrypoints": ">=0.4.0"
   }
 }
