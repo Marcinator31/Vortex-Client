@@ -30,7 +30,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 @Mixin(ItemInHandRenderer.class)
 public class HeldItemRendererMixin {
 
-    @Inject(method = "method_3233", at = @At("HEAD"))
+    @Inject(method = "renderItem", at = @At("HEAD"))
     private void pvpclient$scaleHandItem(LivingEntity entity, ItemStack stack,
                                          ItemDisplayContext displayContext, PoseStack matrices,
                                          SubmitNodeCollector queue, int light,

@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Entity.class)
 public abstract class EntityLookMixin {
 
-    @Inject(method = "method_5872", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "turn", at = @At("HEAD"), cancellable = true)
     private void pvpclient$freecamLook(double cursorDeltaX, double cursorDeltaY, CallbackInfo ci) {
         if (!Freecam.isActive()) return;
         Entity self = (Entity) (Object) this;

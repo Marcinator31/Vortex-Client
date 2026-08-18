@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class NoPumpkinBlurMixin {
 
     @Redirect(
-        method = "method_55798",
+        method = "renderEffects", require = 0,
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/class_746;method_6118(Lnet/minecraft/class_1304;)Lnet/minecraft/class_1799;"

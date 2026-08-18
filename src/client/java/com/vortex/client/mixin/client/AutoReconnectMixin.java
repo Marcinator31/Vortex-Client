@@ -24,7 +24,7 @@ public abstract class AutoReconnectMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "method_25426", at = @At("TAIL"), require = 0)
+    @Inject(method = "init", at = @At("TAIL"), require = 0)
     private void vortex$addReconnect(CallbackInfo ci) {
         try {
             com.vortex.client.hud.AutoReconnect.onDisconnected(

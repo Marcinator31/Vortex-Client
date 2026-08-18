@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public abstract class BlockRenderTypeMixin {
 
-    @Inject(method = "method_26217", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "getRenderShape", at = @At("HEAD"), cancellable = true, require = 0)
     private void vortex$hideSelectedBlocks(CallbackInfoReturnable<RenderShape> cir) {
         try {
             com.vortex.client.module.modules.NoRenderBlocksModule mod =

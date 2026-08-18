@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LocalPlayer.class)
 public abstract class NoFallMixin {
 
-    @Inject(method = "method_3136", at = @At("HEAD"), require = 0)
+    @Inject(method = "sendPosition", at = @At("HEAD"), require = 0)
     private void vortex$noFall(CallbackInfo ci) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
