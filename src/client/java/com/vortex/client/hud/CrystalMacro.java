@@ -3,17 +3,17 @@ package com.vortex.client.hud;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.CrystalMacroModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
 /**
  * Logik des Crystal Macros: Kristall setzen und sofort sprengen.
@@ -54,25 +54,25 @@ public final class CrystalMacro {
         });
     }
 
-    private static void tick(MinecraftClient client) {
+    private static void tick(Minecraft client) {
         CrystalMacroModule mod = ModuleManager.INSTANCE.get(CrystalMacroModule.class);
         if (mod == null || !mod.isEnabled()) {
             restoreSlot(client);
             return;
         }
-        if (client.player == null || client.world == null
-                || client.interactionManager == null) {
+        if (client.player == null || client.level == null
+                || client.gameMode == null) {
             return;
         }
         // In Menues nichts tun.
-        if (client.currentScreen != null) return;
+        if (client.screen != null) return;
 
-        ClientPlayerEntity self = client.player;
+        LocalPlayer self = client.player;
 
         // Optional: nur waehrend die Angriffstaste gehalten wird.
         if (mod.onlyWhenHolding.get()
                 && client.options != null
-                && !client.options.attackKey.isPressed()) {
+                && !client.options.keyAttack.isDown()) {
             restoreSlot(client);
             return;
         }
@@ -89,7 +89,7 @@ public final class CrystalMacro {
         }
 
         // 2) Zielblock pruefen.
-        HitResult hit = client.crosshairTarget;
+        HitResult hit = client.hitResult;
         if (hit == null || hit.getType() != HitResult.Type.BLOCK) {
             restoreSlot(client);
             return;
@@ -99,15 +99,15 @@ public final class CrystalMacro {
             return;
         }
         BlockPos pos = bhr.getBlockPos();
-        var state = client.world.getBlockState(pos);
-        boolean ok = state.isOf(Blocks.OBSIDIAN)
-                || (mod.bedrock.get() && state.isOf(Blocks.BEDROCK));
+        var state = client.level.getBlockState(pos);
+        boolean ok = state.is(Blocks.OBSIDIAN)
+                || (mod.bedrock.get() && state.is(Blocks.BEDROCK));
         if (!ok) {
             restoreSlot(client);
             return;
         }
 
-        // 3) Kristall in der Hand? Sonst passenden Platz suchen und wechseln.
+        // 3) Kristall in der InteractionHand? Sonst passenden Platz suchen und wechseln.
         int slot = findCrystalSlot(self);
         if (slot < 0) {
             restoreSlot(client);
@@ -121,8 +121,8 @@ public final class CrystalMacro {
         }
 
         // 4) Setzen. Der Server prueft Reichweite und Platz selbst.
-        client.interactionManager.interactBlock(self, Hand.MAIN_HAND, bhr);
-        self.swingHand(Hand.MAIN_HAND);
+        client.gameMode.useItemOn(self, InteractionHand.MAIN_HAND, bhr);
+        self.swing(InteractionHand.MAIN_HAND);
 
         // 5) Direkt danach nochmal sprengen -- der eben gesetzte Kristall ist
         //    im selben Tick schon da.
@@ -135,24 +135,24 @@ public final class CrystalMacro {
     }
 
     /** Zerschlaegt alle Kristalle in Reichweite. */
-    private static void breakNearby(MinecraftClient client, ClientPlayerEntity self,
+    private static void breakNearby(Minecraft client, LocalPlayer self,
                                     double range) {
         double rangeSq = range * range;
-        for (Entity e : client.world.getEntities()) {
-            if (!(e instanceof EndCrystalEntity)) continue;
+        for (Entity e : client.level.entitiesForRendering()) {
+            if (!(e instanceof EndCrystal)) continue;
             if (!e.isAlive()) continue;
-            if (self.squaredDistanceTo(e) > rangeSq) continue;
-            client.interactionManager.attackEntity(self, e);
-            self.swingHand(Hand.MAIN_HAND);
+            if (self.distanceToSqr(e) > rangeSq) continue;
+            client.gameMode.attack(self, e);
+            self.swing(InteractionHand.MAIN_HAND);
         }
     }
 
     /** Hotbar-Platz mit Enderkristallen, oder -1. */
-    private static int findCrystalSlot(ClientPlayerEntity self) {
+    private static int findCrystalSlot(LocalPlayer self) {
         var inv = self.getInventory();
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = inv.getStack(i);
-            if (stack != null && !stack.isEmpty() && stack.isOf(Items.END_CRYSTAL)) {
+            ItemStack stack = inv.getItem(i);
+            if (stack != null && !stack.isEmpty() && stack.is(Items.END_CRYSTAL)) {
                 return i;
             }
         }
@@ -160,7 +160,7 @@ public final class CrystalMacro {
     }
 
     /** Zurueck auf den vorherigen Hotbar-Platz, falls gewechselt wurde. */
-    private static void restoreSlot(MinecraftClient client) {
+    private static void restoreSlot(Minecraft client) {
         if (previousSlot < 0) return;
         try {
             if (client.player != null) {

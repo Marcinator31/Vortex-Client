@@ -3,10 +3,9 @@ package com.vortex.client.module.modules;
 import com.vortex.client.core.setting.BooleanSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.module.Module;
-import net.minecraft.util.Identifier;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.resources.Identifier;
 
 /**
  * Anti Render: blendet ausgewaehlte Entity-Typen komplett aus dem Rendering aus

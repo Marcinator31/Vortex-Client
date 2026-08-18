@@ -2,10 +2,10 @@ package com.vortex.client.mixin.client;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.NoPumpkinBlurModule;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  *   class_329 (InGameHud) -> method_55798, Redirect auf
  *   class_746.method_6118 (getEquippedStack).
  */
-@Mixin(net.minecraft.client.gui.hud.InGameHud.class)
+@Mixin(net.minecraft.client.gui.Gui.class)
 public class NoPumpkinBlurMixin {
 
     @Redirect(
@@ -34,11 +34,11 @@ public class NoPumpkinBlurMixin {
             target = "Lnet/minecraft/class_746;method_6118(Lnet/minecraft/class_1304;)Lnet/minecraft/class_1799;"
         )
     )
-    private ItemStack pvpclient$noPumpkinBlur(ClientPlayerEntity player, EquipmentSlot slot) {
-        ItemStack real = player.getEquippedStack(slot);
+    private ItemStack pvpclient$noPumpkinBlur(LocalPlayer player, EquipmentSlot slot) {
+        ItemStack real = player.getItemBySlot(slot);
 
         NoPumpkinBlurModule mod = find();
-        if (mod != null && mod.isEnabled() && real.isOf(Items.CARVED_PUMPKIN)) {
+        if (mod != null && mod.isEnabled() && real.is(Items.CARVED_PUMPKIN)) {
             return ItemStack.EMPTY;
         }
         return real;

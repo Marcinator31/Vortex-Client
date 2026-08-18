@@ -1,12 +1,11 @@
 package com.vortex.client.gui;
 
 import com.vortex.client.core.setting.ColorSetting;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-
 import java.util.Locale;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Farbwaehler im Stil des uebrigen Clients.
@@ -46,7 +45,7 @@ public class ColorPickerScreen extends Screen {
     private float hue = 0f, sat = 1f, bri = 1f;
     private int alpha = 255;
 
-    private TextFieldWidget hexField;
+    private EditBox hexField;
     private float openAnim = 0f;
     private long lastNano = 0L;
     private int mx = 0, my = 0;
@@ -65,7 +64,7 @@ public class ColorPickerScreen extends Screen {
     }
 
     public ColorPickerScreen(Screen parent, ColorSetting setting, Runnable onChange) {
-        super(Text.literal("Pick a colour"));
+        super(Component.literal("Pick a colour"));
         this.parent = parent;
         this.setting = setting;
         this.onChange = onChange;
@@ -99,7 +98,7 @@ public class ColorPickerScreen extends Screen {
             }
         }
         if (hexField != null && !hexField.isFocused()) {
-            hexField.setText(hex(currentArgb()));
+            hexField.setValue(hex(currentArgb()));
         }
     }
 
@@ -114,13 +113,13 @@ public class ColorPickerScreen extends Screen {
         int wx = (this.width - WIN_W) / 2;
         int wy = (this.height - WIN_H) / 2;
 
-        this.hexField = new TextFieldWidget(this.textRenderer,
-                wx + 60, wy + WIN_H - 30, 100, 14, Text.literal(""));
-        this.hexField.setDrawsBackground(false);
+        this.hexField = new EditBox(this.font,
+                wx + 60, wy + WIN_H - 30, 100, 14, Component.literal(""));
+        this.hexField.setBordered(false);
         this.hexField.setMaxLength(9);
-        this.hexField.setText(hex(currentArgb()));
-        this.hexField.setChangedListener(this::onHexTyped);
-        this.addDrawableChild(this.hexField);
+        this.hexField.setValue(hex(currentArgb()));
+        this.hexField.setResponder(this::onHexTyped);
+        this.addRenderableWidget(this.hexField);
     }
 
     /** Hex-Eingabe auswerten -- ungueltige Eingaben werden einfach ignoriert. */
@@ -145,7 +144,7 @@ public class ColorPickerScreen extends Screen {
     // -------------------------------------------------------------- Zeichnen
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
 
@@ -167,7 +166,7 @@ public class ColorPickerScreen extends Screen {
         // Kopfzeile mit Titel und aktueller Farbe.
         ctx.fill(wx, wy, wx + WIN_W, wy + 26, fade(C_BAR, openAnim));
         ctx.fill(wx, wy + 25, wx + WIN_W, wy + 26, fade(C_LINE, openAnim));
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal(setting.getName()),
+        ctx.text(this.font, Component.literal(setting.getName()),
                 wx + 10, wy + 9, fade(0xFFFFFFFF, openAnim));
         drawChecker(ctx, wx + WIN_W - 44, wy + 7, 34, 12);
         roundRect(ctx, wx + WIN_W - 44, wy + 7, 34, 12, currentArgb());
@@ -230,31 +229,31 @@ public class ColorPickerScreen extends Screen {
 
         // --- Hex-Eingabe ---
         int hy = wy + WIN_H - 33;
-        ctx.drawText(this.textRenderer, Text.literal("Hex"),
+        ctx.text(this.font, Component.literal("Hex"),
                 wx + 10, hy + 6, 0xFFB4B4C0, false);
         roundRect(ctx, wx + 50, hy, 120, 20, C_INNER);
 
         // --- Fertig-Knopf ---
         String done = "Fertig";
-        int dw = this.textRenderer.getWidth(done) + 20;
+        int dw = this.font.width(done) + 20;
         int dx = wx + WIN_W - dw - 10;
         boolean dHov = inRect(mx, my, dx, hy, dw, 20);
         roundRect(ctx, dx, hy, dw, 20, dHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-        ctx.drawText(this.textRenderer, Text.literal(done),
+        ctx.text(this.font, Component.literal(done),
                 dx + 10, hy + 6, 0xFFFFFFFF, false);
 
         if (hexField != null) {
             hexField.setX(wx + 56);
             hexField.setY(hy + 6);
         }
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
     /**
      * Farbfeld zeichnen. Aus Aufwandsgruenden in schmalen Streifen: waagerecht
      * die Sattheit, senkrecht per Verlauf die Helligkeit.
      */
-    private void drawSatBriField(DrawContext ctx, int x, int y, int w, int h) {
+    private void drawSatBriField(GuiGraphicsExtractor ctx, int x, int y, int w, int h) {
         int step = 2;
         for (int i = 0; i < w; i += step) {
             float s = i / (float) w;
@@ -267,7 +266,7 @@ public class ColorPickerScreen extends Screen {
     }
 
     /** Kariertes Muster als Untergrund fuer halbdurchsichtige Farben. */
-    private void drawChecker(DrawContext ctx, int x, int y, int w, int h) {
+    private void drawChecker(GuiGraphicsExtractor ctx, int x, int y, int w, int h) {
         int cell = 4;
         for (int iy = 0; iy < h; iy += cell) {
             for (int ix = 0; ix < w; ix += cell) {
@@ -282,7 +281,7 @@ public class ColorPickerScreen extends Screen {
     // ---------------------------------------------------------------- Eingabe
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
         // Our own areas are tested BEFORE the screen's own handling.
         //
         // The other way round, the first press went to the widgets -- focus
@@ -314,17 +313,17 @@ public class ColorPickerScreen extends Screen {
         int wy = (this.height - WIN_H) / 2;
         int hy = wy + WIN_H - 33;
         String done = "Fertig";
-        int dw = this.textRenderer.getWidth(done) + 20;
+        int dw = this.font.width(done) + 20;
         int dx = wx + WIN_W - dw - 10;
         if (inRect(mx, my, dx, hy, dw, 20)) {
-            this.close();
+            this.onClose();
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean mouseDragged(net.minecraft.client.gui.Click click, double dx, double dy) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent click, double dx, double dy) {
         // Dragging without a press we saw: pick up whatever is under the
         // cursor. Belt and braces -- if the press was swallowed somewhere,
         // the slider still follows the mouse instead of doing nothing.
@@ -362,7 +361,7 @@ public class ColorPickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(net.minecraft.client.gui.Click click) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent click) {
         dragMode = 0;
         return super.mouseReleased(click);
     }
@@ -456,7 +455,7 @@ public class ColorPickerScreen extends Screen {
         return px >= x && px < x + w && py >= y && py < y + h;
     }
 
-    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -482,12 +481,12 @@ public class ColorPickerScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
-        this.client.setScreen(parent);
+    public void onClose() {
+        this.minecraft.setScreen(parent);
     }
 }

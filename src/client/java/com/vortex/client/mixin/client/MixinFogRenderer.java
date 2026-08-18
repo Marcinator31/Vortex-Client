@@ -4,13 +4,13 @@ import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ClearLavaModule;
 import com.vortex.client.module.modules.ClearWaterModule;
 import com.vortex.client.module.modules.NoFogModule;
-import net.minecraft.block.enums.CameraSubmersionType;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.fog.FogData;
-import net.minecraft.client.render.fog.FogRenderer;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.fog.FogData;
+import net.minecraft.client.renderer.fog.FogRenderer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.material.FogType;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,10 +24,10 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
  * Ansatz uebernommen von BactroMod (das fuer 1.21.11 funktioniert): Wir haengen
  * uns in FogRenderer.applyFog ein, und zwar GENAU an die Stelle, nachdem das
  * Feld renderDistanceEnd der FogData gesetzt wurde (@At FIELD, shift=AFTER).
- * Per Local-Capture holen wir die lokale FogData und den CameraSubmersionType
+ * Per Local-Capture holen wir die lokale FogData und den FogType
  * heraus und schieben die Nebel-Distanzen auf Float.MAX_VALUE -> kein Nebel.
  *
- * Welcher Nebel gerade gilt, bestimmen wir ueber den CameraSubmersionType
+ * Welcher Nebel gerade gilt, bestimmen wir ueber den FogType
  * (LAVA / WATER) bzw. behandeln alles andere als den normalen (atmosphaerischen)
  * Nebel.
  *
@@ -37,27 +37,27 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 public class MixinFogRenderer {
 
     @Inject(
-        method = "applyFog(Lnet/minecraft/client/render/Camera;ILnet/minecraft/client/render/RenderTickCounter;FLnet/minecraft/client/world/ClientWorld;)Lorg/joml/Vector4f;",
+        method = "setupFog(Lnet/minecraft/client/Camera;ILnet/minecraft/client/DeltaTracker;FLnet/minecraft/client/multiplayer/ClientLevel;)Lorg/joml/Vector4f;",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/render/fog/FogData;renderDistanceEnd:F",
+            target = "Lnet/minecraft/client/renderer/fog/FogData;renderDistanceEnd:F",
             shift = At.Shift.AFTER
         ),
         locals = LocalCapture.CAPTURE_FAILSOFT
     )
     private void pvpclient$removeFog(Camera camera, int renderDistance,
-                                     RenderTickCounter tickCounter, float skyDarkness,
-                                     ClientWorld world,
+                                     DeltaTracker tickCounter, float skyDarkness,
+                                     ClientLevel world,
                                      CallbackInfoReturnable<Vector4f> cir,
                                      float f, Vector4f color, float f2,
-                                     CameraSubmersionType submersion, Entity entity,
+                                     FogType submersion, Entity entity,
                                      FogData data) {
         if (data == null) return;
 
         boolean remove;
-        if (submersion == CameraSubmersionType.LAVA) {
+        if (submersion == FogType.LAVA) {
             remove = isEnabled(ClearLavaModule.class);
-        } else if (submersion == CameraSubmersionType.WATER) {
+        } else if (submersion == FogType.WATER) {
             remove = isEnabled(ClearWaterModule.class);
         } else {
             remove = isEnabled(NoFogModule.class);

@@ -1,9 +1,9 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.gui.screen.DisconnectedScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(DisconnectedScreen.class)
 public abstract class AutoReconnectMixin extends Screen {
 
-    protected AutoReconnectMixin(Text title) {
+    protected AutoReconnectMixin(Component title) {
         super(title);
     }
 
@@ -30,12 +30,12 @@ public abstract class AutoReconnectMixin extends Screen {
             com.vortex.client.hud.AutoReconnect.onDisconnected(
                     (DisconnectedScreen) (Object) this);
 
-            ButtonWidget button = ButtonWidget.builder(
-                    Text.literal(com.vortex.client.hud.AutoReconnect.buttonLabel()),
+            Button button = Button.builder(
+                    Component.literal(com.vortex.client.hud.AutoReconnect.buttonLabel()),
                     b -> com.vortex.client.hud.AutoReconnect.buttonPressed())
-                    .dimensions(this.width / 2 - 100, this.height - 30, 200, 20)
+                    .bounds(this.width / 2 - 100, this.height - 30, 200, 20)
                     .build();
-            this.addDrawableChild(button);
+            this.addRenderableWidget(button);
 
             // Handed over so the countdown can keep the label current.
             com.vortex.client.hud.AutoReconnect.setButton(button);

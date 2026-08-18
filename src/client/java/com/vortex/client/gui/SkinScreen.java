@@ -3,13 +3,13 @@ package com.vortex.client.gui;
 import com.vortex.client.skin.SkinFetcher;
 import com.vortex.client.skin.SkinTextureCache;
 import com.vortex.client.skin.SkinWardrobe;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 
 import java.util.ArrayList;
@@ -48,8 +48,8 @@ public class SkinScreen extends Screen {
 
     private final Screen parent;
 
-    private TextFieldWidget searchField;
-    private TextFieldWidget renameField;
+    private EditBox searchField;
+    private EditBox renameField;
     private SkinWardrobe.Skin renaming = null;
 
     private float openAnim = 0f;
@@ -78,7 +78,7 @@ public class SkinScreen extends Screen {
     private final List<Hit> hits = new ArrayList<>();
 
     public SkinScreen(Screen parent) {
-        super(Text.literal("Skins"));
+        super(Component.literal("Skins"));
         this.parent = parent;
     }
 
@@ -91,18 +91,18 @@ public class SkinScreen extends Screen {
         listH = winH - HEADER_H - FOOTER_H;
         columns = Math.max(1, (winW - PAD * 2) / CELL_W);
 
-        searchField = new TextFieldWidget(this.textRenderer,
-                winX + 14, winY + 38, 180, 14, Text.literal(""));
-        searchField.setDrawsBackground(false);
+        searchField = new EditBox(this.font,
+                winX + 14, winY + 38, 180, 14, Component.literal(""));
+        searchField.setBordered(false);
         searchField.setMaxLength(16);
-        this.addDrawableChild(searchField);
+        this.addRenderableWidget(searchField);
 
-        renameField = new TextFieldWidget(this.textRenderer,
-                winX + 14, winY + winH - 18, 180, 14, Text.literal(""));
-        renameField.setDrawsBackground(false);
+        renameField = new EditBox(this.font,
+                winX + 14, winY + winH - 18, 180, 14, Component.literal(""));
+        renameField.setBordered(false);
         renameField.setMaxLength(32);
         renameField.setVisible(false);
-        this.addDrawableChild(renameField);
+        this.addRenderableWidget(renameField);
 
         // Beim Oeffnen lose PNG-Dateien uebernehmen -- bequemer als ein Knopf.
         int found = SkinWardrobe.importLooseFiles();
@@ -110,7 +110,7 @@ public class SkinScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
         hits.clear();
@@ -140,64 +140,64 @@ public class SkinScreen extends Screen {
             renameField.setX(winX + 76);
             renameField.setY(winY + winH - 16);
         }
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawHeader(DrawContext ctx, int accent) {
+    private void drawHeader(GuiGraphicsExtractor ctx, int accent) {
         ctx.fill(winX, winY, winX + winW, winY + HEADER_H, fade(C_BAR, openAnim));
         ctx.fill(winX, winY + HEADER_H - 1, winX + winW, winY + HEADER_H, fade(C_LINE, openAnim));
 
         boolean backHov = in(winX + 8, winY + 8, 16, 16);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
+        ctx.text(this.font, Component.literal("<"),
                 winX + 12, winY + 12, backHov ? accent : 0xFF9A9AA6);
         hits.add(new Hit(winX + 8, winY + 8, 16, 16, Act.BACK, null));
 
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Skin Wardrobe"),
+        ctx.text(this.font, Component.literal("Skin Wardrobe"),
                 winX + 30, winY + 11, 0xFFFFFFFF);
 
         int count = SkinWardrobe.all().size();
         String c = count + (count == 1 ? " Skin" : " Skins");
-        int cw = this.textRenderer.getWidth(c);
-        ctx.drawText(this.textRenderer, Text.literal(c),
+        int cw = this.font.width(c);
+        ctx.text(this.font, Component.literal(c),
                 winX + winW - cw - 12, winY + 12, 0xFF74747F, false);
 
         // Suchfeld
         roundRect(ctx, winX + 14, winY + 34, 192, 20, C_INNER);
-        if (searchField != null && searchField.getText().isEmpty()) {
-            ctx.drawText(this.textRenderer, Text.literal("Enter a player name..."),
+        if (searchField != null && searchField.getValue().isEmpty()) {
+            ctx.text(this.font, Component.literal("Enter a player name..."),
                     winX + 20, winY + 40, 0xFF6A6A76, false);
         }
 
         // Knopf: holen
         String lbl = busy ? "..." : "Fetch skin";
-        int bw = this.textRenderer.getWidth(lbl) + 18;
+        int bw = this.font.width(lbl) + 18;
         boolean hov = in(winX + 212, winY + 34, bw, 20);
         roundRect(ctx, winX + 212, winY + 34, bw, 20,
                 hov && !busy ? mix(C_INNER, accent, 0.45f) : C_INNER);
-        ctx.drawText(this.textRenderer, Text.literal(lbl),
+        ctx.text(this.font, Component.literal(lbl),
                 winX + 221, winY + 40, busy ? 0xFF74747F : 0xFFFFFFFF, false);
         if (!busy) hits.add(new Hit(winX + 212, winY + 34, bw, 20, Act.SEARCH, null));
 
         // Knopf: Ordner oeffnen
         String ol = "Folder";
-        int ow = this.textRenderer.getWidth(ol) + 18;
+        int ow = this.font.width(ol) + 18;
         int ox = winX + winW - ow - 12;
         boolean ohov = in(ox, winY + 34, ow, 20);
         roundRect(ctx, ox, winY + 34, ow, 20, ohov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-        ctx.drawText(this.textRenderer, Text.literal(ol), ox + 9, winY + 40, 0xFFD0D0DA, false);
+        ctx.text(this.font, Component.literal(ol), ox + 9, winY + 40, 0xFFD0D0DA, false);
         hits.add(new Hit(ox, winY + 34, ow, 20, Act.OPEN_FOLDER, null));
 
         // Knopf: Ordner einlesen
         String il = "Scan";
-        int iw = this.textRenderer.getWidth(il) + 18;
+        int iw = this.font.width(il) + 18;
         int ix = ox - iw - 6;
         boolean ihov = in(ix, winY + 34, iw, 20);
         roundRect(ctx, ix, winY + 34, iw, 20, ihov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-        ctx.drawText(this.textRenderer, Text.literal(il), ix + 9, winY + 40, 0xFFD0D0DA, false);
+        ctx.text(this.font, Component.literal(il), ix + 9, winY + 40, 0xFFD0D0DA, false);
         hits.add(new Hit(ix, winY + 34, iw, 20, Act.IMPORT, null));
     }
 
-    private void drawGrid(DrawContext ctx, int accent) {
+    private void drawGrid(GuiGraphicsExtractor ctx, int accent) {
         ctx.enableScissor(winX, winY + HEADER_H, winX + winW, winY + HEADER_H + listH);
 
         List<SkinWardrobe.Skin> list = SkinWardrobe.all();
@@ -230,13 +230,13 @@ public class SkinScreen extends Screen {
 
             // Name mittig, bei Bedarf gekuerzt.
             String name = shorten(skin.name, CELL_W - 16);
-            int nw = this.textRenderer.getWidth(name);
-            ctx.drawText(this.textRenderer, Text.literal(name),
+            int nw = this.font.width(name);
+            ctx.text(this.font, Component.literal(name),
                     cx + (CELL_W - 6 - nw) / 2, cy + CELL_H - 54, 0xFFFFFFFF, false);
 
             String src = shorten(skin.source + (skin.slim ? "  schlank" : ""), CELL_W - 16);
-            int sw = this.textRenderer.getWidth(src);
-            ctx.drawText(this.textRenderer, Text.literal(src),
+            int sw = this.font.width(src);
+            ctx.text(this.font, Component.literal(src),
                     cx + (CELL_W - 6 - sw) / 2, cy + CELL_H - 44, 0xFF74747F, false);
 
             // Werkzeuge nur unter der Maus einblenden, damit das Raster ruhig bleibt.
@@ -244,17 +244,17 @@ public class SkinScreen extends Screen {
                 // Werkzeug-Reihe oberhalb des Hochladen-Knopfes, damit sich
                 // die Klickflaechen nicht ueberlappen.
                 int bx = cx + 4, by = cy + CELL_H - 40;
-                ctx.drawText(this.textRenderer, Text.literal("rename"),
+                ctx.text(this.font, Component.literal("rename"),
                         bx, by, 0xFF9AD8FF, false);
-                hits.add(new Hit(bx, by, this.textRenderer.getWidth("rename"), 9,
+                hits.add(new Hit(bx, by, this.font.width("rename"), 9,
                         Act.RENAME, skin));
 
                 String ml = skin.slim ? "classic" : "slim";
-                int mxp = cx + CELL_W - 10 - this.textRenderer.getWidth(ml) - 12;
-                ctx.drawText(this.textRenderer, Text.literal(ml), mxp, by, 0xFFB4B4C0, false);
-                hits.add(new Hit(mxp, by, this.textRenderer.getWidth(ml), 9, Act.MODEL, skin));
+                int mxp = cx + CELL_W - 10 - this.font.width(ml) - 12;
+                ctx.text(this.font, Component.literal(ml), mxp, by, 0xFFB4B4C0, false);
+                hits.add(new Hit(mxp, by, this.font.width(ml), 9, Act.MODEL, skin));
 
-                ctx.drawText(this.textRenderer, Text.literal("x"),
+                ctx.text(this.font, Component.literal("x"),
                         cx + CELL_W - 16, by, 0xFFFF7A7A, false);
                 hits.add(new Hit(cx + CELL_W - 18, by - 1, 12, 11, Act.DELETE, skin));
 
@@ -273,8 +273,8 @@ public class SkinScreen extends Screen {
                     can ? (ubHov ? mix(C_INNER, 0xFF55FF7A, 0.5f) : C_INNER) : 0xFF202027);
             String up = can ? "Visible to everyone" : "Anmeldung fehlt";
             String upShort = shorten(up, ubW - 8);
-            int uw2 = this.textRenderer.getWidth(upShort);
-            ctx.drawText(this.textRenderer, Text.literal(upShort),
+            int uw2 = this.font.width(upShort);
+            ctx.text(this.font, Component.literal(upShort),
                     ubX + (ubW - uw2) / 2, ubY + 3,
                     can ? 0xFF9AFF9A : 0xFF5A5A66, false);
             if (can) {
@@ -302,8 +302,8 @@ public class SkinScreen extends Screen {
 
         if (list.isEmpty()) {
             String msg = "No skins yet — search for a player name above";
-            ctx.drawText(this.textRenderer, Text.literal(msg),
-                    winX + (winW - this.textRenderer.getWidth(msg)) / 2,
+            ctx.text(this.font, Component.literal(msg),
+                    winX + (winW - this.font.width(msg)) / 2,
                     winY + HEADER_H + listH / 2 - 4, 0xFF6A6A76, false);
         }
     }
@@ -315,7 +315,7 @@ public class SkinScreen extends Screen {
      * Pixeln, die Hut-Ebene darueber bei (40,8). Beide werden vergroessert
      * uebereinander gezeichnet, damit auch Skins mit Hut korrekt aussehen.
      */
-    private void drawSkinPreview(DrawContext ctx, SkinWardrobe.Skin skin,
+    private void drawSkinPreview(GuiGraphicsExtractor ctx, SkinWardrobe.Skin skin,
                                  int x, int y, int scale) {
         Identifier tex = SkinTextureCache.get(skin);
         int size = 8 * scale;
@@ -323,38 +323,38 @@ public class SkinScreen extends Screen {
             // Platzhalter, wenn die Datei fehlt oder unlesbar ist.
             roundRect(ctx, x, y, size, size, 0xFF3A3A45);
             String q = "?";
-            ctx.drawText(this.textRenderer, Text.literal(q),
-                    x + size / 2 - this.textRenderer.getWidth(q) / 2, y + size / 2 - 4,
+            ctx.text(this.font, Component.literal(q),
+                    x + size / 2 - this.font.width(q) / 2, y + size / 2 - 4,
                     0xFF74747F, false);
             return;
         }
         try {
             // Grundschicht (Gesicht)
-            ctx.drawTexture(RenderPipelines.GUI_TEXTURED, tex,
+            ctx.blit(RenderPipelines.GUI_TEXTURED, tex,
                     x, y, 8.0F, 8.0F, size, size, 8, 8, 64, 64);
             // Hut-Ebene darueber
-            ctx.drawTexture(RenderPipelines.GUI_TEXTURED, tex,
+            ctx.blit(RenderPipelines.GUI_TEXTURED, tex,
                     x, y, 40.0F, 8.0F, size, size, 8, 8, 64, 64);
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("SkinScreen.preview", pvpErr);
         }
     }
 
-    private void drawFooter(DrawContext ctx, int accent) {
+    private void drawFooter(GuiGraphicsExtractor ctx, int accent) {
         int fy = winY + winH - FOOTER_H;
         ctx.fill(winX, fy, winX + winW, winY + winH, fade(C_BAR, openAnim));
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
 
         if (renaming != null) {
-            ctx.drawText(this.textRenderer, Text.literal("New name:"),
+            ctx.text(this.font, Component.literal("New name:"),
                     winX + 12, fy + 7, 0xFFD0D0DA, false);
             roundRect(ctx, winX + 72, fy + 3, 188, 16, C_INNER);
             String ok = "Save";
-            int okw = this.textRenderer.getWidth(ok) + 14;
+            int okw = this.font.width(ok) + 14;
             boolean hov = in(winX + 266, fy + 3, okw, 16);
             roundRect(ctx, winX + 266, fy + 3, okw, 16,
                     hov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-            ctx.drawText(this.textRenderer, Text.literal(ok),
+            ctx.text(this.font, Component.literal(ok),
                     winX + 273, fy + 7, 0xFFFFFFFF, false);
             hits.add(new Hit(winX + 266, fy + 3, okw, 16, Act.RENAME, renaming));
             return;
@@ -365,12 +365,12 @@ public class SkinScreen extends Screen {
         var actNow = com.vortex.client.skin.ActiveSkin.get();
         if (actNow != null) {
             String vl = "Variant " + com.vortex.client.skin.ActiveSkin.getVariant();
-            int vw = this.textRenderer.getWidth(vl) + 14;
+            int vw = this.font.width(vl) + 14;
             int vx = winX + winW - vw - 10;
             boolean vhov = in(vx, fy + 3, vw, 16);
             roundRect(ctx, vx, fy + 3, vw, 16,
                     vhov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-            ctx.drawText(this.textRenderer, Text.literal(vl),
+            ctx.text(this.font, Component.literal(vl),
                     vx + 7, fy + 7, 0xFFD0D0DA, false);
             hits.add(new Hit(vx, fy + 3, vw, 16, Act.VARIANT, null));
         }
@@ -384,14 +384,14 @@ public class SkinScreen extends Screen {
                     ? "Click a skin to apply it (visible only to you)"
                     : ("Active: " + act.name + "  \u2014  click again for your own skin");
         }
-        ctx.drawText(this.textRenderer, Text.literal(shorten(msg, winW - 24)),
+        ctx.text(this.font, Component.literal(shorten(msg, winW - 24)),
                 winX + 12, fy + 7, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
     }
 
     // ---------------------------------------------------------------- Eingabe
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
 
         for (int i = hits.size() - 1; i >= 0; i--) {
@@ -399,7 +399,7 @@ public class SkinScreen extends Screen {
             if (!h.has(mx, my)) continue;
             switch (h.act) {
                 case BACK:
-                    this.close();
+                    this.onClose();
                     return true;
                 case SEARCH:
                     startSearch();
@@ -415,14 +415,14 @@ public class SkinScreen extends Screen {
                 }
                 case RENAME:
                     if (renaming == h.skin && renameField != null) {
-                        SkinWardrobe.rename(h.skin, renameField.getText());
+                        SkinWardrobe.rename(h.skin, renameField.getValue());
                         renaming = null;
                         renameField.setVisible(false);
                         status = "Renamed.";
                     } else {
                         renaming = h.skin;
                         if (renameField != null) {
-                            renameField.setText(h.skin.name);
+                            renameField.setValue(h.skin.name);
                             renameField.setVisible(true);
                             this.setFocused(renameField);
                         }
@@ -474,7 +474,7 @@ public class SkinScreen extends Screen {
     /** Sucht den eingegebenen Spielernamen und legt den Skin in der Sammlung ab. */
     private void startSearch() {
         if (busy || searchField == null) return;
-        String name = searchField.getText().trim();
+        String name = searchField.getValue().trim();
         if (name.isEmpty()) {
             status = "Enter a player name.";
             return;
@@ -489,8 +489,8 @@ public class SkinScreen extends Screen {
                 SkinFetcher.download(r.textureUrl, file);
                 SkinWardrobe.add(r.userName, file, r.userName, r.slim);
                 status = r.userName + " added.";
-                MinecraftClient.getInstance().execute(() -> {
-                    if (searchField != null) searchField.setText("");
+                Minecraft.getInstance().execute(() -> {
+                    if (searchField != null) searchField.setValue("");
                 });
             } catch (Throwable e) {
                 String m = e.getMessage();
@@ -538,7 +538,7 @@ public class SkinScreen extends Screen {
     private void openFolder() {
         try {
             java.nio.file.Files.createDirectories(SkinWardrobe.skinDir());
-            Util.getOperatingSystem().open(SkinWardrobe.skinDir().toUri());
+            Util.getPlatform().openUri(SkinWardrobe.skinDir().toUri());
             status = "Folder opened \u2014 copy PNGs in, then press Scan.";
         } catch (Throwable pvpErr) {
             status = "Folder: " + SkinWardrobe.skinDir();
@@ -561,9 +561,9 @@ public class SkinScreen extends Screen {
     // ----------------------------------------------------------- Hilfsmittel
 
     private String shorten(String s, int maxW) {
-        if (this.textRenderer.getWidth(s) <= maxW) return s;
+        if (this.font.width(s) <= maxW) return s;
         String cur = s;
-        while (cur.length() > 1 && this.textRenderer.getWidth(cur + "..") > maxW) {
+        while (cur.length() > 1 && this.font.width(cur + "..") > maxW) {
             cur = cur.substring(0, cur.length() - 1);
         }
         return cur + "..";
@@ -573,7 +573,7 @@ public class SkinScreen extends Screen {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
-    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -598,13 +598,13 @@ public class SkinScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         SkinWardrobe.save();
-        this.client.setScreen(parent);
+        this.minecraft.setScreen(parent);
     }
 }

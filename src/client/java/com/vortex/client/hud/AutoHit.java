@@ -4,12 +4,12 @@ import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.AutoHitModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 
 /**
  * Logik fuer Auto Hit: schlaegt zu, wenn das Fadenkreuz auf einem (Spieler-)
@@ -32,19 +32,19 @@ public final class AutoHit {
             try {
             AutoHitModule mod = (AutoHitModule) find(AutoHitModule.class);
             if (mod == null || !mod.isEnabled()) return;
-            if (client.player == null || client.world == null) return;
-            if (client.interactionManager == null) return;
+            if (client.player == null || client.level == null) return;
+            if (client.gameMode == null) return;
             // In einem Menue/Screen nicht zuschlagen.
-            if (client.currentScreen != null) return;
+            if (client.screen != null) return;
 
-            ClientPlayerEntity self = client.player;
+            LocalPlayer self = client.player;
 
             // Angriff muss voll (bzw. ueber der Schwelle) aufgeladen sein.
-            float charge = self.getAttackCooldownProgress(0.0f);
+            float charge = self.getAttackStrengthScale(0.0f);
             if (charge < mod.getMinCharge()) return;
 
             // Fadenkreuz-Ziel pruefen.
-            HitResult hit = client.crosshairTarget;
+            HitResult hit = client.hitResult;
             if (hit == null || hit.getType() != HitResult.Type.ENTITY) return;
             if (!(hit instanceof EntityHitResult ehr)) return;
 
@@ -53,7 +53,7 @@ public final class AutoHit {
             if (!targetEntity.isAlive()) return;
 
             // Optional nur Spieler.
-            if (mod.playersOnly() && !(targetEntity instanceof PlayerEntity)) return;
+            if (mod.playersOnly() && !(targetEntity instanceof Player)) return;
 
             // Zuschlagen: doAttack nutzt das crosshairTarget (= dieses Ziel) und
             // macht Reichweiten-Check, Schaden, Swing + Pakete selbst. doAttack

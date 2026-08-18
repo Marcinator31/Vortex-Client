@@ -68,11 +68,11 @@ public class NoRenderBlocksModule extends Module {
      */
     public static void rebuildChunks() {
         try {
-            var client = net.minecraft.client.MinecraftClient.getInstance();
-            if (client == null || client.world == null) return;
+            var client = net.minecraft.client.Minecraft.getInstance();
+            if (client == null || client.level == null) return;
             var acc = (com.vortex.client.mixin.client.MinecraftClientAccessor) client;
             var wr = acc.pvpclient$getWorldRenderer();
-            if (wr != null) wr.reload();
+            if (wr != null) wr.allChanged();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("NoRenderBlocks.rebuild", pvpErr);
         }

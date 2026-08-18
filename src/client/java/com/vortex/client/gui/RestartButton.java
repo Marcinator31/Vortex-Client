@@ -3,9 +3,9 @@ package com.vortex.client.gui;
 import com.vortex.client.util.GameRestarter;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Fuegt dem Pause-Menue (ESC) einen "Restart game"-Knopf hinzu.
@@ -20,34 +20,34 @@ public final class RestartButton {
     public static void register() {
         // Hauptmenue: Knopf zur Skin-Garderobe.
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof net.minecraft.client.gui.screen.TitleScreen)) return;
+            if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen)) return;
             try {
-                ButtonWidget skins = ButtonWidget.builder(
-                        Text.literal("Skins"),
-                        b -> net.minecraft.client.MinecraftClient.getInstance()
+                Button skins = Button.builder(
+                        Component.literal("Skins"),
+                        b -> net.minecraft.client.Minecraft.getInstance()
                                 .setScreen(new SkinScreen(screen))
-                ).dimensions(6, 6, 70, 20).build();
-                Screens.getButtons(screen).add(skins);
+                ).bounds(6, 6, 70, 20).build();
+                Screens.getWidgets(screen).add(skins);
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("SkinButton", pvpErr);
             }
         });
 
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof GameMenuScreen)) return;
+            if (!(screen instanceof PauseScreen)) return;
             try {
                 // Oben links platzieren, damit nichts vom Vanilla-Menue verdeckt wird.
-                ButtonWidget btn = ButtonWidget.builder(
-                        Text.literal("Restart game"),
+                Button btn = Button.builder(
+                        Component.literal("Restart game"),
                         b -> {
                             try {
                                 GameRestarter.restart();
                             } catch (Throwable t) {
-                                b.setMessage(Text.literal("Restart failed"));
+                                b.setMessage(Component.literal("Restart failed"));
                             }
                         }
-                ).dimensions(6, 6, 140, 20).build();
-                Screens.getButtons(screen).add(btn);
+                ).bounds(6, 6, 140, 20).build();
+                Screens.getWidgets(screen).add(btn);
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("RestartButton", pvpErr);
             }

@@ -1,36 +1,36 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.session.Session;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
  * Ein "Accessor-Mixin" -- ein zweiter Mixin-Typ, den du kennen solltest.
  *
- * Problem: MinecraftClient.session ist privat und final. Der Account-
+ * Problem: Minecraft.session ist privat und final. Der Account-
  * Switcher muss es aber neu setzen koennen.
  *
  * Loesung: @Accessor erzeugt automatisch einen Setter dafuer. Statt
  * haesslicher Reflection castest du den Client einfach auf dieses
  * Interface und rufst pvpclient$setSession() auf:
  *
- *   ((MinecraftClientAccessor) MinecraftClient.getInstance())
+ *   ((MinecraftClientAccessor) Minecraft.getInstance())
  *       .pvpclient$setSession(neueSession);
  *
  * Hinweis: Der exakte Feldname ("session") kann je nach Mappings
- * leicht abweichen. Falls der Build meckert, in der MinecraftClient-
- * Klasse nach dem Session-Feld suchen und den Namen anpassen.
+ * leicht abweichen. Falls der Build meckert, in der Minecraft-
+ * Klasse nach dem User-Feld suchen und den Namen anpassen.
  */
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public interface MinecraftClientAccessor {
 
     /**
      * Setzt die Sitzung (den angemeldeten Account).
      *
      * WICHTIG -- der Name ist bewusst eindeutig gewaehlt:
-     * Andere Mods legen ebenfalls Zugriffe auf MinecraftClient an. Der Essential-
+     * Andere Mods legen ebenfalls Zugriffe auf Minecraft an. Der Essential-
      * Mod bringt eine Methode namens "setSession" mit; heisst unsere genauso,
      * verwirft Mixin unsere stillschweigend ("Method overwrite conflict ...
      * Skipping method") und der Account-Wechsel bleibt wirkungslos, ohne dass
@@ -41,15 +41,15 @@ public interface MinecraftClientAccessor {
      * Mod kollidieren.
      */
     @Accessor("field_1726")
-    void pvpclient$setSession(Session session);
+    void pvpclient$setSession(User session);
 
     /**
      * Getter fuer das package-private worldRenderer-Feld. Wird vom Potato
      * Mode genutzt, um nach einer Render-Distanz-Aenderung reload() aufzurufen,
      * damit die Aenderung sofort sichtbar wird.
      */
-    @Accessor("worldRenderer")
-    WorldRenderer pvpclient$getWorldRenderer();
+    @Accessor("levelRenderer")
+    LevelRenderer pvpclient$getWorldRenderer();
 
     /**
      * Setter fuer das crosshairTarget-Feld. Wird genutzt, damit in der Freecam
@@ -57,7 +57,7 @@ public interface MinecraftClientAccessor {
      * berechnen das Ziel selbst vom Spieler und setzen es hier.
      */
     @Accessor("field_1765")
-    void pvpclient$setCrosshairTarget(net.minecraft.util.hit.HitResult target);
+    void pvpclient$setCrosshairTarget(net.minecraft.world.phys.HitResult target);
 
     /**
      * Invoker fuer die private Methode doAttack() (method_1536). @Invoker ist das

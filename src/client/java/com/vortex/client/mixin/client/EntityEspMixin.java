@@ -2,9 +2,9 @@ package com.vortex.client.mixin.client;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.EspModule;
-import net.minecraft.entity.Entity;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -43,7 +43,7 @@ public abstract class EntityEspMixin {
     private boolean pvpclient$isEspMob(EspModule esp) {
         try {
             Entity self = (Entity) (Object) this;
-            Identifier id = Registries.ENTITY_TYPE.getId(self.getType());
+            Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(self.getType());
             return esp.isMobEnabled(id);
         } catch (Throwable t) {
             return false;

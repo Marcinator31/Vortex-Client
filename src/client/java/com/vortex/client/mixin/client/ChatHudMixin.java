@@ -1,9 +1,5 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,6 +10,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 /**
  * Puts the time in front of arriving chat messages.
@@ -22,14 +22,14 @@ import java.time.format.DateTimeFormatter;
  * part of the line: it wraps with it, it is there when the line is copied, and
  * it survives scrolling back.
  */
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public abstract class ChatHudMixin {
 
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter LONG = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @ModifyVariable(method = "method_1812", at = @At("HEAD"), argsOnly = true, require = 0)
-    private Text vortex$addTimestamp(Text message) {
+    private Component vortex$addTimestamp(Component message) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
                     com.vortex.client.module.modules.ChatModule.class);
@@ -45,7 +45,7 @@ public abstract class ChatHudMixin {
             DateTimeFormatter fmt = (mod.format.getIndex() == 1) ? LONG : SHORT;
             String stamp = LocalTime.now().format(fmt);
 
-            MutableText prefix = Text.literal(stamp + " ")
+            MutableComponent prefix = Component.literal(stamp + " ")
                     .setStyle(Style.EMPTY.withColor(mod.timeColor.get() & 0xFFFFFF));
 
             // Keep a plain copy for the clipboard, with the stamp included --

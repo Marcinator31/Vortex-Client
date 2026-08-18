@@ -1,6 +1,6 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.Mouse;
+import net.minecraft.client.MouseHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * of surprise that costs a fight. While the zoom key is held the wheel belongs
  * to the zoom and to nothing else.
  */
-@Mixin(Mouse.class)
+@Mixin(MouseHandler.class)
 public abstract class ZoomScrollMixin {
 
     @Inject(method = "method_1598", at = @At("HEAD"), cancellable = true, require = 0)

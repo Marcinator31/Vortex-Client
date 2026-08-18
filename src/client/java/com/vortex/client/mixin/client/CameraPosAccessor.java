@@ -1,7 +1,7 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.render.Camera;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Camera;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -23,5 +23,5 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface CameraPosAccessor {
 
     @Accessor("field_18712")
-    Vec3d vortex$getPos();
+    Vec3 vortex$getPos();
 }

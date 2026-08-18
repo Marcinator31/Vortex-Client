@@ -3,30 +3,29 @@ package com.vortex.client.hud;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.StashFinderModule;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.Container;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
  * Findet Stashes ueber die Container-Dichte pro Chunk.
  *
  * Architektur wie beim Block-ESP: Ein HINTERGRUND-THREAD durchsucht die
- * geladenen Chunks, zaehlt Container (alles was Inventory implementiert) je
+ * geladenen Chunks, zaehlt Container (alles was Container implementiert) je
  * Chunk und merkt sich Chunks ueber der Schwelle als Stash. Der Render-Thread
  * liest nur das Ergebnis und zeichnet Tracer -> keine FPS-Drops.
  *
@@ -38,10 +37,10 @@ public final class StashFinder {
     /** Ein gefundener Stash: Zentrum + Anzahl Container. */
     public static final class Stash {
         public final long chunkKey;   // eindeutige Chunk-Kennung
-        public final Vec3d center;    // Mittelpunkt (fuer Tracer)
+        public final Vec3 center;    // Mittelpunkt (fuer Tracer)
         public final int blockX, blockZ;
         public final int count;
-        Stash(long chunkKey, Vec3d center, int blockX, int blockZ, int count) {
+        Stash(long chunkKey, Vec3 center, int blockX, int blockZ, int count) {
             this.chunkKey = chunkKey;
             this.center = center;
             this.blockX = blockX;
@@ -66,12 +65,12 @@ public final class StashFinder {
     private static Thread worker;
 
     public static void register() {
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
             StashFinderModule mod = (StashFinderModule) find(StashFinderModule.class);
             if (mod == null || !mod.isEnabled()) return;
 
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client.world == null || client.player == null) return;
+            Minecraft client = Minecraft.getInstance();
+            if (client.level == null || client.player == null) return;
 
             ensureWorker();
 
@@ -83,7 +82,7 @@ public final class StashFinder {
                             + s.blockX + ", " + s.blockZ
                             + " \u00a77(" + s.count + " Container)";
                     try {
-                        client.inGameHud.getChatHud().addMessage(Text.literal(msg));
+                        if (client.player != null) client.player.sendSystemMessage(Component.literal(msg));
                     } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("StashFinder", pvpErr);
             }
@@ -94,17 +93,17 @@ public final class StashFinder {
 
             // Tracer zeichnen.
             if (!mod.tracerEnabled()) return;
-            MatrixStack matrices = context.matrices();
-            VertexConsumerProvider consumers = context.consumers();
+            PoseStack matrices = context.poseStack();
+            MultiBufferSource consumers = context.bufferSource();
             if (matrices == null || consumers == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
-                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
+                float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 // Via the shared helper, which uses the real render camera and
                 // handles freecam. Computing this locally from the player's
                 // eyes shifted everything as soon as the view changed.
-                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
+                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
                 if (com.vortex.client.freecam.Freecam.isActive()) {
                     cam = com.vortex.client.freecam.Freecam.getPos();
                 }
@@ -120,22 +119,22 @@ public final class StashFinder {
                 float tw = 2.0f;
 
                 // Tracer-Start: knapp vor der Kamera in Blickrichtung.
-                Vec3d start = pvpclient$tracerStart(client, cam, tickDelta);
+                Vec3 start = pvpclient$tracerStart(client, cam, tickDelta);
 
-                org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
+                org.joml.Matrix4f mat = matrices.last().pose();
                 List<Stash> stashes = RESULT.get();
                 for (int i = 0; i < stashes.size(); i++) {
-                    Vec3d c = stashes.get(i).center;
+                    Vec3 c = stashes.get(i).center;
                     double sx = start.x - cam.x, sy = start.y - cam.y, sz = start.z - cam.z;
                     double ex = c.x - cam.x, ey = c.y - cam.y, ez = c.z - cam.z;
                     double dx = ex - sx, dy = ey - sy, dz = ez - sz;
                     double len = Math.sqrt(dx*dx + dy*dy + dz*dz);
                     if (len < 1.0e-4) continue;
                     float nx = (float)(dx/len), ny = (float)(dy/len), nz = (float)(dz/len);
-                    lines.vertex(mat, (float) sx, (float) sy, (float) sz)
-                            .color(r, g, b, a).normal(nx, ny, nz).lineWidth(tw);
-                    lines.vertex(mat, (float) ex, (float) ey, (float) ez)
-                            .color(r, g, b, a).normal(nx, ny, nz).lineWidth(tw);
+                    lines.addVertex(mat, (float) sx, (float) sy, (float) sz)
+                            .setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(tw);
+                    lines.addVertex(mat, (float) ex, (float) ey, (float) ez)
+                            .setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(tw);
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("StashFinder", pvpErr);
@@ -149,22 +148,22 @@ public final class StashFinder {
         });
     }
 
-    private static Vec3d pvpclient$tracerStart(MinecraftClient client, Vec3d cam,
+    private static Vec3 pvpclient$tracerStart(Minecraft client, Vec3 cam,
                                                float tickDelta) {
         float yaw, pitch;
         if (com.vortex.client.freecam.Freecam.isActive()) {
             yaw = com.vortex.client.freecam.Freecam.getYaw();
             pitch = com.vortex.client.freecam.Freecam.getPitch();
         } else {
-            yaw = client.player.getYaw(tickDelta);
-            pitch = client.player.getPitch(tickDelta);
+            yaw = client.player.getViewYRot(tickDelta);
+            pitch = client.player.getViewXRot(tickDelta);
         }
         double yawRad = Math.toRadians(yaw);
         double pitchRad = Math.toRadians(pitch);
         double fx = -Math.sin(yawRad) * Math.cos(pitchRad);
         double fy = -Math.sin(pitchRad);
         double fz = Math.cos(yawRad) * Math.cos(pitchRad);
-        return new Vec3d(cam.x + fx * 0.5, cam.y + fy * 0.5, cam.z + fz * 0.5);
+        return new Vec3(cam.x + fx * 0.5, cam.y + fy * 0.5, cam.z + fz * 0.5);
     }
 
     private static void ensureWorker() {
@@ -180,13 +179,13 @@ public final class StashFinder {
             try {
                 Thread.sleep(500); // Stashes aendern sich langsam -> 2x/Sekunde reicht
 
-                MinecraftClient client = MinecraftClient.getInstance();
+                Minecraft client = Minecraft.getInstance();
                 StashFinderModule mod = (StashFinderModule) find(StashFinderModule.class);
                 if (client == null || mod == null || !mod.isEnabled()) {
                     if (!RESULT.get().isEmpty()) RESULT.set(new ArrayList<>());
                     continue;
                 }
-                ClientWorld world = client.world;
+                ClientLevel world = client.level;
                 if (world == null || client.player == null) {
                     if (!RESULT.get().isEmpty()) RESULT.set(new ArrayList<>());
                     continue;
@@ -214,7 +213,7 @@ public final class StashFinder {
                     int bx = (ccx << 4) + 8;
                     int bz = (ccz << 4) + 8;
                     Stash st = new Stash(ck,
-                            new net.minecraft.util.math.Vec3d(bx + 0.5, 64.0, bz + 0.5),
+                            new net.minecraft.world.phys.Vec3(bx + 0.5, 64.0, bz + 0.5),
                             bx, bz, count);
                     found.add(st);
                     if (!notified.contains(ck)) {

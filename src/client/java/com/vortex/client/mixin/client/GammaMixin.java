@@ -2,7 +2,7 @@ package com.vortex.client.mixin.client;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.FullbrightModule;
-import net.minecraft.client.option.SimpleOption;
+import net.minecraft.client.OptionInstance;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,14 +19,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Lightmap-Renderer einen Gamma-Wert von z.B. 15, ohne dass wir den
  * gespeicherten Wert veraendern.
  *
- * HINWEIS: Dieser Mixin zielt auf SimpleOption.getValue(). Da viele
+ * HINWEIS: Dieser Mixin zielt auf OptionInstance.getValue(). Da viele
  * Optionen diese Methode nutzen, pruefen wir, ob es WIRKLICH die
  * Gamma-Option ist -- ueber den Vergleich mit client.options.getGamma().
  */
-@Mixin(SimpleOption.class)
+@Mixin(OptionInstance.class)
 public class GammaMixin {
 
-    @Inject(method = "getValue", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "get", at = @At("HEAD"), cancellable = true)
     private void pvpclient$boostGamma(CallbackInfoReturnable<Object> cir) {
         // Hell machen, wenn Fullbright an ist ODER die Freecam aktiv ist.
         // Letzteres, damit man beim Umschauen unter der Erde etwas sieht.
@@ -35,12 +35,12 @@ public class GammaMixin {
         boolean freecam = com.vortex.client.freecam.Freecam.isActive();
         if (!fullbright && !freecam) return;
 
-        net.minecraft.client.MinecraftClient client =
-            net.minecraft.client.MinecraftClient.getInstance();
+        net.minecraft.client.Minecraft client =
+            net.minecraft.client.Minecraft.getInstance();
         if (client.options == null) return;
 
         // Nur eingreifen, wenn DIESE Option die Gamma-Option ist.
-        if ((Object) this == client.options.getGamma()) {
+        if ((Object) this == client.options.gamma()) {
             cir.setReturnValue(15.0);
         }
     }

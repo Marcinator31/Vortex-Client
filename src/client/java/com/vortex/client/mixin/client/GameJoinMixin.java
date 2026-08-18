@@ -1,8 +1,8 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.waypoint.ServerFingerprint;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,13 +24,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * Read only. The packet arrives anyway; nothing is requested or sent.
  */
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public abstract class GameJoinMixin {
 
     @Inject(method = "method_11120", at = @At("TAIL"), require = 0)
-    private void vortex$recordServer(GameJoinS2CPacket packet, CallbackInfo ci) {
+    private void vortex$recordServer(ClientboundLoginPacket packet, CallbackInfo ci) {
         try {
-            int dims = (packet.dimensionIds() == null) ? 0 : packet.dimensionIds().size();
+            int dims = (packet.levels() == null) ? 0 : packet.levels().size();
             ServerFingerprint.record(dims, packet.maxPlayers(), packet.hardcore());
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("GameJoinMixin", pvpErr);

@@ -1,15 +1,15 @@
 package com.vortex.client.skin;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
+import com.mojang.blaze3d.platform.NativeImage;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import com.mojang.blaze3d.platform.NativeImage;
 
 /**
  * Verwaltet den gerade angewendeten Skin.
@@ -113,10 +113,10 @@ public final class ActiveSkin {
 
             // Grundname OHNE Dateiendung.
             String base = "activeskin/" + safe(stripExt(skin.fileName));
-            Identifier main = Identifier.of("vortexclient", base);
+            Identifier main = Identifier.fromNamespaceAndPath("vortexclient", base);
 
-            var tm = MinecraftClient.getInstance().getTextureManager();
-            var texture = new NativeImageBackedTexture(() -> "vortexclient-active-skin", image);
+            var tm = Minecraft.getInstance().getTextureManager();
+            var texture = new DynamicTexture(() -> "vortexclient-active-skin", image);
 
             // WARUM MEHRERE NAMEN:
             // Der Skin wird ueber eine Textur-Referenz eingebunden, und die
@@ -133,7 +133,7 @@ public final class ActiveSkin {
             };
             for (String v : variants) {
                 try {
-                    tm.registerTexture(Identifier.of("vortexclient", v), texture);
+                    tm.register(Identifier.fromNamespaceAndPath("vortexclient", v), texture);
                 } catch (Throwable pvpErr) {
                     com.vortex.client.core.Errors.report("ActiveSkin.register:" + v, pvpErr);
                 }

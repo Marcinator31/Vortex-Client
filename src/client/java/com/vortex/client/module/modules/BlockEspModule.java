@@ -4,10 +4,9 @@ import com.vortex.client.core.setting.BooleanSetting;
 import com.vortex.client.core.setting.ColorSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.module.Module;
-import net.minecraft.util.Identifier;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.resources.Identifier;
 
 /**
  * Block-ESP: hebt ausgewaehlte Bloecke in der Welt mit einer farbigen Box-

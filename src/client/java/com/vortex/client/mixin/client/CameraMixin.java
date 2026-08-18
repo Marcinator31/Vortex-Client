@@ -1,9 +1,9 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.freecam.Freecam;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,11 +24,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * pos (field_18712) setzen wir direkt per @Shadow. setPos/setRotation sind in
  * Camera protected -> wir rufen sie ueber @Shadow-Methoden auf.
  */
-@Mixin(net.minecraft.client.render.Camera.class)
+@Mixin(net.minecraft.client.Camera.class)
 public abstract class CameraMixin {
 
     @Shadow
-    private Vec3d field_18712; // pos
+    private Vec3 field_18712; // pos
 
     @Shadow
     protected abstract void method_19325(float yaw, float pitch); // setRotation
@@ -37,7 +37,7 @@ public abstract class CameraMixin {
     protected abstract void method_19327(double x, double y, double z); // setPos
 
     @Inject(method = "method_19321", at = @At("TAIL"))
-    private void pvpclient$freecamUpdate(World area, Entity focusedEntity,
+    private void pvpclient$freecamUpdate(Level area, Entity focusedEntity,
                                          boolean thirdPerson, boolean inverseView,
                                          float tickProgress, CallbackInfo ci) {
         if (!Freecam.isActive()) return;

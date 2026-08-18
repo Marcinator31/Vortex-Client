@@ -1,10 +1,10 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.freecam.Freecam;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.util.hit.HitResult;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -38,8 +38,8 @@ public abstract class CrosshairTargetMixin {
     private void pvpclient$retargetFromPlayer(float tickDelta, CallbackInfo ci) {
         if (!Freecam.isActive()) return;
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
         if (player == null) return;
 
         try {
@@ -55,8 +55,8 @@ public abstract class CrosshairTargetMixin {
             // Trefferposition minimal, das Spiel denkt "anderer Block" und setzt
             // den Abbau-Fortschritt zurueck (man muss den Block mehrfach
             // anfangen).
-            double reach = player.getBlockInteractionRange();
-            HitResult target = player.raycast(reach, 1.0F, false);
+            double reach = player.blockInteractionRange();
+            HitResult target = player.pick(reach, 1.0F, false);
             // IMMER setzen (auch bei MISS), damit nie das Kamera-Ziel der
             // Freecam durchrutscht und den Block wechselt.
             if (target != null) {

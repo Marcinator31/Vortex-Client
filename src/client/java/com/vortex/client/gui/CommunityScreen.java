@@ -2,13 +2,12 @@ package com.vortex.client.gui;
 
 import com.vortex.client.macro.Macro;
 import com.vortex.client.macro.MacroManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Macros and presets shared by other people.
@@ -67,7 +66,7 @@ public class CommunityScreen extends Screen {
     private int winX, winY, winW, winH, listH;
 
     public CommunityScreen(Screen parent) {
-        super(Text.literal("Community"));
+        super(Component.literal("Community"));
         this.parent = parent;
     }
 
@@ -187,7 +186,7 @@ public class CommunityScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
 
@@ -209,9 +208,9 @@ public class CommunityScreen extends Screen {
         ctx.fill(winX, winY + HEADER_H - 1, winX + winW, winY + HEADER_H, fade(C_LINE, openAnim));
 
         boolean backHov = in(winX + 8, winY + 8, 16, 16);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
+        ctx.text(this.font, Component.literal("<"),
                 winX + 12, winY + 12, backHov ? accent : 0xFF9A9AA6);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Community"),
+        ctx.text(this.font, Component.literal("Community"),
                 winX + 30, winY + 11, 0xFFFFFFFF);
 
         int bx = winX + 12;
@@ -227,8 +226,8 @@ public class CommunityScreen extends Screen {
         int y = winY + HEADER_H + 4 - (int) scroll;
 
         if (list.isEmpty()) {
-            ctx.drawText(this.textRenderer,
-                    Text.literal(loading ? "Loading..." : status),
+            ctx.text(this.font,
+                    Component.literal(loading ? "Loading..." : status),
                     winX + 16, y + 8, 0xFF6A6A76, false);
         }
 
@@ -238,24 +237,24 @@ public class CommunityScreen extends Screen {
                 roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
 
                 int tagColor = "macro".equals(e.kind()) ? 0xFF9AD8FF : 0xFFD8A0FF;
-                ctx.drawText(this.textRenderer, Text.literal(e.kind().toUpperCase()),
+                ctx.text(this.font, Component.literal(e.kind().toUpperCase()),
                         winX + 16, y + 5, tagColor, false);
-                ctx.drawText(this.textRenderer, Text.literal(e.name()),
+                ctx.text(this.font, Component.literal(e.name()),
                         winX + 68, y + 5, 0xFFFFFFFF, false);
 
                 String sub = "by " + e.author();
                 if (e.description() != null && !e.description().isEmpty()) {
                     sub += "  ·  " + e.description();
                 }
-                ctx.drawText(this.textRenderer, Text.literal(shorten(sub, winW - 160)),
+                ctx.text(this.font, Component.literal(shorten(sub, winW - 160)),
                         winX + 16, y + 17, 0xFF74747F, false);
 
                 String get = "Import";
-                int gw = this.textRenderer.getWidth(get) + 14;
+                int gw = this.font.width(get) + 14;
                 boolean gHov = in(winX + winW - gw - 16, y + 7, gw, 16);
                 roundRect(ctx, winX + winW - gw - 16, y + 7, gw, 16,
                         gHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-                ctx.drawText(this.textRenderer, Text.literal(get),
+                ctx.text(this.font, Component.literal(get),
                         winX + winW - gw - 9, y + 11, 0xFFD0D0DA, false);
             }
             y += ROW_H + 3;
@@ -274,10 +273,10 @@ public class CommunityScreen extends Screen {
             roundRect(ctx, bxx, byy, bw, bh, 0xFF24242B);
             ctx.fill(bxx, byy, bxx + bw, byy + 1, accent);
 
-            ctx.drawTextWithShadow(this.textRenderer,
-                    Text.literal("Import into which preset?"), bxx + 12, byy + 10, 0xFFFFFFFF);
-            ctx.drawText(this.textRenderer,
-                    Text.literal(shorten("\"" + pendingPreset.name() + "\" replaces that slot.", bw - 24)),
+            ctx.text(this.font,
+                    Component.literal("Import into which preset?"), bxx + 12, byy + 10, 0xFFFFFFFF);
+            ctx.text(this.font,
+                    Component.literal(shorten("\"" + pendingPreset.name() + "\" replaces that slot.", bw - 24)),
                     bxx + 12, byy + 24, 0xFF9A9AA6, false);
 
             for (int i = 0; i < 3; i++) {
@@ -288,19 +287,19 @@ public class CommunityScreen extends Screen {
                 boolean sHov = in(sx, byy + 44, sw, 20);
                 roundRect(ctx, sx, byy + 44, sw, 20,
                         sHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-                ctx.drawText(this.textRenderer, Text.literal(label),
+                ctx.text(this.font, Component.literal(label),
                         sx + 6, byy + 50, active ? accent : 0xFFD0D0DA, false);
             }
 
             String cancel = "Cancel";
-            int cw2 = this.textRenderer.getWidth(cancel) + 16;
+            int cw2 = this.font.width(cancel) + 16;
             boolean cHov = in(bxx + bw - cw2 - 12, byy + 70, cw2, 18);
             roundRect(ctx, bxx + bw - cw2 - 12, byy + 70, cw2, 18,
                     cHov ? C_HOV : C_INNER);
-            ctx.drawText(this.textRenderer, Text.literal(cancel),
+            ctx.text(this.font, Component.literal(cancel),
                     bxx + bw - cw2 - 4, byy + 75, 0xFF9A9AA6, false);
 
-            ctx.drawText(this.textRenderer, Text.literal("The one in colour is active now"),
+            ctx.text(this.font, Component.literal("The one in colour is active now"),
                     bxx + 12, byy + 76, 0xFF5A5A66, false);
         }
 
@@ -308,33 +307,33 @@ public class CommunityScreen extends Screen {
         int fy = winY + winH - FOOTER_H;
         ctx.fill(winX, fy, winX + winW, winY + winH, fade(C_BAR, openAnim));
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
-        ctx.drawText(this.textRenderer,
-                Text.literal("Macros land in your list without a key. Presets ask which slot to replace."),
+        ctx.text(this.font,
+                Component.literal("Macros land in your list without a key. Presets ask which slot to replace."),
                 winX + 12, fy + 8, 0xFF74747F, false);
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
-    private int tab(DrawContext ctx, int x, int y, String label, String value, int accent) {
-        int w = this.textRenderer.getWidth(label) + 16;
+    private int tab(GuiGraphicsExtractor ctx, int x, int y, String label, String value, int accent) {
+        int w = this.font.width(label) + 16;
         boolean active = filter.equals(value);
         boolean hov = in(x, y, w, 18);
         roundRect(ctx, x, y, w, 18,
                 active ? mix(C_INNER, accent, 0.5f) : (hov ? C_HOV : C_INNER));
-        ctx.drawText(this.textRenderer, Text.literal(label), x + 8, y + 5, 0xFFE6E6EC, false);
+        ctx.text(this.font, Component.literal(label), x + 8, y + 5, 0xFFE6E6EC, false);
         return x + w + 4;
     }
 
-    private int button(DrawContext ctx, int x, int y, String label, int accent) {
-        int w = this.textRenderer.getWidth(label) + 16;
+    private int button(GuiGraphicsExtractor ctx, int x, int y, String label, int accent) {
+        int w = this.font.width(label) + 16;
         boolean hov = in(x, y, w, 18);
         roundRect(ctx, x, y, w, 18, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-        ctx.drawText(this.textRenderer, Text.literal(label), x + 8, y + 5, 0xFFD0D0DA, false);
+        ctx.text(this.font, Component.literal(label), x + 8, y + 5, 0xFFD0D0DA, false);
         return x + w + 6;
     }
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
 
         // While the question is up, nothing behind it reacts.
@@ -355,7 +354,7 @@ public class CommunityScreen extends Screen {
                 }
             }
             String cancel = "Cancel";
-            int cw2 = this.textRenderer.getWidth(cancel) + 16;
+            int cw2 = this.font.width(cancel) + 16;
             if (in(bxx + bw - cw2 - 12, byy + 70, cw2, 18)) {
                 pendingPreset = null;
                 status = "";
@@ -364,14 +363,14 @@ public class CommunityScreen extends Screen {
         }
 
         if (in(winX + 8, winY + 8, 16, 16)) {
-            this.close();
+            this.onClose();
             return true;
         }
 
         // Tabs and buttons, measured the same way they are drawn.
         int bx = winX + 12;
         for (String[] t : new String[][] { {"All","all"}, {"Macros","macro"}, {"Presets","preset"} }) {
-            int w = this.textRenderer.getWidth(t[0]) + 16;
+            int w = this.font.width(t[0]) + 16;
             if (in(bx, winY + 30, w, 18)) {
                 filter = t[1];
                 scrollTarget = 0f;
@@ -380,15 +379,15 @@ public class CommunityScreen extends Screen {
             bx += w + 4;
         }
         bx += 8;
-        int rw = this.textRenderer.getWidth(loading ? "Loading..." : "Refresh") + 16;
+        int rw = this.font.width(loading ? "Loading..." : "Refresh") + 16;
         if (in(bx, winY + 30, rw, 18)) {
             if (!loading) fetch();
             return true;
         }
         bx += rw + 6;
-        int ow = this.textRenderer.getWidth("Open website") + 16;
+        int ow = this.font.width("Open website") + 16;
         if (in(bx, winY + 30, ow, 18)) {
-            net.minecraft.util.Util.getOperatingSystem().open(SITE + "/presets.html");
+            net.minecraft.util.Util.getPlatform().openUri(SITE + "/presets.html");
             return true;
         }
 
@@ -396,7 +395,7 @@ public class CommunityScreen extends Screen {
         List<Entry> list = shown();
         int y = winY + HEADER_H + 4 - (int) scroll;
         for (Entry e : list) {
-            int gw = this.textRenderer.getWidth("Import") + 14;
+            int gw = this.font.width("Import") + 14;
             if (in(winX + winW - gw - 16, y + 7, gw, 16)) {
                 doImport(e);
                 return true;
@@ -450,7 +449,7 @@ public class CommunityScreen extends Screen {
                 // Writing files and reloading settings belongs on the game
                 // thread: doing it here would have the client reading settings
                 // that are being rewritten underneath it.
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     boolean ok = com.vortex.client.core.ConfigManager.importInto(slot, content);
                     status = ok
                             ? "Imported into preset " + (slot + 1) + " and selected."
@@ -477,9 +476,9 @@ public class CommunityScreen extends Screen {
     }
 
     private String shorten(String s, int maxW) {
-        if (this.textRenderer.getWidth(s) <= maxW) return s;
+        if (this.font.width(s) <= maxW) return s;
         String cur = s;
-        while (cur.length() > 1 && this.textRenderer.getWidth(cur + "..") > maxW) {
+        while (cur.length() > 1 && this.font.width(cur + "..") > maxW) {
             cur = cur.substring(0, cur.length() - 1);
         }
         return cur + "..";
@@ -489,7 +488,7 @@ public class CommunityScreen extends Screen {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
-    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -514,12 +513,12 @@ public class CommunityScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
-        MinecraftClient.getInstance().setScreen(parent);
+    public void onClose() {
+        Minecraft.getInstance().setScreen(parent);
     }
 }

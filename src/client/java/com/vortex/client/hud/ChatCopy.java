@@ -4,8 +4,8 @@ import com.vortex.client.core.Errors;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ChatModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Copies recent chat to the clipboard on a key.
@@ -39,12 +39,12 @@ public final class ChatCopy {
             try {
                 ChatModule mod = ModuleManager.INSTANCE.get(ChatModule.class);
                 if (mod == null || !mod.isEnabled() || !mod.copyKey.isBound()) return;
-                if (client.currentScreen != null) {
+                if (client.screen != null) {
                     keyWasDown = false;
                     return;
                 }
 
-                boolean down = InputUtil.isKeyPressed(
+                boolean down = InputConstants.isKeyDown(
                         client.getWindow(), mod.copyKey.getKeyCode());
                 if (down && !keyWasDown) {
                     copy(client, mod.copyLines.getInt());
@@ -56,7 +56,7 @@ public final class ChatCopy {
         });
     }
 
-    private static synchronized void copy(MinecraftClient client, int count) {
+    private static synchronized void copy(Minecraft client, int count) {
         if (LINES.isEmpty()) {
             info(client, "Nothing in the chat yet.");
             return;
@@ -66,15 +66,15 @@ public final class ChatCopy {
         String text = String.join("\\n", all.subList(from, all.size()));
 
         try {
-            client.keyboard.setClipboard(text);
+            client.keyboardHandler.setClipboard(text);
             info(client, (all.size() - from) + " lines copied.");
         } catch (Throwable pvpErr) {
             Errors.report("ChatCopy.clipboard", pvpErr);
         }
     }
 
-    private static void info(MinecraftClient client, String text) {
+    private static void info(Minecraft client, String text) {
         if (client.player == null) return;
-        client.player.sendMessage(net.minecraft.text.Text.literal("[Chat] " + text), false);
+        client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[Chat] " + text));
     }
 }

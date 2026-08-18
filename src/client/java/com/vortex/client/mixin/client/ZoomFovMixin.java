@@ -1,6 +1,6 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ZoomFovMixin {
 
     @Inject(method = "method_3196", at = @At("RETURN"), cancellable = true, require = 0)
-    private void vortex$applyZoom(net.minecraft.client.render.Camera camera,
+    private void vortex$applyZoom(net.minecraft.client.Camera camera,
                                   float tickProgress, boolean changingFov,
                                   CallbackInfoReturnable<Float> cir) {
         try {

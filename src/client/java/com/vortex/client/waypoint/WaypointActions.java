@@ -1,15 +1,16 @@
 package com.vortex.client.waypoint;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.vortex.client.core.ConfigManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.text.Text;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Die Bedienung des Waypoint-Systems: Tastenbelegungen, Markieren von Bloecken
@@ -70,8 +71,8 @@ public final class WaypointActions {
         });
     }
 
-    private static void tick(MinecraftClient client) {
-        if (client.player == null || client.world == null) {
+    private static void tick(Minecraft client) {
+        if (client.player == null || client.level == null) {
             wasAlive = true;
             // Beim Verlassen der Welt die gemerkte Ecke und die aktive Gruppe
             // vergessen -- sonst wuerde die naechste Markierung auf einem
@@ -81,7 +82,7 @@ public final class WaypointActions {
             return;
         }
         WaypointSettings cfg = WaypointSettings.INSTANCE;
-        ClientPlayerEntity self = client.player;
+        LocalPlayer self = client.player;
 
         // --- Todespunkt: Uebergang lebendig -> tot ---
         boolean alive = self.isAlive();
@@ -102,7 +103,7 @@ public final class WaypointActions {
         wasAlive = alive;
 
         // Tasten nur ausserhalb von Menues auswerten.
-        if (client.currentScreen != null) {
+        if (client.screen != null) {
             addDown = markDown = toggleDown = manageDown = false;
             return;
         }
@@ -147,10 +148,10 @@ public final class WaypointActions {
     }
 
     /** Taste gedrueckt? Nicht belegte Tasten zaehlen nie. */
-    private static boolean pressed(MinecraftClient client, int keyCode) {
+    private static boolean pressed(Minecraft client, int keyCode) {
         if (keyCode == GLFW.GLFW_KEY_UNKNOWN) return false;
         try {
-            return InputUtil.isKeyPressed(client.getWindow(), keyCode);
+            return InputConstants.isKeyDown(client.getWindow(), keyCode);
         } catch (Throwable pvpErr) {
             return false;
         }
@@ -162,8 +163,8 @@ public final class WaypointActions {
      * Praktisch, um etwas Bestimmtes festzuhalten, ohne hinzulaufen -- etwa eine
      * Kiste am anderen Ende der Halle oder einen Portal-Rahmen von weitem.
      */
-    private static void markLookedAtBlock(MinecraftClient client) {
-        HitResult hit = client.crosshairTarget;
+    private static void markLookedAtBlock(Minecraft client) {
+        HitResult hit = client.hitResult;
         if (hit == null || hit.getType() != HitResult.Type.BLOCK
                 || !(hit instanceof BlockHitResult bhr)) {
             info(client, "No block in view.");
@@ -185,7 +186,7 @@ public final class WaypointActions {
         if (blockGroup == null) {
             String blockName;
             try {
-                blockName = client.world.getBlockState(pos)
+                blockName = client.level.getBlockState(pos)
                         .getBlock().getName().getString();
             } catch (Throwable pvpErr) {
                 blockName = "Blocks";
@@ -216,7 +217,7 @@ public final class WaypointActions {
      * Sucht eine Block-Gruppe in der Naehe, damit man nicht jedes Mal manuell
      * eine auswaehlen muss.
      */
-    private static WaypointManager.Waypoint findNearbyGroup(MinecraftClient client,
+    private static WaypointManager.Waypoint findNearbyGroup(Minecraft client,
                                                             BlockPos pos, int radius) {
         String dim = com.vortex.client.hud.WaypointRenderer.currentWorldKey(client);
         WaypointManager.Waypoint best = null;
@@ -262,8 +263,8 @@ public final class WaypointActions {
      * So markiert man ein 4x4-Feld mit zwei Tastendruecken statt sechzehn --
      * und ebenso eine ganze Wand oder einen Raum.
      */
-    private static void markArea(MinecraftClient client) {
-        HitResult hit = client.crosshairTarget;
+    private static void markArea(Minecraft client) {
+        HitResult hit = client.hitResult;
         if (hit == null || hit.getType() != HitResult.Type.BLOCK
                 || !(hit instanceof BlockHitResult bhr)) {
             info(client, "No block in view.");
@@ -322,7 +323,7 @@ public final class WaypointActions {
     }
 
     /** Legt einen Marker an und meldet es im Chat. */
-    public static WaypointManager.Waypoint addWaypoint(MinecraftClient client,
+    public static WaypointManager.Waypoint addWaypoint(Minecraft client,
                                                        int x, int y, int z,
                                                        String name,
                                                        WaypointManager.Kind kind,
@@ -348,7 +349,7 @@ public final class WaypointActions {
      * Beim Portalbau spart das die Kopfrechnerei -- und beim Base-Hunting findet
      * man so die Stelle im Nether, die zu einer Basis in der Oberwelt gehoert.
      */
-    public static WaypointManager.Waypoint createCounterpart(MinecraftClient client,
+    public static WaypointManager.Waypoint createCounterpart(Minecraft client,
                                                              WaypointManager.Waypoint w) {
         boolean fromNether = w.dimension != null && w.dimension.contains("nether");
         int nx, nz;
@@ -371,10 +372,10 @@ public final class WaypointActions {
     }
 
     /** Koordinaten in die Zwischenablage legen. */
-    public static void copyToClipboard(MinecraftClient client,
+    public static void copyToClipboard(Minecraft client,
                                        WaypointManager.Waypoint w) {
         try {
-            client.keyboard.setClipboard(w.x + " " + w.y + " " + w.z);
+            client.keyboardHandler.setClipboard(w.x + " " + w.y + " " + w.z);
             info(client, "Coordinates copied.");
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("WaypointActions.clipboard", pvpErr);
@@ -386,10 +387,10 @@ public final class WaypointActions {
         return String.format(java.util.Locale.ROOT, "%02d:%02d", t.getHour(), t.getMinute());
     }
 
-    private static void info(MinecraftClient client, String msg) {
+    private static void info(Minecraft client, String msg) {
         if (client.player == null) return;
         try {
-            client.player.sendMessage(Text.literal("[Waypoints] " + msg), false);
+            client.player.sendSystemMessage(Component.literal("[Waypoints] " + msg));
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("WaypointActions.info", pvpErr);
         }

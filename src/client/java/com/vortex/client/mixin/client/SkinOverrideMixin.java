@@ -1,17 +1,17 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.skin.ActiveSkin;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.util.AssetInfo;
-import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.core.ClientAsset;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.PlayerSkin;
 
 /**
  * Ersetzt den dargestellten Skin des eigenen Spielers durch den in der
@@ -28,17 +28,17 @@ import java.util.Optional;
  * Nur zur Darstellung bei dir: an den Server geht nichts, andere Spieler sehen
  * weiterhin den Skin deines Kontos.
  */
-@Mixin(PlayerListEntry.class)
+@Mixin(PlayerInfo.class)
 public abstract class SkinOverrideMixin {
 
     @Inject(method = "method_52810", at = @At("RETURN"), cancellable = true, require = 0)
-    private void pvpclient$applyCustomSkin(CallbackInfoReturnable<SkinTextures> cir) {
+    private void pvpclient$applyCustomSkin(CallbackInfoReturnable<PlayerSkin> cir) {
         try {
             Identifier tex = ActiveSkin.textureId();
             if (tex == null) return;   // kein eigener Skin gewaehlt
 
             // Nur der eigene Eintrag -- fremde Spieler nicht anfassen.
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (client == null || client.player == null) return;
 
             // Eigenen Listeneintrag ueber den Netzwerk-Handler holen und mit
@@ -50,16 +50,16 @@ public abstract class SkinOverrideMixin {
             //    Version (mal getId(), mal id())
             // Die Namens-Variante nutzt nur oeffentliche, im Projekt bereits
             // kompilierende Aufrufe.
-            var handler = client.getNetworkHandler();
+            var handler = client.getConnection();
             if (handler == null) return;
-            PlayerListEntry mine =
-                    handler.getPlayerListEntry(client.player.getName().getString());
+            PlayerInfo mine =
+                    handler.getPlayerInfo(client.player.getName().getString());
             if (mine == null || mine != (Object) this) return;
 
-            SkinTextures original = cir.getReturnValue();
+            PlayerSkin original = cir.getReturnValue();
             if (original == null) return;
 
-            SkinTextures replaced = pvpclient$buildOverride(original, tex);
+            PlayerSkin replaced = pvpclient$buildOverride(original, tex);
             if (replaced != null) cir.setReturnValue(replaced);
         } catch (Throwable pvpErr) {
             // Niemals das Rendern wegen eines Skins abbrechen.
@@ -76,28 +76,28 @@ public abstract class SkinOverrideMixin {
      * werden hier bewusst ROHE Optional-Typen benutzt -- der Compiler laesst sie
      * in jeden erwarteten Typ zu. Welche Variante zur Laufzeit passt, probieren
      * wir einmal aus und merken uns das Ergebnis:
-     *   Variante 1: eine Textur-Referenz (AssetInfo.TextureAssetInfo)
+     *   Variante 1: eine Textur-Referenz (ClientAsset.TextureAssetInfo)
      *   Variante 2: die Kennung (Identifier) direkt
      * Schlaegt beides fehl, wird nichts ersetzt und der eigene Skin bleibt.
      */
     @org.spongepowered.asm.mixin.Unique
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static SkinTextures pvpclient$buildOverride(SkinTextures original, Identifier tex) {
+    private static PlayerSkin pvpclient$buildOverride(PlayerSkin original, Identifier tex) {
         // Vom Nutzer gewaehlte Variante (in der Garderobe umschaltbar).
         int wanted = ActiveSkin.getVariant();
 
         Object model = ActiveSkin.isSlim()
-                ? net.minecraft.entity.player.PlayerSkinType.byModelMetadata("slim")
-                : net.minecraft.entity.player.PlayerSkinType.byModelMetadata("default");
+                ? net.minecraft.world.entity.player.PlayerModelType.byLegacyServicesName("slim")
+                : net.minecraft.world.entity.player.PlayerModelType.byLegacyServicesName("default");
 
         // Variante 1: Textur-Referenz
         if (wanted == 1) {
             try {
-                Optional texOpt = Optional.of(new AssetInfo.TextureAssetInfo(tex));
+                Optional texOpt = Optional.of(new ClientAsset.ResourceTexture(tex));
                 Optional modelOpt = Optional.of(model);
-                SkinTextures.SkinOverride ov = SkinTextures.SkinOverride.create(
+                PlayerSkin.Patch ov = PlayerSkin.Patch.create(
                         texOpt, Optional.empty(), Optional.empty(), modelOpt);
-                return original.withOverride(ov);
+                return original.with(ov);
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("SkinOverride.variante1", pvpErr);
                 return null;
@@ -108,9 +108,9 @@ public abstract class SkinOverrideMixin {
         try {
             Optional texOpt = Optional.of(tex);
             Optional modelOpt = Optional.of(model);
-            SkinTextures.SkinOverride ov = SkinTextures.SkinOverride.create(
+            PlayerSkin.Patch ov = PlayerSkin.Patch.create(
                     texOpt, Optional.empty(), Optional.empty(), modelOpt);
-            return original.withOverride(ov);
+            return original.with(ov);
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("SkinOverride.variante2", pvpErr);
             return null;
