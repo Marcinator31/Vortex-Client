@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
@@ -40,7 +41,8 @@ public interface MinecraftClientAccessor {
      * Methodenname ist frei waehlbar. Mit dem Praefix kann er mit keiner anderen
      * Mod kollidieren.
      */
-    @Accessor("field_1726")
+    @Mutable
+    @Accessor("user")
     void pvpclient$setSession(User session);
 
     /**
@@ -56,7 +58,7 @@ public interface MinecraftClientAccessor {
      * der Abbau/Angriff vom echten Spieler ausgeht statt von der Kamera: wir
      * berechnen das Ziel selbst vom Spieler und setzen es hier.
      */
-    @Accessor("field_1765")
+    @Accessor("hitResult")
     void pvpclient$setCrosshairTarget(net.minecraft.world.phys.HitResult target);
 
     /**
@@ -66,7 +68,7 @@ public interface MinecraftClientAccessor {
      * Vanilla-Angriff auszuloesen (Reichweite, Schaden, Swing, Pakete), ohne die
      * Logik nachbauen zu muessen.
      */
-    @org.spongepowered.asm.mixin.gen.Invoker("method_1536")
+    @org.spongepowered.asm.mixin.gen.Invoker("startAttack")
     boolean pvpclient$invokeDoAttack();
 
     /**
@@ -76,6 +78,6 @@ public interface MinecraftClientAccessor {
      * real one does: place, eat, draw a bow, depending on what you are holding
      * and looking at.
      */
-    @org.spongepowered.asm.mixin.gen.Invoker("method_1583")
+    @org.spongepowered.asm.mixin.gen.Invoker("startUseItem")
     void vortex$invokeDoItemUse();
 }
