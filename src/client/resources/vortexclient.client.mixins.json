@@ -2,6 +2,7 @@
 	"required": true,
 	"package": "com.vortex.client.mixin.client",
 	"compatibilityLevel": "JAVA_17",
+	"refmap": "vortexclient.refmap.json",
 	"client": [
 		"AutoReconnectMixin",
 		"BiomeAccessSeedAccessor",
