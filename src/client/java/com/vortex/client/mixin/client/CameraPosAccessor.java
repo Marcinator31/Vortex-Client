@@ -22,6 +22,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(Camera.class)
 public interface CameraPosAccessor {
 
-    @Accessor("field_18712")
+    @Accessor("position")
     Vec3 vortex$getPos();
 }

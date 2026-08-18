@@ -23,6 +23,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(BiomeManager.class)
 public interface BiomeAccessSeedAccessor {
 
-    @Accessor("field_20641")
+    @Accessor("biomeZoomSeed")
     long vortex$getSeed();
 }

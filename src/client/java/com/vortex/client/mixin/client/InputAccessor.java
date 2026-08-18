@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(ClientInput.class)
 public interface InputAccessor {
 
-    @Accessor("field_55868")
+    @Accessor("moveVector")
     void pvpclient$setMovementVector(Vec2 vec);
 
-    @Accessor("field_54155")
+    @Accessor("keyPresses")
     void pvpclient$setPlayerInput(Input input);
 }
