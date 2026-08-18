@@ -224,9 +224,12 @@ public final class RadarRenderer {
                 if (entry != null) {
                     var skin = entry.getSkin();
                     // Kopf zeichnen (inkl. Hut-Overlay).
-                    context.blit(skin.body().texturePath(), hx, hy, headSize, headSize,
+                    // GuiGraphicsExtractor erwartet in 26.x x1/y1 und x2/y2,
+                    // nicht x/y plus Breite/Höhe. headSize als Endpunkt hatte
+                    // deshalb riesige Rechtecke bis zur oberen linken Ecke erzeugt.
+                    context.blit(skin.body().texturePath(), hx, hy, hx + headSize, hy + headSize,
                             0.125F, 0.125F, 0.25F, 0.25F);
-                    context.blit(skin.body().texturePath(), hx, hy, headSize, headSize,
+                    context.blit(skin.body().texturePath(), hx, hy, hx + headSize, hy + headSize,
                             0.625F, 0.125F, 0.75F, 0.25F);
                 }
             }
