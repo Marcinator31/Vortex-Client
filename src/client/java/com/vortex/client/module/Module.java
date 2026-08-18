@@ -71,6 +71,7 @@ public abstract class Module {
      */
     protected void enabledByDefault() {
         this.enabled.set(true);
+        this.enabled.rememberDefault();
     }
 
     /** Settings in der Unterklasse hinzufuegen. */

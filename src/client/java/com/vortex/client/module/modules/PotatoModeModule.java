@@ -169,24 +169,13 @@ public class PotatoModeModule extends Module {
     }
 
     /**
-     * Stoesst ein Neuzeichnen der Welt an, damit Aenderungen an Render-Distanz
-     * und Smooth Lighting sofort sichtbar werden. Greift ueber den Accessor-
-     * Mixin auf das package-private worldRenderer-Feld zu. Alles in try-catch:
-     * schlaegt der Zugriff fehl, wirken die Aenderungen eben leicht verzoegert,
-     * aber es crasht nichts.
+     * Die Options-Setter veranlassen Vanilla selbst zu einem sicheren Chunk- und
+     * Renderdistanz-Refresh. Ein direkter resetLevelRenderData()-Aufruf ist in
+     * 26.x nicht mehr sicher: Er kann die ViewArea zwischen zwei Renderframes
+     * leeren und führt dann in LevelRenderer.repositionCamera zu einem Absturz.
      */
     private static void reloadWorld() {
-        try {
-            Minecraft client = Minecraft.getInstance();
-            if (client == null || client.level == null) return;
-            var acc = (com.vortex.client.mixin.client.MinecraftClientAccessor) client;
-            var wr = acc.pvpclient$getWorldRenderer();
-            if (wr != null) {
-                wr.allChanged();
-            }
-        } catch (Throwable ignored) {
-            // Kein reload moeglich -> Aenderung wirkt verzoegert, kein Crash.
-        }
+        // Absichtlich kein direkter Renderer-Reset.
     }
 
     private static Options options() {
