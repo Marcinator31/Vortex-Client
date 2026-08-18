@@ -1,7 +1,7 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.gui.screen.DisconnectedScreen;
-import net.minecraft.network.DisconnectionInfo;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -14,6 +14,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(DisconnectedScreen.class)
 public interface DisconnectInfoAccessor {
 
-    @Accessor("field_52131")
-    DisconnectionInfo vortex$getInfo();
+    @Accessor("reason")
+    Component vortex$getInfo();
 }

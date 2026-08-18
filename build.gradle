@@ -1,208 +1,226 @@
 plugins {
-	// Plugin-ID 'fabric-loom' -- existiert als fabric-loom.gradle.plugin
-	// in the Fabric maven (verified). Resolves cleanly with Gradle 9.2.1.
-	id 'fabric-loom' version "${loom_version}"
-	id 'maven-publish'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+        id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'org.spongepowered.mixin' version '0.7.+'
+
 }
 
-version = project.mod_version
-group = project.maven_group
+version = mod_version
+group = mod_group_id
 
 base {
-	archivesName = project.archives_base_name
+    archivesName = mod_id
 }
+
+// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+minecraft {
+    // The mappings can be changed at any time and must be in the following format.
+    // Channel:   Version:
+    // official   MCVersion             Official field/method names from Mojang mapping files
+    // parchment  YYYY.MM.DD-MCVersion  Open community-sourced parameter names and javadocs layered on top of official
+    //
+    // You must be aware of the Mojang license when using the 'official' or 'parchment' mappings.
+    // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
+    //
+    // Parchment is an unofficial project maintained by ParchmentMC, separate from MinecraftForge
+    // Additional setup is needed to use their mappings: https://parchmentmc.org/docs/getting-started
+    //
+    // Use non-default mappings at your own risk. They may not always work.
+    // Simply re-run your setup task after changing the mappings to update your workspace.
+    mappings channel: mapping_channel, version: mapping_version
+
+    // When true, this property will have all Eclipse/IntelliJ IDEA run configurations run the "prepareX" task for the given run configuration before launching the game.
+    // In most cases, it is not necessary to enable.
+    // enableEclipsePrepareRuns = true
+    // enableIdeaPrepareRuns = true
+
+    // This property allows configuring Gradle's ProcessResources task(s) to run on IDE output locations before launching the game.
+    // It is REQUIRED to be set to true for this template to function.
+    // See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+    copyIdeResources = true
+
+    // When true, this property will add the folder name of all declared run configurations to generated IDE run configurations.
+    // The folder name can be set on a run configuration using the "folderName" property.
+    // By default, the folder name of a run configuration is the name of the Gradle project containing it.
+    // generateRunFolders = true
+
+    // This property enables access transformers for use in development.
+    // They will be applied to the Minecraft artifact.
+    // The access transformer file can be anywhere in the project.
+    // However, it must be at "META-INF/accesstransformer.cfg" in the final mod jar to be loaded by Forge.
+    // This default location is a best practice to automatically put the file in the right place in the final jar.
+    // See https://docs.minecraftforge.net/en/latest/advanced/accesstransformers/ for more information.
+    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    // Default run configurations.
+    // These can be tweaked, removed, or duplicated as needed.
+    runs {
+        // applies to all the run configs below
+        configureEach {
+            workingDirectory project.file('run')
+
+            // Recommended logging data for a userdev environment
+            // The markers can be added/remove as needed separated by commas.
+            // "SCAN": For mods scan.
+            // "REGISTRIES": For firing of registry events.
+            // "REGISTRYDUMP": For getting the contents of all registries.
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            // Recommended logging level for the console
+            // You can set various levels here.
+            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+
+        // This run config launches GameTestServer and runs all registered gametests, then exits.
+        // By default, the server will crash when no gametests are provided.
+        // The gametest system is also enabled by default for other run configs under the /test command.
+        gameTestServer {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        data {
+            // example of overriding the workingDirectory set in configureEach above
+            workingDirectory project.file('run-data')
+
+            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+// Keep the original Vortex client source and bundled resourcepacks as part
+// of the Forge main source set. Forge loads client-only classes through
+// client-side subscribers; the source layout remains intact for feature parity.
+sourceSets {
+    main {
+        java.srcDirs += ['src/client/java']
+        resources.srcDirs += ['src/client/resources']
+    }
+}
+
+// Include resources generated by data generators.
+sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-	// Modrinth maven -- Sodium, Lithium and friends live here.
-	exclusiveContent {
-		forRepository {
-			maven {
-				name = "Modrinth"
-				url = "https://api.modrinth.com/maven"
-			}
-		}
-		filter {
-			includeGroup "maven.modrinth"
-		}
-	}
-}
+    // Put repositories for dependencies here
+    // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
-loom {
-	// Splits client and common code. This client is purely client-side.
-	splitEnvironmentSourceSets()
-
-	mods {
-		"pvpclient" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
-		}
-	}
+    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
+    // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
+    // flatDir {
+    //     dir 'libs'
+    // }
 }
 
 dependencies {
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // Specify the version of Minecraft to use.
+    // Any artifact can be supplied so long as it has a "userdev" classifier artifact and is a compatible patcher artifact.
+    // The "userdev" classifier will be requested and setup by ForgeGradle.
+    // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
+    // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-	// Yarn mappings rather than Mojang -- all code uses Yarn names
-	// (net.minecraft.client.MinecraftClient, Text, DrawContext, ...).
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
+    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
+    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")
+    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}")
+    // runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
 
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    // Example mod dependency using a mod jar from ./libs with a flat dir repository
+    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
+    // The group id is ignored when searching -- in this case, it is "blank"
+    // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
 
-	// --- FPS / performance ("the boost you get from Lunar and friends") ---
-	// These mods ARE the FPS boost. We do not write one ourselves.
-	// They run at runtime here so the dev client already has the boosted
-	// frame rate and compatibility can be tested.
-	// Players simply drop them into their own mods folder later.
-	// Verifizierte echte 1.21.11-Versionen (Modrinth, Maerz 2026).
-	// Format: maven.modrinth:<slug>:<modrinth-version-id>
-	modRuntimeOnly "maven.modrinth:sodium:mc1.21.11-0.8.7-fabric"
-	modRuntimeOnly "maven.modrinth:lithium:mc1.21.11-0.21.4-fabric"
-	// (FerriteCore, Entity Culling and so on can be added the same way,
-	//  once the exact 1.21.11 version strings are known from Modrinth.)
-
-	// --- Eingebettete Mods (Jar-in-Jar) ---
-	// These are NOT embedded via Loom's 'include' (which did not work
-	// reliably in this setup). Instead the 'embedNestedMods' task below
-	// copies the jars from libs/ straight into META-INF/jars/ of the
-	// finished jar and registers them in fabric.mod.json -- the exact
-	// mechanism Fabric Loader reads directly. Fully verifiable and it
-	// sidesteps every quirk of 'include'.
+    // For more info:
+    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
+    // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
 
-processResources {
-	inputs.property "version", project.version
+mixin {
+    add sourceSets.main, 'vortexclient.refmap.json'
+    config 'vortexclient.client.mixins.json'
+}
 
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
-	}
+// This block of code expands all declared replace properties in the specified resource targets.
+
+// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
+// When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
+// See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
+            forge_version: forge_version, forge_version_range: forge_version_range,
+            loader_version_range: loader_version_range,
+            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors: mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+// Example for how to get properties into the manifest for reading at runtime.
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1', // We are version 1 of ourselves
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : mod_authors,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+
+    // This is the preferred method to reobfuscate your jar file
+    finalizedBy 'reobfJar'
+}
+
+// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing:
+// tasks.named('publish').configure {
+//     dependsOn 'reobfJar'
+// }
+
+// Example configuration to allow publishing using the maven-publish plugin
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-}
-
-java {
-	// Do NOT produce a sources jar. The build used to create two jars
-	// (vortexclient-x.x.x.jar AND -sources.jar). The sources jar contains
-	// NO embedded mods (no AppleSkin) -- anyone who drops it into their
-	// mods folder by mistake ends up without it. With a single jar that
-	// can no longer happen.
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
-}
-
-jar {
-	from("LICENSE") {
-		rename { "${it}_${base.archivesName.get()}" }
-	}
-}
-
-// === Jar-in-Jar: Mods MANUELL einbetten (zuverlaessig & nachpruefbar) ===
-// Loom's 'include' did not work in this setup, so we embed the mods
-// from libs/ ourselves, using the mechanism Fabric Loader reads:
-// direkt liest:
-//   1. The mod jars are copied into META-INF/jars/ of the finished jar.
-//   2. A "jars" entry pointing at META-INF/jars/ is added to fabric.mod.json.
-//      Eintrag pro Mod geschrieben.
-// Fabric Loader unpacks and loads nested jars automatically at startup.
-//
-// Which mods? Every .jar in libs/. Drop jars in there and they are
-// eingebettet. (Reihenfolge egal.)
-tasks.register("embedNestedMods") {
-	// Runs after remapJar has produced the final jar.
-	dependsOn tasks.named("remapJar")
-
-	doLast {
-		def libsDir = file("libs")
-		def modJars = []
-		if (libsDir.exists()) {
-			libsDir.listFiles().each { f ->
-				if (f.name.endsWith(".jar")) modJars.add(f)
-			}
-		}
-		if (modJars.isEmpty()) {
-			println "  [embedNestedMods] libs/ is empty -- nothing to embed."
-			return
-		}
-
-		// Locate the final (remapped) jar.
-		def outJar = tasks.named("remapJar").get().archiveFile.get().asFile
-		if (!outJar.exists()) {
-			println "  [embedNestedMods] ERROR: final jar not found: " + outJar
-			return
-		}
-
-		println "  [embedNestedMods] Ziel-JAR: " + outJar.name
-		modJars.each { println "  [embedNestedMods]   embedding: " + it.name }
-
-		// Unpack into a temporary directory, modify, repack.
-		def workDir = new File(temporaryDir, "jij-work")
-		delete workDir
-		workDir.mkdirs()
-		copy {
-			from zipTree(outJar)
-			into workDir
-		}
-
-		// 1) Copy the mod jars into META-INF/jars/.
-		def jarsTarget = new File(workDir, "META-INF/jars")
-		jarsTarget.mkdirs()
-		def jarEntries = []
-		modJars.each { mj ->
-			copy {
-				from mj
-				into jarsTarget
-			}
-			jarEntries.add("META-INF/jars/" + mj.name)
-		}
-
-		// 2) fabric.mod.json um "jars"-Liste ergaenzen.
-		def fmjFile = new File(workDir, "fabric.mod.json")
-		if (!fmjFile.exists()) {
-			println "  [embedNestedMods] FEHLER: fabric.mod.json fehlt in JAR!"
-			return
-		}
-		def slurper = new groovy.json.JsonSlurper()
-		def fmj = slurper.parse(fmjFile)
-		def jarsList = []
-		jarEntries.each { e -> jarsList.add([file: e]) }
-		fmj.jars = jarsList
-		fmjFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(fmj))
-		println "  [embedNestedMods] fabric.mod.json: " + jarsList.size() + " jars-Eintraege geschrieben."
-
-		// 3) Pack everything back into the jar (replacing the old one).
-		//    Pure Java implementation (java.util.zip) -- works in any
-		//    environment, no ant required.
-		delete outJar
-		def fos = new java.io.FileOutputStream(outJar)
-		def zos = new java.util.zip.ZipOutputStream(fos)
-		workDir.eachFileRecurse { f ->
-			if (f.isFile()) {
-				def relPath = workDir.toPath().relativize(f.toPath()).toString().replace("\\", "/")
-				def entry = new java.util.zip.ZipEntry(relPath)
-				zos.putNextEntry(entry)
-				zos.write(f.bytes)
-				zos.closeEntry()
-			}
-		}
-		zos.close()
-		fos.close()
-
-		// 4) Verification: check what actually ended up inside.
-		def zf = new java.util.zip.ZipFile(outJar)
-		def count = 0
-		def en = zf.entries()
-		while (en.hasMoreElements()) {
-			def n = en.nextElement().name
-			if (n.startsWith("META-INF/jars/") && n.endsWith(".jar")) count++
-		}
-		zf.close()
-		println "  [embedNestedMods] FERTIG: " + count + " Mod(s) jetzt in META-INF/jars/."
-	}
-}
-
-// Run embedNestedMods automatically as part of 'build'.
-tasks.named("assemble") {
-	finalizedBy tasks.named("embedNestedMods")
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }

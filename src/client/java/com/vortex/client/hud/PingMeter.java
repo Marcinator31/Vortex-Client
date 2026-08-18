@@ -1,9 +1,8 @@
 package com.vortex.client.hud;
 
-import net.minecraft.client.MinecraftClient;
-
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import net.minecraft.client.Minecraft;
 
 /**
  * Measures the round trip to the server ourselves.
@@ -93,11 +92,11 @@ public final class PingMeter {
     private static void measureOnce() {
         if (System.currentTimeMillis() < backoffUntil) return;
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.world == null) return;
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.level == null) return;
 
         // Only makes sense on a real server.
-        if (client.isInSingleplayer()) {
+        if (client.isLocalServer()) {
             lastPing = 0;
             lastMeasured = System.currentTimeMillis();
             return;
@@ -109,10 +108,10 @@ public final class PingMeter {
                 com.vortex.client.module.modules.PingModule.class);
         if (mod == null || !mod.isEnabled() || !mod.measure.get()) return;
 
-        var entry = client.getCurrentServerEntry();
-        if (entry == null || entry.address == null) return;
+        var entry = client.getCurrentServer();
+        if (entry == null || entry.ip == null) return;
 
-        String host = entry.address;
+        String host = entry.ip;
         int port = 25565;
         // Split off the port, taking care not to trip over IPv6 addresses.
         int colon = host.lastIndexOf(':');

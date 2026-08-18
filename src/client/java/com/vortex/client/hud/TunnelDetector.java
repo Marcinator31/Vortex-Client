@@ -3,20 +3,19 @@ package com.vortex.client.hud;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.TunnelDetectorModule;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Cave/Tunnel Detector: findet gerade, von Spielern gegrabene Tunnel.
@@ -26,14 +25,14 @@ import java.util.concurrent.atomic.AtomicReference;
  * mit festem Boden, fester Decke und festen Seitenwaenden (genau 1 Block breit).
  * Von einem Startsegment aus wird in X- und in Z-Richtung verfolgt, wie weit
  * sich das gerade fortsetzt. Erreicht die Linie die Mindestlaenge, wird sie als
- * Tunnel markiert (eine Box ueber die ganze Linie).
+ * Tunnel markiert (eine AABB ueber die ganze Linie).
  *
  * "Fester Block" = nicht-Luft (robust, ohne fragile isSolid-Abfragen). Die
  * Mindestlaenge haelt die Fehlalarme durch natuerliche Hoehlen gering.
  */
 public final class TunnelDetector {
 
-    private static final AtomicReference<List<Box>> RESULT =
+    private static final AtomicReference<List<AABB>> RESULT =
             new AtomicReference<>(new ArrayList<>());
 
     private static final int RADIUS = 24;       // horizontaler Suchradius (reduziert)
@@ -44,29 +43,29 @@ public final class TunnelDetector {
     private static Thread worker;
 
     public static void register() {
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
             TunnelDetectorModule mod = (TunnelDetectorModule) find(TunnelDetectorModule.class);
             if (mod == null || !mod.isEnabled()) return;
 
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client.world == null || client.player == null) return;
+            Minecraft client = Minecraft.getInstance();
+            if (client.level == null || client.player == null) return;
 
             ensureWorker();
 
-            MatrixStack matrices = context.matrices();
-            VertexConsumerProvider consumers = context.consumers();
+            PoseStack matrices = context.poseStack();
+            MultiBufferSource consumers = context.bufferSource();
             if (matrices == null || consumers == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
-                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
-                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
+                float tickDelta = client.getFrameTime();
+                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
                 VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 int color = mod.getColor();
                 if ((color >>> 24) == 0) color |= 0xFF000000;
 
-                List<Box> boxes = RESULT.get();
+                List<AABB> boxes = RESULT.get();
                 for (int i = 0; i < boxes.size(); i++) {
                     EspRender.drawBox(matrices, lines, boxes.get(i), cam, color, 2.0f);
                 }
@@ -93,27 +92,27 @@ public final class TunnelDetector {
             try {
                 Thread.sleep(1500); // teurer Scan -> deutlich seltener (gegen Lag)
 
-                MinecraftClient client = MinecraftClient.getInstance();
+                Minecraft client = Minecraft.getInstance();
                 TunnelDetectorModule mod = (TunnelDetectorModule) find(TunnelDetectorModule.class);
                 if (client == null || mod == null || !mod.isEnabled()) {
                     if (!RESULT.get().isEmpty()) RESULT.set(new ArrayList<>());
                     continue;
                 }
-                ClientWorld world = client.world;
+                ClientLevel world = client.level;
                 if (world == null || client.player == null) {
                     if (!RESULT.get().isEmpty()) RESULT.set(new ArrayList<>());
                     continue;
                 }
 
                 int minLen = mod.getMinLength();
-                int topY = Math.min(mod.getMaxY(), world.getTopYInclusive());
-                int bottomY = Math.max(topY - Y_DEPTH, world.getBottomY() + 1);
+                int topY = Math.min(mod.getMaxY(), world.getMaxBuildHeight());
+                int bottomY = Math.max(topY - Y_DEPTH, world.getMinBuildHeight() + 1);
 
                 int px = client.player.getBlockX();
                 int pz = client.player.getBlockZ();
 
-                List<Box> found = new ArrayList<>();
-                BlockPos.Mutable pos = new BlockPos.Mutable();
+                List<AABB> found = new ArrayList<>();
+                BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
                 // Bereits erfasste Startpunkte, damit ein Tunnel nicht mehrfach
                 // (von jedem seiner Bloecke aus) gemeldet wird.
@@ -144,7 +143,7 @@ public final class TunnelDetector {
                                 lastCX = cX;
                                 lastCZ = cZ;
                                 try {
-                                    lastLoaded = world.isChunkLoaded(cX, cZ);
+                                    lastLoaded = world.hasChunk(cX, cZ);
                                 } catch (Throwable t) {
                                     lastLoaded = false;
                                 }
@@ -170,11 +169,11 @@ public final class TunnelDetector {
 
                             if (lenX >= minLen) {
                                 for (int i = 0; i < lenX; i++) used.add(pack(x + i, y, z));
-                                found.add(new Box(x, y, z,
+                                found.add(new AABB(x, y, z,
                                         x + lenX, y + 2.0, z + 1.0));
                             } else if (lenZ >= minLen) {
                                 for (int i = 0; i < lenZ; i++) used.add(pack(x, y, z + i));
-                                found.add(new Box(x, y, z,
+                                found.add(new AABB(x, y, z,
                                         x + 1.0, y + 2.0, z + lenZ));
                             }
                             if (found.size() >= MAX_RESULTS) {
@@ -202,7 +201,7 @@ public final class TunnelDetector {
      * Ist an (x,y,z) ein begehbares 1x2-Tunnelsegment? Luft auf y und y+1,
      * fester Boden (y-1) und feste Decke (y+2).
      */
-    private static boolean isTunnelCell(ClientWorld world, BlockPos.Mutable pos,
+    private static boolean isTunnelCell(ClientLevel world, BlockPos.MutableBlockPos pos,
                                         int x, int y, int z) {
         return isAir(world, pos, x, y, z)
                 && isAir(world, pos, x, y + 1, z)
@@ -211,20 +210,20 @@ public final class TunnelDetector {
     }
 
     /** Fuer einen X-Tunnel: Seiten in Z-Richtung muessen fest sein (1 breit). */
-    private static boolean isStraightX(ClientWorld world, BlockPos.Mutable pos,
+    private static boolean isStraightX(ClientLevel world, BlockPos.MutableBlockPos pos,
                                        int x, int y, int z) {
         return isSolid(world, pos, x, y, z - 1)
                 && isSolid(world, pos, x, y, z + 1);
     }
 
     /** Fuer einen Z-Tunnel: Seiten in X-Richtung muessen fest sein (1 breit). */
-    private static boolean isStraightZ(ClientWorld world, BlockPos.Mutable pos,
+    private static boolean isStraightZ(ClientLevel world, BlockPos.MutableBlockPos pos,
                                        int x, int y, int z) {
         return isSolid(world, pos, x - 1, y, z)
                 && isSolid(world, pos, x + 1, y, z);
     }
 
-    private static boolean isAir(ClientWorld world, BlockPos.Mutable pos,
+    private static boolean isAir(ClientLevel world, BlockPos.MutableBlockPos pos,
                                  int x, int y, int z) {
         pos.set(x, y, z);
         try {
@@ -234,7 +233,7 @@ public final class TunnelDetector {
         }
     }
 
-    private static boolean isSolid(ClientWorld world, BlockPos.Mutable pos,
+    private static boolean isSolid(ClientLevel world, BlockPos.MutableBlockPos pos,
                                    int x, int y, int z) {
         pos.set(x, y, z);
         try {

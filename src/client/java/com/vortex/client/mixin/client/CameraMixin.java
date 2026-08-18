@@ -1,9 +1,8 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.freecam.Freecam;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,27 +23,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * pos (field_18712) setzen wir direkt per @Shadow. setPos/setRotation sind in
  * Camera protected -> wir rufen sie ueber @Shadow-Methoden auf.
  */
-@Mixin(net.minecraft.client.render.Camera.class)
+@Mixin(net.minecraft.client.Camera.class)
 public abstract class CameraMixin {
 
     @Shadow
-    private Vec3d field_18712; // pos
+    protected abstract void setRotation(float yaw, float pitch);
 
     @Shadow
-    protected abstract void method_19325(float yaw, float pitch); // setRotation
+    protected abstract void setPosition(double x, double y, double z);
 
-    @Shadow
-    protected abstract void method_19327(double x, double y, double z); // setPos
-
-    @Inject(method = "method_19321", at = @At("TAIL"))
-    private void pvpclient$freecamUpdate(World area, Entity focusedEntity,
+    @Inject(method = "setup", at = @At("TAIL"))
+    private void pvpclient$freecamUpdate(BlockGetter area, Entity focusedEntity,
                                          boolean thirdPerson, boolean inverseView,
                                          float tickProgress, CallbackInfo ci) {
         if (!Freecam.isActive()) return;
         // Bewegung pro Frame berechnen (fluessig, framerate-unabhaengig).
         Freecam.updateFrame();
         // Erst Rotation (berechnet Richtungsvektoren neu), dann Position.
-        method_19325(Freecam.getYaw(), Freecam.getPitch());
-        method_19327(Freecam.getPos().x, Freecam.getPos().y, Freecam.getPos().z);
+        setRotation(Freecam.getYaw(), Freecam.getPitch());
+        setPosition(Freecam.getPos().x, Freecam.getPos().y, Freecam.getPos().z);
     }
 }

@@ -1,10 +1,10 @@
 package com.vortex.client.account;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Util;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.Util;
 
 /**
  * Der Account-Switcher-Bildschirm mit echtem Microsoft-Login.
@@ -19,16 +19,16 @@ import net.minecraft.util.Util;
  */
 public class AccountScreen extends Screen {
 
-    // Status-Text fuer den laufenden Login (Code, Fehler, Erfolg).
+    // Status-Component fuer den laufenden Login (Code, Fehler, Erfolg).
     private volatile String statusLine = "";
     private volatile String codeLine = "";
     private volatile boolean loggingIn = false;
 
     // Eingabefeld fuer den aus dem Browser kopierten Code (klassischer Weg).
-    private net.minecraft.client.gui.widget.TextFieldWidget codeField;
+    private net.minecraft.client.gui.components.EditBox codeField;
 
     public AccountScreen() {
-        super(Text.literal("Accounts"));
+        super(Component.literal("Accounts"));
     }
 
     @Override
@@ -38,64 +38,64 @@ public class AccountScreen extends Screen {
         int y = 44;
 
         // "Microsoft-Login" -- startet den Device Code Flow.
-        this.addDrawableChild(ButtonWidget.builder(
-            Text.literal(loggingIn ? "Signing in..." : "+ Microsoft sign-in"),
+        this.addRenderableWidget(Button.builder(
+            Component.literal(loggingIn ? "Signing in..." : "+ Microsoft sign-in"),
             btn -> startMicrosoftLogin()
-        ).dimensions(x, y, 200, 20).build());
+        ).bounds(x, y, 200, 20).build());
 
         y += 24;
 
         // --- Klassischer Browser-Login (ohne eigene Azure-App) ---
-        this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("1. Open login page"),
+        this.addRenderableWidget(Button.builder(
+            Component.literal("1. Open login page"),
             btn -> openLoginPage()
-        ).dimensions(x, y, 200, 20).build());
+        ).bounds(x, y, 200, 20).build());
 
         y += 24;
 
         // Feld zum Einfuegen der Adresse aus dem Browser.
-        this.codeField = new net.minecraft.client.gui.widget.TextFieldWidget(
-                this.textRenderer, x, y, 200, 20,
-                Text.literal("Paste the address"));
+        this.codeField = new net.minecraft.client.gui.components.EditBox(
+                this.font, x, y, 200, 20,
+                Component.literal("Paste the address"));
         this.codeField.setMaxLength(2000);
-        this.codeField.setPlaceholder(Text.literal("Paste the address containing code=..."));
-        this.addDrawableChild(this.codeField);
+        this.codeField.setHint(Component.literal("Paste the address containing code=..."));
+        this.addRenderableWidget(this.codeField);
 
         y += 24;
 
-        this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("2. Redeem code"),
+        this.addRenderableWidget(Button.builder(
+            Component.literal("2. Redeem code"),
             btn -> redeemCode()
-        ).dimensions(x, y, 200, 20).build());
+        ).bounds(x, y, 200, 20).build());
 
         y += 30;
 
         // Pro gespeichertem Account: "Wechseln" + "Entfernen".
         for (Account acc : new java.util.ArrayList<>(AccountManager.INSTANCE.getAccounts())) {
-            this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Switch to: " + acc.username),
+            this.addRenderableWidget(Button.builder(
+                Component.literal("Switch to: " + acc.username),
                 btn -> {
                     AccountManager.INSTANCE.switchTo(acc);
-                    this.clearAndInit();
+                    this.rebuildWidgets();
                 }
-            ).dimensions(x, y, 150, 20).build());
+            ).bounds(x, y, 150, 20).build());
 
-            this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("X"),
+            this.addRenderableWidget(Button.builder(
+                Component.literal("X"),
                 btn -> {
                     AccountManager.INSTANCE.remove(acc);
-                    this.clearAndInit();
+                    this.rebuildWidgets();
                 }
-            ).dimensions(x + 155, y, 45, 20).build());
+            ).bounds(x + 155, y, 45, 20).build());
 
             y += 24;
         }
 
         // Schliessen-Button.
-        this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("Close"),
-            btn -> this.close()
-        ).dimensions(x, this.height - 30, 200, 20).build());
+        this.addRenderableWidget(Button.builder(
+            Component.literal("Close"),
+            btn -> this.onClose()
+        ).bounds(x, this.height - 30, 200, 20).build());
     }
 
     /** Startet den Microsoft Device Code Flow in einem Hintergrund-Thread. */
@@ -128,7 +128,7 @@ public class AccountScreen extends Screen {
         statusLine = "Sign in with your browser, then copy the address.";
         codeLine = "It contains 'code=' and looks blank.";
         try {
-            Util.getOperatingSystem().open(new java.net.URI(url));
+            Util.getPlatform().openUri(new java.net.URI(url));
         } catch (Throwable t) {
             LOGGER.error("[vortexclient] Could not open the browser", t);
             statusLine = "Browser did not open \u2014 the address is in latest.log";
@@ -139,7 +139,7 @@ public class AccountScreen extends Screen {
     /** Schritt 2: eingefuegte Adresse einloesen und Account anlegen. */
     private void redeemCode() {
         if (loggingIn) return;
-        String pasted = (codeField != null) ? codeField.getText() : "";
+        String pasted = (codeField != null) ? codeField.getValue() : "";
         if (pasted == null || pasted.trim().isEmpty()) {
             statusLine = "Paste the address from your browser first.";
             return;
@@ -147,7 +147,7 @@ public class AccountScreen extends Screen {
         loggingIn = true;
         statusLine = "Redeeming code...";
         codeLine = "";
-        this.clearAndInit();
+        this.rebuildWidgets();
 
         Thread t = new Thread(() -> {
             try {
@@ -169,9 +169,9 @@ public class AccountScreen extends Screen {
                 }
             } finally {
                 loggingIn = false;
-                net.minecraft.client.MinecraftClient.getInstance().execute(() -> {
-                    if (this.client != null && this.client.currentScreen == this) {
-                        this.clearAndInit();
+                net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                    if (this.minecraft != null && this.minecraft.screen == this) {
+                        this.rebuildWidgets();
                     }
                 });
             }
@@ -185,7 +185,7 @@ public class AccountScreen extends Screen {
         loggingIn = true;
         statusLine = "Connecting to Microsoft...";
         codeLine = "";
-        this.clearAndInit();
+        this.rebuildWidgets();
 
         Thread t = new Thread(() -> {
             try {
@@ -194,7 +194,7 @@ public class AccountScreen extends Screen {
                     codeLine = "Code: " + code.userCode;
                     statusLine = "Opening browser... enter this code: " + code.userCode;
                     try {
-                        Util.getOperatingSystem().open(new java.net.URI(code.verificationUri));
+                        Util.getPlatform().openUri(new java.net.URI(code.verificationUri));
                     } catch (Throwable ignored) {
                         statusLine = "Gehe zu " + code.verificationUri
                                 + " and enter the code.";
@@ -214,9 +214,9 @@ public class AccountScreen extends Screen {
             } finally {
                 loggingIn = false;
                 // GUI im Main-Thread neu aufbauen.
-                net.minecraft.client.MinecraftClient.getInstance().execute(() -> {
-                    if (this.client != null && this.client.currentScreen == this) {
-                        this.clearAndInit();
+                net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                    if (this.minecraft != null && this.minecraft.screen == this) {
+                        this.rebuildWidgets();
                     }
                 });
             }
@@ -226,27 +226,27 @@ public class AccountScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
 
         // Aktueller Account-Name oben.
-        String current = "Current: " + this.client.getSession().getUsername();
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(current),
+        String current = "Current: " + this.minecraft.getUser().getName();
+        ctx.drawCenteredString(this.font, Component.literal(current),
                 this.width / 2, 18, 0xFFFFFF00);
 
         // Status + Code (waehrend/nach dem Login).
         if (!statusLine.isEmpty()) {
-            ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(statusLine),
+            ctx.drawCenteredString(this.font, Component.literal(statusLine),
                     this.width / 2, this.height - 52, 0xFF55FF55);
         }
         if (!codeLine.isEmpty()) {
-            ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(codeLine),
+            ctx.drawCenteredString(this.font, Component.literal(codeLine),
                     this.width / 2, this.height - 64, 0xFFFFFFFF);
         }
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 }

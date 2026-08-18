@@ -3,10 +3,9 @@ package com.vortex.client.module.modules;
 import com.vortex.client.core.setting.BooleanSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.module.Module;
-import net.minecraft.util.Identifier;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Anti Render: blendet ausgewaehlte Entity-Typen komplett aus dem Rendering aus
@@ -57,8 +56,8 @@ public class AntiRenderModule extends Module {
         addSetting(keepPlayers);
     }
 
-    /** Soll dieser Entity-Typ (per Identifier) ausgeblendet werden? */
-    public boolean isHidden(Identifier id) {
+    /** Soll dieser Entity-Typ (per ResourceLocation) ausgeblendet werden? */
+    public boolean isHidden(ResourceLocation id) {
         return id != null && hiddenTypes.contains(id.toString());
     }
 

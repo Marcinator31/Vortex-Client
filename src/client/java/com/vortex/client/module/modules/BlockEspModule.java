@@ -4,10 +4,9 @@ import com.vortex.client.core.setting.BooleanSetting;
 import com.vortex.client.core.setting.ColorSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.module.Module;
-import net.minecraft.util.Identifier;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Block-ESP: hebt ausgewaehlte Bloecke in der Welt mit einer farbigen Box-
@@ -65,7 +64,7 @@ public class BlockEspModule extends Module {
         addSetting(tracerColor);
     }
 
-    public boolean isBlockEnabled(Identifier id) {
+    public boolean isBlockEnabled(ResourceLocation id) {
         return id != null && enabledBlocks.contains(id.toString());
     }
 

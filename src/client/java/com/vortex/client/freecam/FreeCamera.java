@@ -1,11 +1,10 @@
 package com.vortex.client.freecam;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.recipebook.ClientRecipeBook;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.stat.StatHandler;
-import net.minecraft.util.PlayerInput;
+import net.minecraft.client.ClientRecipeBook;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.stats.StatsCounter;
 
 /**
  * Eine rein CLIENTSEITIGE Kamera-Entity, die als cameraEntity gesetzt wird,
@@ -13,12 +12,12 @@ import net.minecraft.util.PlayerInput;
  * der Freecam-Position orientiert statt am echten Spieler.
  *
  * SERVER-SICHERHEIT -- das ist entscheidend: Diese Entity darf NICHTS an den
- * Server senden. Eine normale ClientPlayerEntity meldet jeden Tick ihre Position
+ * Server senden. Eine normale LocalPlayer meldet jeden Tick ihre Position
  * (sendMovementPackets) -- das wuerde der Server als Teleport/Flug werten und
  * Anticheat ausloesen. Deshalb ueberschreiben wir:
  *   - tick(): tut nichts (kein Ticking, keine Pakete)
  *   - sendMovementPackets(): leer (sendet garantiert nichts)
- * Die Entity existiert nur lokal in der ClientWorld. Der echte Spieler bleibt
+ * Die Entity existiert nur lokal in der ClientLevel. Der echte Spieler bleibt
  * stehen und meldet weiter ganz normal seine Steh-Position. Der Server sieht
  * also keinen Unterschied -- du stehst still, die Kamera fliegt nur im Client.
  *
@@ -26,20 +25,20 @@ import net.minecraft.util.PlayerInput;
  * cameraEntity gesetzt; beim Deaktivieren wieder entfernt und die Kamera auf den
  * Spieler zurueckgesetzt.
  */
-public class FreeCamera extends ClientPlayerEntity {
+public class FreeCamera extends LocalPlayer {
 
     public FreeCamera() {
         super(
-            MinecraftClient.getInstance(),
-            MinecraftClient.getInstance().world,
-            MinecraftClient.getInstance().getNetworkHandler(),
-            new StatHandler(),
+            Minecraft.getInstance(),
+            Minecraft.getInstance().level,
+            Minecraft.getInstance().getConnection(),
+            new StatsCounter(),
             new ClientRecipeBook(),
-            PlayerInput.DEFAULT,
+            false,
             false
         );
         // Durch Bloecke hindurch -- die Kamera soll frei fliegen.
-        this.noClip = true;
+        this.noPhysics = true;
         // Unsichtbar: sonst sieht man einen Koerper / eine Hitbox ueber dem
         // Freecam-Kopf. setInvisible ist ein normaler Aufruf (kein Override),
         // also build-sicher, und setzt das Invisible-Flag der Entity.
@@ -60,17 +59,28 @@ public class FreeCamera extends ClientPlayerEntity {
     }
 
     /**
-     * Spawnt die Kamera-Entity lokal in die ClientWorld (kein Server-Paket) und
+     * Spawnt die Kamera-Entity lokal in die ClientLevel (kein Server-Paket) und
      * setzt sie als aktive Kamera. Position/Blick werden von Freecam gesetzt.
      */
     public void spawn() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientWorld world = client.world;
+        Minecraft client = Minecraft.getInstance();
+        ClientLevel world = client.level;
         if (world == null) return;
-        world.addEntity(this);
+        // 1.20.1 keeps ClientLevel entity insertion private. The camera
+        // entity is intentionally local and is installed directly by Freecam.
+        this.setLevel(world);
     }
 
-    /** Entfernt die Kamera-Entity wieder aus der ClientWorld. */
+    /** Positions- und Blickhilfe fuer den klassischen 1.20.1-Entitypfad. */
+    public void snapTo(double x, double y, double z, float yaw, float pitch) {
+        this.setPos(x, y, z);
+        this.setYRot(yaw);
+        this.setXRot(pitch);
+        this.yRotO = yaw;
+        this.xRotO = pitch;
+    }
+
+    /** Entfernt die Kamera-Entity wieder aus der ClientLevel. */
     public void despawn() {
         this.discard();
     }

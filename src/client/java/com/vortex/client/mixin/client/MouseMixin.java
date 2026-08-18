@@ -1,45 +1,24 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.hud.CpsCounter;
-import net.minecraft.client.Mouse;
-import net.minecraft.client.input.MouseInput;
+import net.minecraft.client.MouseHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Faengt Mausklicks ab und meldet sie an den CpsCounter.
- *
- * WICHTIG -- Signatur fuer 1.21.11 (verifiziert gegen Yarn-Javadocs):
- *   onMouseButton(long window, MouseInput input, int action)
- *
- * In aelteren Versionen waren das vier ints (long, int, int, int).
- * Jetzt ist Button + Modifier im MouseInput-Record zusammengefasst:
- *   - input.button() -> welche Taste (0 = links, 1 = rechts)
- *   - action         -> 1 = gedrueckt, 0 = losgelassen
- *
- * Die Mixin-Signatur MUSS exakt zur Zielmethode passen, sonst stuerzt
- * Minecraft beim Start ab (genau der vorherige Crash).
- */
-@Mixin(Mouse.class)
-public class MouseMixin {
-
-    private static final int LEFT_BUTTON = 0;
-    private static final int RIGHT_BUTTON = 1;
-    private static final int ACTION_PRESS = 1; // GLFW: 1 = gedrueckt
-
-    @Inject(method = "onMouseButton", at = @At("HEAD"))
-    private void pvpclient$onMouseButton(long window, MouseInput input, int action, CallbackInfo ci) {
-        if (action != ACTION_PRESS) {
-            return; // nur das Druecken zaehlen, nicht das Loslassen
-        }
-        int button = input.button();
-        if (button == LEFT_BUTTON) {
+/** Captures classic 1.20.1 mouse presses for CPS and macro recording. */
+@Mixin(MouseHandler.class)
+public final class MouseMixin {
+    @Inject(method = "onPress", at = @At("HEAD"), require = 0)
+    private void vortex$onMousePress(long window, int button, int action, int modifiers,
+                                     CallbackInfo ci) {
+        if (action != 1) return;
+        if (button == 0) {
             CpsCounter.LEFT.onClick();
             com.vortex.client.macro.MacroManager.record(
                     com.vortex.client.macro.Macro.Action.LEFT_CLICK, 0, 0);
-        } else if (button == RIGHT_BUTTON) {
+        } else if (button == 1) {
             CpsCounter.RIGHT.onClick();
             com.vortex.client.macro.MacroManager.record(
                     com.vortex.client.macro.Macro.Action.RIGHT_CLICK, 0, 0);

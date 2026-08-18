@@ -1,6 +1,6 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,10 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(GameRenderer.class)
 public abstract class ZoomFovMixin {
 
-    @Inject(method = "method_3196", at = @At("RETURN"), cancellable = true, require = 0)
-    private void vortex$applyZoom(net.minecraft.client.render.Camera camera,
+    @Inject(method = "getFov", at = @At("RETURN"), cancellable = true, require = 0)
+    private void vortex$applyZoom(net.minecraft.client.Camera camera,
                                   float tickProgress, boolean changingFov,
-                                  CallbackInfoReturnable<Float> cir) {
+                                  CallbackInfoReturnable<Double> cir) {
         try {
             // Advance the movement once per frame, right where the value is
             // needed -- that keeps it in step with what is on screen.
@@ -31,8 +31,8 @@ public abstract class ZoomFovMixin {
             double factor = com.vortex.client.hud.Zoom.factor();
             if (factor <= 1.001) return;
 
-            float fov = cir.getReturnValueF();
-            cir.setReturnValue((float) (fov / factor));
+            double fov = cir.getReturnValue();
+            cir.setReturnValue(fov / factor);
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("ZoomFovMixin", pvpErr);
         }

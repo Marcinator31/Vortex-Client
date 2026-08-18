@@ -1,14 +1,14 @@
 package com.vortex.client.skin;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
+import com.mojang.blaze3d.platform.NativeImage;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.ResourceLocation;
+import com.mojang.blaze3d.platform.NativeImage;
 
 /**
  * Laedt Skin-PNGs als Texturen, damit sie in der Oberflaeche angezeigt werden
@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public final class SkinTextureCache {
 
-    private static final Map<String, Identifier> CACHE = new HashMap<>();
+    private static final Map<String, ResourceLocation> CACHE = new HashMap<>();
     /** Dateien, die sich nicht laden liessen -- nicht endlos erneut versuchen. */
     private static final Map<String, Boolean> FAILED = new HashMap<>();
 
@@ -34,10 +34,10 @@ public final class SkinTextureCache {
      * Liefert die Textur-Kennung fuer einen Skin, oder null wenn die Datei
      * fehlt oder unlesbar ist.
      */
-    public static Identifier get(SkinWardrobe.Skin skin) {
+    public static ResourceLocation get(SkinWardrobe.Skin skin) {
         if (skin == null) return null;
         String key = skin.fileName;
-        Identifier cached = CACHE.get(key);
+        ResourceLocation cached = CACHE.get(key);
         if (cached != null) return cached;
         if (FAILED.containsKey(key)) return null;
 
@@ -59,9 +59,9 @@ public final class SkinTextureCache {
                 return null;
             }
 
-            Identifier id = Identifier.of("vortexclient", "skins/" + safeKey(key));
-            MinecraftClient.getInstance().getTextureManager().registerTexture(
-                    id, new NativeImageBackedTexture(() -> "vortexclient-skin", image));
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath("vortexclient", "skins/" + safeKey(key));
+            Minecraft.getInstance().getTextureManager().register(
+                    id, new DynamicTexture(image));
             CACHE.put(key, id);
             return id;
         } catch (Throwable pvpErr) {

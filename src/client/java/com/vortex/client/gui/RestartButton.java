@@ -1,55 +1,39 @@
 package com.vortex.client.gui;
 
 import com.vortex.client.util.GameRestarter;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.common.MinecraftForge;
 
-/**
- * Fuegt dem Pause-Menue (ESC) einen "Restart game"-Knopf hinzu.
- *
- * Der Knopf macht dasselbe wie der Befehl /relaunch: er startet einen neuen
- * Spiel-Prozess und faehrt den aktuellen sauber herunter.
- */
+/** Adds the Vortex skin and restart controls through Forge's screen-init event. */
 public final class RestartButton {
-
+    private static boolean registered;
     private RestartButton() {}
 
     public static void register() {
-        // Hauptmenue: Knopf zur Skin-Garderobe.
-        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof net.minecraft.client.gui.screen.TitleScreen)) return;
+        if (registered) return;
+        registered = true;
+        MinecraftForge.EVENT_BUS.addListener((ScreenEvent.Init.Post event) -> {
+            var screen = event.getScreen();
             try {
-                ButtonWidget skins = ButtonWidget.builder(
-                        Text.literal("Skins"),
-                        b -> net.minecraft.client.MinecraftClient.getInstance()
-                                .setScreen(new SkinScreen(screen))
-                ).dimensions(6, 6, 70, 20).build();
-                Screens.getButtons(screen).add(skins);
-            } catch (Throwable pvpErr) {
-                com.vortex.client.core.Errors.report("SkinButton", pvpErr);
-            }
-        });
-
-        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof GameMenuScreen)) return;
-            try {
-                // Oben links platzieren, damit nichts vom Vanilla-Menue verdeckt wird.
-                ButtonWidget btn = ButtonWidget.builder(
-                        Text.literal("Restart game"),
-                        b -> {
-                            try {
-                                GameRestarter.restart();
-                            } catch (Throwable t) {
-                                b.setMessage(Text.literal("Restart failed"));
-                            }
-                        }
-                ).dimensions(6, 6, 140, 20).build();
-                Screens.getButtons(screen).add(btn);
-            } catch (Throwable pvpErr) {
-                com.vortex.client.core.Errors.report("RestartButton", pvpErr);
+                if (screen instanceof TitleScreen) {
+                    Button skins = Button.builder(Component.literal("Skins"), button ->
+                            Minecraft.getInstance().setScreen(new SkinScreen(screen)))
+                            .bounds(6, 6, 70, 20).build();
+                    event.addListener(skins);
+                } else if (screen instanceof PauseScreen) {
+                    Button restart = Button.builder(Component.literal("Restart game"), button -> {
+                        try { GameRestarter.restart(); }
+                        catch (Throwable error) { button.setMessage(Component.literal("Restart failed")); }
+                    }).bounds(6, 6, 140, 20).build();
+                    event.addListener(restart);
+                }
+            } catch (Throwable error) {
+                com.vortex.client.core.Errors.report("RestartButton", error);
             }
         });
     }

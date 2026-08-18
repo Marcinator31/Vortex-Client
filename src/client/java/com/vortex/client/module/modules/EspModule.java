@@ -2,10 +2,9 @@ package com.vortex.client.module.modules;
 
 import com.vortex.client.core.setting.ColorSetting;
 import com.vortex.client.module.Module;
-import net.minecraft.util.Identifier;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * ESP: laesst ausgewaehlte Mobs mit einer leuchtenden Outline durch Waende
@@ -27,8 +26,8 @@ public class EspModule extends Module {
         addSetting(color);
     }
 
-    /** Ist dieser Entity-Typ (per Identifier) fuer ESP aktiviert? */
-    public boolean isMobEnabled(Identifier id) {
+    /** Ist dieser Entity-Typ (per ResourceLocation) fuer ESP aktiviert? */
+    public boolean isMobEnabled(ResourceLocation id) {
         return id != null && enabledMobs.contains(id.toString());
     }
 

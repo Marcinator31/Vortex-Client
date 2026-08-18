@@ -1,9 +1,8 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.freecam.Freecam;
-import net.minecraft.client.input.KeyboardInput;
-import net.minecraft.util.PlayerInput;
-import net.minecraft.util.math.Vec2f;
+import net.minecraft.client.player.KeyboardInput;
+import net.minecraft.client.player.Input;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,13 +26,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(KeyboardInput.class)
 public abstract class KeyboardInputOverrideMixin {
 
-    @Inject(method = "method_3129", at = @At("TAIL"), require = 0)
+    @Inject(method = "tick", at = @At("TAIL"), require = 0)
     private void pvpclient$blockInputDuringFreecam(CallbackInfo ci) {
         if (!Freecam.isActive()) return;
         try {
-            InputAccessor acc = (InputAccessor) this;
-            acc.pvpclient$setMovementVector(Vec2f.ZERO);
-            acc.pvpclient$setPlayerInput(PlayerInput.DEFAULT);
+            Input input = (Input) (Object) this;
+            input.leftImpulse = 0.0F;
+            input.forwardImpulse = 0.0F;
+            input.up = false;
+            input.down = false;
+            input.left = false;
+            input.right = false;
+            input.jumping = false;
+            input.shiftKeyDown = false;
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("KeyboardInputOverride", pvpErr);
         }

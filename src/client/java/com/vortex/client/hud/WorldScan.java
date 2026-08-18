@@ -1,14 +1,13 @@
 package com.vortex.client.hud;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.WorldChunk;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.Container;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -117,8 +116,8 @@ public final class WorldScan {
         });
     }
 
-    private static void tick(MinecraftClient client) {
-        ClientWorld world = client.world;
+    private static void tick(Minecraft client) {
+        ClientLevel world = client.level;
         if (world == null || client.player == null) {
             if (SNAPSHOT.get() != EMPTY) SNAPSHOT.set(EMPTY);
             building = new ArrayList<>();
@@ -179,13 +178,13 @@ public final class WorldScan {
     }
 
     /** Ein Chunk -- laeuft auf dem Haupt-Thread, daher sicher. */
-    private static void scanChunk(ClientWorld world, int cx, int cz) {
+    private static void scanChunk(ClientLevel world, int cx, int cz) {
         // Verifizierte Variante: getWorldChunk(BlockPos). Die Mitte des Chunks
         // als Bezugspunkt nehmen.
         BlockPos center = new BlockPos((cx << 4) + 8, 0, (cz << 4) + 8);
-        WorldChunk chunk;
+        LevelChunk chunk;
         try {
-            chunk = world.getWorldChunk(center);
+            chunk = world.getChunkAt(center);
         } catch (Throwable t) {
             return;
         }
@@ -196,11 +195,11 @@ public final class WorldScan {
         // die Liste waehrenddessen.
         for (BlockEntity be : chunk.getBlockEntities().values()) {
             if (be == null) continue;
-            boolean isInv = be instanceof Inventory;
-            boolean isSpawner = be instanceof MobSpawnerBlockEntity;
+            boolean isInv = be instanceof Container;
+            boolean isSpawner = be instanceof SpawnerBlockEntity;
             if (isInv) inv++; else other++;
             if (building.size() < MAX_ENTRIES) {
-                building.add(new Be(be.getPos(), isInv, isSpawner));
+                building.add(new Be(be.getBlockPos(), isInv, isSpawner));
             }
         }
         if (inv > 0 || other > 0) {

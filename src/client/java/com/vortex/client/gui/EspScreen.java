@@ -2,12 +2,12 @@ package com.vortex.client.gui;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.EspModule;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SpawnEggItem;
 
 /**
  * Auswahl der Mob-Typen fuers Mob-ESP.
@@ -25,12 +25,12 @@ public class EspScreen extends SelectionScreen {
     @Override
     protected void buildEntries() {
         entries.add(new Entry(Items.PLAYER_HEAD, "minecraft:player", "Players"));
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnEggItem egg = SpawnEggItem.forEntity(type);
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            var egg = SpawnEggItem.byId(type);
             if (egg == null) continue; // kein Spawn-Ei -> kein Mob
-            Identifier id = Registries.ENTITY_TYPE.getId(type);
+            ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
             if (id == null) continue;
-            entries.add(new Entry(egg, id.toString(), type.getName().getString()));
+            entries.add(new Entry(egg, id.toString(), type.getDescription().getString()));
         }
     }
 

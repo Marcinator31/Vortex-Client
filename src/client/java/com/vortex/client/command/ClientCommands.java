@@ -1,160 +1,113 @@
 package com.vortex.client.command;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.vortex.client.util.GameRestarter;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.common.MinecraftForge;
 
-/**
- * Eigene Client-Befehle (laufen nur lokal, gehen NICHT an den Server).
- *
- *   /relaunch  -- startet das Spiel neu
- */
+/** Client-only Forge commands; none of these commands are sent to a server. */
 public final class ClientCommands {
-
+    private static boolean registered;
     private ClientCommands() {}
 
     public static void register() {
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) -> {
-            dispatcher.register(ClientCommandManager.literal("relaunch")
-                    .executes(ctx -> {
-                        ctx.getSource().sendFeedback(
-                                Text.literal("Restarting game..."));
-                        try {
-                            GameRestarter.restart();
-                        } catch (Throwable t) {
-                            ctx.getSource().sendError(Text.literal(
-                                    "Restart failed: " + t));
-                        }
-                        return 1;
-                    }));
+        if (registered) return;
+        registered = true;
+        MinecraftForge.EVENT_BUS.addListener((RegisterClientCommandsEvent event) -> {
+            var dispatcher = event.getDispatcher();
 
-            // /export <name> -- aktives Preset als Textdatei sichern
-            dispatcher.register(ClientCommandManager.literal("export")
-                    .then(ClientCommandManager.argument("name",
-                            com.mojang.brigadier.arguments.StringArgumentType.word())
-                    .executes(ctx -> {
-                        String name = com.mojang.brigadier.arguments.StringArgumentType
-                                .getString(ctx, "name");
-                        java.nio.file.Path p =
-                                com.vortex.client.core.ConfigManager.exportPreset(name);
-                        if (p != null) {
-                            ctx.getSource().sendFeedback(
-                                    Text.literal("Saved: " + p));
-                        } else {
-                            ctx.getSource().sendError(
-                                    Text.literal("Export failed."));
-                        }
+            dispatcher.register(Commands.literal("relaunch").executes(ctx -> {
+                success(ctx, "Restarting game...");
+                try { GameRestarter.restart(); }
+                catch (Throwable error) { failure(ctx, "Restart failed: " + error); }
+                return 1;
+            }));
+
+            dispatcher.register(Commands.literal("export")
+                    .then(Commands.argument("name", StringArgumentType.word()).executes(ctx -> {
+                        String name = StringArgumentType.getString(ctx, "name");
+                        java.nio.file.Path path = com.vortex.client.core.ConfigManager.exportPreset(name);
+                        if (path != null) success(ctx, "Saved: " + path);
+                        else failure(ctx, "Export failed.");
                         return 1;
                     })));
 
-            // /import <name> -- gesicherte Datei ins aktive Preset laden
-            dispatcher.register(ClientCommandManager.literal("import")
-                    .then(ClientCommandManager.argument("name",
-                            com.mojang.brigadier.arguments.StringArgumentType.word())
-                    .executes(ctx -> {
-                        String name = com.mojang.brigadier.arguments.StringArgumentType
-                                .getString(ctx, "name");
-                        if (com.vortex.client.core.ConfigManager.importPreset(name)) {
-                            ctx.getSource().sendFeedback(
-                                    Text.literal("Loaded: " + name));
-                        } else {
-                            ctx.getSource().sendError(
-                                    Text.literal("Not found. Available: "
-                                        + String.join(", ",
-                                            com.vortex.client.core.ConfigManager.listExports())));
-                        }
+            dispatcher.register(Commands.literal("import")
+                    .then(Commands.argument("name", StringArgumentType.word()).executes(ctx -> {
+                        String name = StringArgumentType.getString(ctx, "name");
+                        if (com.vortex.client.core.ConfigManager.importPreset(name)) success(ctx, "Loaded: " + name);
+                        else failure(ctx, "Not found. Available: " + String.join(", ",
+                                com.vortex.client.core.ConfigManager.listExports()));
                         return 1;
                     })));
 
-            // /wp add|del|list -- Waypoints verwalten
-            dispatcher.register(ClientCommandManager.literal("wp")
-                    .then(ClientCommandManager.literal("add")
-                        .then(ClientCommandManager.argument("name",
-                                com.mojang.brigadier.arguments.StringArgumentType.word())
-                        .executes(ctx -> {
-                            var mc = net.minecraft.client.MinecraftClient.getInstance();
-                            if (mc.player == null) return 0;
-                            String name = com.mojang.brigadier.arguments.StringArgumentType
-                                    .getString(ctx, "name");
-                            String dim = com.vortex.client.hud.WaypointRenderer
-                                    .currentDimension(mc);
-                            com.vortex.client.waypoint.WaypointManager.add(name,
-                                    mc.player.getBlockX(), mc.player.getBlockY(),
-                                    mc.player.getBlockZ(), dim);
-                            com.vortex.client.core.ConfigManager.save();
-                            ctx.getSource().sendFeedback(
-                                    Text.literal("Marker added: " + name));
-                            return 1;
-                        })))
-                    .then(ClientCommandManager.literal("del")
-                        .then(ClientCommandManager.argument("name",
-                                com.mojang.brigadier.arguments.StringArgumentType.word())
-                        .executes(ctx -> {
-                            String name = com.mojang.brigadier.arguments.StringArgumentType
-                                    .getString(ctx, "name");
-                            boolean ok = com.vortex.client.waypoint.WaypointManager
-                                    .remove(name);
-                            com.vortex.client.core.ConfigManager.save();
-                            if (ok) {
-                                ctx.getSource().sendFeedback(
-                                        Text.literal("Removed: " + name));
-                            } else {
-                                ctx.getSource().sendError(
-                                        Text.literal("No marker with that name."));
-                            }
-                            return 1;
-                        })))
-                    .then(ClientCommandManager.literal("list")
-                        .executes(ctx -> {
-                            var all = com.vortex.client.waypoint.WaypointManager.all();
-                            if (all.isEmpty()) {
-                                ctx.getSource().sendFeedback(
-                                        Text.literal("No markers yet."));
+            dispatcher.register(Commands.literal("wp")
+                    .then(Commands.literal("add")
+                            .then(Commands.argument("name", StringArgumentType.word()).executes(ctx -> {
+                                Minecraft minecraft = Minecraft.getInstance();
+                                if (minecraft.player == null) return 0;
+                                String name = StringArgumentType.getString(ctx, "name");
+                                String dimension = com.vortex.client.hud.WaypointRenderer.currentDimension(minecraft);
+                                com.vortex.client.waypoint.WaypointManager.add(name,
+                                        minecraft.player.getBlockX(), minecraft.player.getBlockY(),
+                                        minecraft.player.getBlockZ(), dimension);
+                                com.vortex.client.core.ConfigManager.save();
+                                success(ctx, "Marker added: " + name);
                                 return 1;
-                            }
-                            StringBuilder sb = new StringBuilder("Markers:");
-                            for (var w : all) {
-                                sb.append("\n  ").append(w.name).append("  ")
-                                  .append(w.x).append(", ").append(w.y)
-                                  .append(", ").append(w.z);
-                            }
-                            ctx.getSource().sendFeedback(Text.literal(sb.toString()));
-                            return 1;
-                        })));
-
-            // /lag -- zeigt, welcher Teil des Clients wie viel Zeit braucht
-            dispatcher.register(ClientCommandManager.literal("lag")
-                    .executes(ctx -> {
-                        ctx.getSource().sendFeedback(Text.literal(
-                                com.vortex.client.core.Profiler.summary()));
+                            })))
+                    .then(Commands.literal("del")
+                            .then(Commands.argument("name", StringArgumentType.word()).executes(ctx -> {
+                                String name = StringArgumentType.getString(ctx, "name");
+                                boolean removed = com.vortex.client.waypoint.WaypointManager.remove(name);
+                                com.vortex.client.core.ConfigManager.save();
+                                if (removed) success(ctx, "Removed: " + name);
+                                else failure(ctx, "No marker with that name.");
+                                return 1;
+                            })))
+                    .then(Commands.literal("list").executes(ctx -> {
+                        var waypoints = com.vortex.client.waypoint.WaypointManager.all();
+                        if (waypoints.isEmpty()) { success(ctx, "No markers yet."); return 1; }
+                        StringBuilder message = new StringBuilder("Markers:");
+                        for (var waypoint : waypoints) message.append("\n  ").append(waypoint.name)
+                                .append("  ").append(waypoint.x).append(", ").append(waypoint.y)
+                                .append(", ").append(waypoint.z);
+                        success(ctx, message.toString());
                         return 1;
-                    })
-                    .then(ClientCommandManager.literal("reset")
-                        .executes(ctx -> {
-                            com.vortex.client.core.Profiler.reset();
-                            ctx.getSource().sendFeedback(
-                                    Text.literal("Measurements reset."));
-                            return 1;
-                        })));
+                    })));
 
-            // /errors -- zeigt, wo im Client etwas schiefgelaufen ist
-            dispatcher.register(ClientCommandManager.literal("errors")
-                    .executes(ctx -> {
-                        ctx.getSource().sendFeedback(Text.literal(
-                                com.vortex.client.core.Errors.summary()));
-                        return 1;
-                    }));
+            dispatcher.register(Commands.literal("lag").executes(ctx -> {
+                success(ctx, com.vortex.client.core.Profiler.summary());
+                return 1;
+            }).then(Commands.literal("reset").executes(ctx -> {
+                com.vortex.client.core.Profiler.reset();
+                success(ctx, "Measurements reset.");
+                return 1;
+            })));
 
-            // /presets -- zeigt, was gesichert ist
-            dispatcher.register(ClientCommandManager.literal("presets")
-                    .executes(ctx -> {
-                        var list = com.vortex.client.core.ConfigManager.listExports();
-                        ctx.getSource().sendFeedback(Text.literal(
-                                list.isEmpty() ? "No exports found."
-                                               : "Exports: " + String.join(", ", list)));
-                        return 1;
-                    }));
+            dispatcher.register(Commands.literal("errors").executes(ctx -> {
+                success(ctx, com.vortex.client.core.Errors.summary());
+                return 1;
+            }));
+
+            dispatcher.register(Commands.literal("presets").executes(ctx -> {
+                var exports = com.vortex.client.core.ConfigManager.listExports();
+                success(ctx, exports.isEmpty() ? "No exports found."
+                        : "Exports: " + String.join(", ", exports));
+                return 1;
+            }));
         });
+    }
+
+    private static void success(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> context,
+                                String text) {
+        context.getSource().sendSuccess(() -> Component.literal(text), false);
+    }
+
+    private static void failure(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> context,
+                                String text) {
+        context.getSource().sendFailure(Component.literal(text));
     }
 }

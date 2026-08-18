@@ -4,11 +4,11 @@ import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.AutoTotemModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.inventory.ClickType;
 
 /**
  * Logik fuer Auto Totem: sobald die Off-Hand leer ist und ein Totem im Inventar
@@ -49,12 +49,12 @@ public final class AutoTotem {
             tickCounter++;
             AutoTotemModule mod = (AutoTotemModule) find(AutoTotemModule.class);
             if (mod == null || !mod.isEnabled()) return;
-            if (client.player == null || client.interactionManager == null) return;
+            if (client.player == null || client.gameMode == null) return;
 
-            ClientPlayerEntity player = client.player;
+            LocalPlayer player = client.player;
 
             // Nur handeln, wenn die Off-Hand wirklich leer ist.
-            if (!player.getOffHandStack().isEmpty()) return;
+            if (!player.getOffhandItem().isEmpty()) return;
 
             // Only below a certain health, if that is what was asked for.
             // Twenty means the check is off, since that is full health.
@@ -79,8 +79,8 @@ public final class AutoTotem {
                 // way. Said once, not every tick.
                 if (mod.warnEmpty.get() && !warnedEmpty) {
                     warnedEmpty = true;
-                    player.sendMessage(net.minecraft.text.Text.literal(
-                            "\u00a7c[Auto Totem] No totems left."), true);
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                            "\u00a7c[Auto Totem] No totems left."));
                 }
             } else {
                 warnedEmpty = false;
@@ -88,22 +88,22 @@ public final class AutoTotem {
             if (totemSlot < 0) return; // kein Totem vorhanden -> nichts tun
 
             try {
-                int syncId = player.playerScreenHandler.syncId;
+                int syncId = player.inventoryMenu.containerId;
                 // Inventar-Index -> Screen-Slot-Nummer umrechnen.
                 int screenSlot = inventoryIndexToScreenSlot(totemSlot);
                 if (screenSlot < 0) return;
 
                 // 1. Totem aufnehmen (auf den Cursor).
-                client.interactionManager.clickSlot(
-                        syncId, screenSlot, 0, SlotActionType.PICKUP, player);
+                client.gameMode.handleInventoryMouseClick(
+                        syncId, screenSlot, 0, ClickType.PICKUP, player);
                 // 2. In die Off-Hand legen.
-                client.interactionManager.clickSlot(
-                        syncId, OFFHAND_SLOT, 0, SlotActionType.PICKUP, player);
+                client.gameMode.handleInventoryMouseClick(
+                        syncId, OFFHAND_SLOT, 0, ClickType.PICKUP, player);
                 // 3. Falls noch etwas am Cursor ist (Off-Hand war doch belegt),
                 //    zurueck auf den Ursprungsslot legen.
-                if (!player.playerScreenHandler.getCursorStack().isEmpty()) {
-                    client.interactionManager.clickSlot(
-                            syncId, screenSlot, 0, SlotActionType.PICKUP, player);
+                if (!player.inventoryMenu.getCarried().isEmpty()) {
+                    client.gameMode.handleInventoryMouseClick(
+                            syncId, screenSlot, 0, ClickType.PICKUP, player);
                 }
 
                 lastActionTick = tickCounter;
@@ -134,11 +134,11 @@ public final class AutoTotem {
      * is crude, but it is stable across versions and cannot fail to compile,
      * which the alternatives just did.
      */
-    private static boolean holdingWeapon(ClientPlayerEntity player) {
+    private static boolean holdingWeapon(LocalPlayer player) {
         try {
-            ItemStack held = player.getMainHandStack();
+            ItemStack held = player.getMainHandItem();
             if (held == null || held.isEmpty()) return false;
-            var id = net.minecraft.registry.Registries.ITEM.getId(held.getItem());
+            var id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem());
             if (id == null) return false;
             String path = id.getPath();
             return path.endsWith("_sword") || path.endsWith("_axe")
@@ -149,13 +149,13 @@ public final class AutoTotem {
         }
     }
 
-    private static int findTotemInventorySlot(ClientPlayerEntity player) {
+    private static int findTotemInventorySlot(LocalPlayer player) {
         // getInventory().size() deckt Hauptinventar + Hotbar + Ruestung + Off-Hand
         // ab; wir interessieren uns fuer die normalen Slots 0..35.
-        int size = Math.min(player.getInventory().size(), 36);
+        int size = Math.min(player.getInventory().getContainerSize(), 36);
         for (int i = 0; i < size; i++) {
-            ItemStack stack = player.getInventory().getStack(i);
-            if (!stack.isEmpty() && stack.isOf(Items.TOTEM_OF_UNDYING)) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (!stack.isEmpty() && stack.is(Items.TOTEM_OF_UNDYING)) {
                 return i;
             }
         }
