@@ -178,10 +178,10 @@ public class VortexClientMod implements ClientModInitializer {
                 }
             }
             while (openClickGuiKey.consumeClick()) {
-                client.setScreen(new ClickGui());
+                client.gui.setScreen(new ClickGui());
             }
             while (openHudEditorKey.consumeClick()) {
-                client.setScreen(new com.vortex.client.gui.HudEditorScreen());
+                client.gui.setScreen(new com.vortex.client.gui.HudEditorScreen());
             }
 
             // --- Module toggle keys ---
@@ -193,7 +193,7 @@ public class VortexClientMod implements ClientModInitializer {
             // Skipped while a screen is open: otherwise typing a name into the
             // waypoint manager would switch modules on and off.
             try {
-                if (client.screen == null) {
+                if (client.gui.screen() == null) {
                     for (var module : ModuleManager.INSTANCE.getModules()) {
                         int code = module.getToggleKey().getKeyCode();
                         if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) continue;

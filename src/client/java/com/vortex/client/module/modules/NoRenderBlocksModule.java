@@ -72,7 +72,7 @@ public class NoRenderBlocksModule extends Module {
             if (client == null || client.level == null) return;
             var acc = (com.vortex.client.mixin.client.MinecraftClientAccessor) client;
             var wr = acc.pvpclient$getWorldRenderer();
-            if (wr != null) wr.allChanged();
+            if (wr != null) wr.resetLevelRenderData();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("NoRenderBlocks.rebuild", pvpErr);
         }

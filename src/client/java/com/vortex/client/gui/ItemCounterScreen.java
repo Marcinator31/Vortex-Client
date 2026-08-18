@@ -250,7 +250,7 @@ public class ItemCounterScreen extends Screen {
                     }
                     return true;
                 case PICK:
-                    Minecraft.getInstance().setScreen(
+                    Minecraft.getInstance().gui.setScreen(
                             new ItemPickScreen(this, h.data));
                     return true;
                 case STYLE:
@@ -285,7 +285,7 @@ public class ItemCounterScreen extends Screen {
                     return true;
                 case COLOR:
                     // The picker writes straight into this counter's setting.
-                    Minecraft.getInstance().setScreen(
+                    Minecraft.getInstance().gui.setScreen(
                             new ColorPickerScreen(this, h.data.color));
                     return true;
                 case COLOR_ALL: {
@@ -294,7 +294,7 @@ public class ItemCounterScreen extends Screen {
                     // rather than only after closing the picker.
                     if (m == null || m.getCounters().isEmpty()) return true;
                     ItemCounter first = m.getCounters().get(0);
-                    Minecraft.getInstance().setScreen(
+                    Minecraft.getInstance().gui.setScreen(
                             new ColorPickerScreen(this, first.color, () -> {
                                 int col = first.color.get();
                                 for (ItemCounter other : m.getCounters()) {
@@ -377,6 +377,6 @@ public class ItemCounterScreen extends Screen {
     @Override
     public void onClose() {
         com.vortex.client.core.ConfigManager.save();
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 }

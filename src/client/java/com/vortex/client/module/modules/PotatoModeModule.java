@@ -182,7 +182,7 @@ public class PotatoModeModule extends Module {
             var acc = (com.vortex.client.mixin.client.MinecraftClientAccessor) client;
             var wr = acc.pvpclient$getWorldRenderer();
             if (wr != null) {
-                wr.allChanged();
+                wr.resetLevelRenderData();
             }
         } catch (Throwable ignored) {
             // Kein reload moeglich -> Aenderung wirkt verzoegert, kein Crash.

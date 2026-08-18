@@ -954,19 +954,19 @@ public class ClickGui extends Screen {
                 case SECTION:
                     // Skin-Garderobe hat einen eigenen Bildschirm.
                     if ("openSkins".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new SkinScreen(this));
+                        Minecraft.getInstance().gui.setScreen(new SkinScreen(this));
                         break;
                     }
                     if ("openMacros".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new MacroScreen(this));
+                        Minecraft.getInstance().gui.setScreen(new MacroScreen(this));
                         break;
                     }
                     if ("openKeys".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new KeyListScreen(this));
+                        Minecraft.getInstance().gui.setScreen(new KeyListScreen(this));
                         break;
                     }
                     if ("openCommunity".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new CommunityScreen(this));
+                        Minecraft.getInstance().gui.setScreen(new CommunityScreen(this));
                         break;
                     }
                     section = (Section) hit.extra;
@@ -976,7 +976,7 @@ public class ClickGui extends Screen {
                     if (search != null) search.setValue("");
                     break;
                 case WP_MANAGE:
-                    Minecraft.getInstance().setScreen(new WaypointScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new WaypointScreen(this));
                     break;
                 case FAVCAT:
                     favView = true;
@@ -991,7 +991,7 @@ public class ClickGui extends Screen {
                     if (favView && !GuiState.hasFavorites()) favView = false;
                     break;
                 case THEME:
-                    Minecraft.getInstance().setScreen(new ThemeScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new ThemeScreen(this));
                     break;
                 case PRESET: {
                     // Wechselt das Preset: sichert den aktuellen Stand und laedt
@@ -1028,22 +1028,22 @@ public class ClickGui extends Screen {
                     }
                     break;
                 case SUB_ESP:
-                    Minecraft.getInstance().setScreen(new EspScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new EspScreen(this));
                     break;
                 case SUB_BLOCK:
-                    Minecraft.getInstance().setScreen(new BlockEspScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new BlockEspScreen(this));
                     break;
                 case SUB_ANTI:
-                    Minecraft.getInstance().setScreen(new AntiRenderScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new AntiRenderScreen(this));
                     break;
                 case SUB_NORENDER:
-                    Minecraft.getInstance().setScreen(new NoRenderBlocksScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new NoRenderBlocksScreen(this));
                     break;
                 case SUB_COUNTER:
-                    Minecraft.getInstance().setScreen(new ItemCounterScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new ItemCounterScreen(this));
                     break;
                 case SUB_WAYPOINT:
-                    Minecraft.getInstance().setScreen(new WaypointScreen(this));
+                    Minecraft.getInstance().gui.setScreen(new WaypointScreen(this));
                     break;
                 case S_BOOL:
                     handleBool(hit.module, (BooleanSetting) hit.setting);
@@ -1148,10 +1148,10 @@ public class ClickGui extends Screen {
         if (m != null && m instanceof com.vortex.client.module.modules.GlobalHudColorModule ghc
                 && c == ghc.color) {
             Minecraft.getInstance()
-                    .setScreen(new ColorPickerScreen(this, c, ghc::applyToAll));
+                    .gui.setScreen(new ColorPickerScreen(this, c, ghc::applyToAll));
             return;
         }
-        Minecraft.getInstance().setScreen(new ColorPickerScreen(this, c));
+        Minecraft.getInstance().gui.setScreen(new ColorPickerScreen(this, c));
     }
 
     /**

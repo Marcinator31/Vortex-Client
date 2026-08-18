@@ -13,10 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.Container;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
@@ -79,13 +78,12 @@ public final class BlockEntityEsp {
             ensureWorker();
 
             PoseStack matrices = context.poseStack();
-            MultiBufferSource consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             try {
                 float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 Vec3 cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 int contColor = contOn ? cont.getColor() : 0;
                 if ((contColor >>> 24) == 0) contColor |= 0xFF000000;
@@ -93,7 +91,6 @@ public final class BlockEntityEsp {
                 if ((spawnColor >>> 24) == 0) spawnColor |= 0xFF000000;
 
                 Vec3 start = EspRender.tracerStart(client, cam, tickDelta);
-                org.joml.Matrix4f mat = matrices.last().pose();
 
                 List<Hit> hits = RESULT.get();
                 double maxDistSq = MAX_DRAW_DIST * MAX_DRAW_DIST;
@@ -108,11 +105,17 @@ public final class BlockEntityEsp {
                     if (h.center.distanceToSqr(cam) > maxDistSq) continue;
                     drawn++;
                     int color = h.spawner ? spawnColor : contColor;
-                    EspRender.drawBox(matrices, lines, h.box, cam, color, 2.0f);
+                    EspRender.submitBox(collector, matrices, h.box, cam, color, 2.0f);
 
                     boolean tracer = h.spawner ? spawn.tracerEnabled() : cont.tracerEnabled();
                     if (tracer) {
-                        EspRender.drawTracer(mat, lines, start, h.center, cam, color, 2.0f);
+                        final Vec3 tracerStart = start;
+                        final Vec3 tracerTarget = h.center;
+                        final Vec3 tracerCam = cam;
+                        final int tracerColor = color;
+                        EspRender.submitLines(collector, matrices,
+                                (matrix, lines) -> EspRender.drawTracer(matrix, lines,
+                                        tracerStart, tracerTarget, tracerCam, tracerColor, 2.0f));
                     }
                 }
             } catch (Throwable pvpErr) {
