@@ -68,13 +68,13 @@ public class LivingEntityRendererMixin {
     @Unique
     private static boolean pvpclient$lambdaLogged = false;
 
-    @Inject(method = "method_62355", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void pvpclient$captureEntity(LivingEntity entity, LivingEntityRenderState state,
                                          float tickDelta, CallbackInfo ci) {
         pvpclient$entityMap.put(state, entity);
     }
 
-    @Inject(method = "method_4054", at = @At("TAIL"))
+    @Inject(method = "submit", at = @At("TAIL"))
     private void pvpclient$renderHealth(LivingEntityRenderState state, PoseStack matrices,
                                         SubmitNodeCollector queue, CameraRenderState camState,
                                         CallbackInfo ci) {
@@ -117,7 +117,7 @@ public class LivingEntityRendererMixin {
      * Bewusst ein eigener Einstiegspunkt und nicht im Health-Block: beide Module
      * sollen unabhaengig voneinander an- und ausschaltbar sein.
      */
-    @Inject(method = "method_4054", at = @At("TAIL"))
+    @Inject(method = "submit", at = @At("TAIL"))
     private void pvpclient$renderTargetInfo(LivingEntityRenderState state, PoseStack matrices,
                                             SubmitNodeCollector queue,
                                             CameraRenderState camState, CallbackInfo ci) {
@@ -218,7 +218,7 @@ public class LivingEntityRendererMixin {
      * this number matters even when you are not aiming at someone, and the two
      * modules switch on independently.
      */
-    @Inject(method = "method_4054", at = @At("TAIL"), require = 0)
+    @Inject(method = "submit", at = @At("TAIL"), require = 0)
     private void vortex$renderTotemCount(LivingEntityRenderState state, PoseStack matrices,
                                          SubmitNodeCollector queue,
                                          CameraRenderState camState, CallbackInfo ci) {
@@ -270,7 +270,7 @@ public class LivingEntityRendererMixin {
      * the matrix, transparency from the colour's alpha, and drawing through
      * walls from the light value -- none of which the vanilla tag hands out.
      */
-    @Inject(method = "method_4054", at = @At("TAIL"), require = 0)
+    @Inject(method = "submit", at = @At("TAIL"), require = 0)
     private void vortex$renderNametag(LivingEntityRenderState state, PoseStack matrices,
                                       SubmitNodeCollector queue,
                                       CameraRenderState camState, CallbackInfo ci) {

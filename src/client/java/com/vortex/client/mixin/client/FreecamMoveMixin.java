@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(Entity.class)
 public abstract class FreecamMoveMixin {
 
-    @ModifyVariable(method = "method_5784", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "move", at = @At("HEAD"), argsOnly = true)
     private Vec3 pvpclient$freezeHorizontalMovement(Vec3 movement) {
         if (!Freecam.isActive() || movement == null) return movement;
 

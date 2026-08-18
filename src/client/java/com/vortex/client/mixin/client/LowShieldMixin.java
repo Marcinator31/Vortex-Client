@@ -30,7 +30,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 @Mixin(ItemInHandRenderer.class)
 public class LowShieldMixin {
 
-    @Inject(method = "method_3233", at = @At("HEAD"))
+    @Inject(method = "renderItem", at = @At("HEAD"))
     private void pvpclient$lowShield(LivingEntity entity, ItemStack stack,
                                      ItemDisplayContext displayContext, PoseStack matrices,
                                      SubmitNodeCollector queue, int light, CallbackInfo ci) {
