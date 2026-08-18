@@ -9,8 +9,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import com.mojang.blaze3d.platform.NativeImage;
-
 /**
  * Verwaltet den gerade angewendeten Skin.
  *
@@ -118,28 +116,13 @@ public final class ActiveSkin {
             var tm = Minecraft.getInstance().getTextureManager();
             var texture = new DynamicTexture(() -> "vortexclient-active-skin", image);
 
-            // WARUM MEHRERE NAMEN:
-            // Der Skin wird ueber eine Textur-Referenz eingebunden, und die
-            // wandelt den Namen intern um -- vermutlich zu "textures/<name>.png".
-            // Welche Form genau gesucht wird, geht aus den Mappings nicht hervor.
-            // Statt zu raten, melden wir dieselbe Textur unter allen plausiblen
-            // Namen an. Das kostet nichts (es ist ein und dasselbe Bild) und
-            // trifft in jedem Fall den Namen, den das Spiel nachschlaegt.
-            String[] variants = {
-                base,
-                base + ".png",
-                "textures/" + base,
-                "textures/" + base + ".png"
-            };
-            for (String v : variants) {
-                try {
-                    tm.register(Identifier.fromNamespaceAndPath("vortexclient", v), texture);
-                } catch (Throwable pvpErr) {
-                    com.vortex.client.core.Errors.report("ActiveSkin.register:" + v, pvpErr);
-                }
-            }
-            com.vortex.client.core.Errors.note("ActiveSkin",
-                    "Textur angemeldet als " + main + " (+3 Namensvarianten)");
+            // Die PlayerSkin-Ueberschreibung verwendet diese Kennung sowohl als
+            // Asset-ID als auch als tatsaechlichen Texturpfad. Eine DynamicTexture
+            // darf deshalb genau einmal unter dieser Kennung registriert werden;
+            // Mehrfachregistrierungen derselben Instanz unter umgerechneten
+            // Ressourcenpfaden koennen die Skin-UVs im Entity-Renderer verfälschen.
+            tm.register(main, texture);
+            com.vortex.client.core.Errors.note("ActiveSkin", "Textur angemeldet als " + main);
             return main;
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("ActiveSkin.upload", pvpErr);
