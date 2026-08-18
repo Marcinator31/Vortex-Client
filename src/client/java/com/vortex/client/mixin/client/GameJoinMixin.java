@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPacketListener.class)
 public abstract class GameJoinMixin {
 
-    @Inject(method = "method_11120", at = @At("TAIL"), require = 0)
+    @Inject(method = "handleLogin", at = @At("TAIL"), require = 0)
     private void vortex$recordServer(ClientboundLoginPacket packet, CallbackInfo ci) {
         try {
             int dims = (packet.levels() == null) ? 0 : packet.levels().size();

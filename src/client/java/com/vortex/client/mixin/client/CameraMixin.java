@@ -2,8 +2,7 @@ package com.vortex.client.mixin.client;
 
 import com.vortex.client.freecam.Freecam;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.DeltaTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,23 +27,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CameraMixin {
 
     @Shadow
-    private Vec3 field_18712; // pos
+    protected abstract void setRotation(float yaw, float pitch);
 
     @Shadow
-    protected abstract void method_19325(float yaw, float pitch); // setRotation
+    protected abstract void setPosition(double x, double y, double z);
 
-    @Shadow
-    protected abstract void method_19327(double x, double y, double z); // setPos
-
-    @Inject(method = "method_19321", at = @At("TAIL"))
-    private void pvpclient$freecamUpdate(Level area, Entity focusedEntity,
-                                         boolean thirdPerson, boolean inverseView,
-                                         float tickProgress, CallbackInfo ci) {
+    @Inject(method = "update", at = @At("TAIL"))
+    private void pvpclient$freecamUpdate(DeltaTracker deltaTracker, CallbackInfo ci) {
         if (!Freecam.isActive()) return;
         // Bewegung pro Frame berechnen (fluessig, framerate-unabhaengig).
         Freecam.updateFrame();
         // Erst Rotation (berechnet Richtungsvektoren neu), dann Position.
-        method_19325(Freecam.getYaw(), Freecam.getPitch());
-        method_19327(Freecam.getPos().x, Freecam.getPos().y, Freecam.getPos().z);
+        setRotation(Freecam.getYaw(), Freecam.getPitch());
+        setPosition(Freecam.getPos().x, Freecam.getPos().y, Freecam.getPos().z);
     }
 }

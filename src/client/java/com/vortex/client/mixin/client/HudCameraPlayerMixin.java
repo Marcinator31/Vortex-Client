@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Gui.class)
 public abstract class HudCameraPlayerMixin {
 
-    @Inject(method = "method_1737", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getCameraPlayer", at = @At("HEAD"), cancellable = true, require = 0)
     private void pvpclient$realPlayerForHud(CallbackInfoReturnable<Player> cir) {
         if (Freecam.isActive()) {
             Player real = Minecraft.getInstance().player;

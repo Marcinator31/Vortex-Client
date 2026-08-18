@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public abstract class CrosshairMixin {
 
-    @Inject(method = "method_1736", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true, require = 0)
     private void vortex$customCrosshair(GuiGraphicsExtractor ctx,
                                         net.minecraft.client.DeltaTracker tickCounter,
                                         CallbackInfo ci) {

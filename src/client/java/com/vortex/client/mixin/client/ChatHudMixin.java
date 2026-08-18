@@ -28,7 +28,7 @@ public abstract class ChatHudMixin {
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter LONG = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    @ModifyVariable(method = "method_1812", at = @At("HEAD"), argsOnly = true, require = 0)
+    @ModifyVariable(method = "addMessage", at = @At("HEAD"), argsOnly = true, require = 0)
     private Component vortex$addTimestamp(Component message) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
@@ -66,7 +66,7 @@ public abstract class ChatHudMixin {
      * constant compiled into the trimming step, so it is changed there rather
      * than through a field -- there is no field left to change.
      */
-    @ModifyConstant(method = "method_1812", constant = @Constant(intValue = 100), require = 0)
+    @ModifyConstant(method = "addMessage", constant = @Constant(intValue = 100), require = 0)
     private int vortex$moreHistory(int original) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(

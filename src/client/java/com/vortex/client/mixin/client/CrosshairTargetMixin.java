@@ -3,7 +3,7 @@ package com.vortex.client.mixin.client;
 import com.vortex.client.freecam.Freecam;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,10 +31,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   updateCrosshairTarget = method_3190 (float tickDelta)
  *   player.raycast        = method_5745 (double, float, boolean) -> HitResult
  */
-@Mixin(GameRenderer.class)
+@Mixin(Minecraft.class)
 public abstract class CrosshairTargetMixin {
 
-    @Inject(method = "method_3190", at = @At("TAIL"))
+    @Inject(method = "pick", at = @At("TAIL"))
     private void pvpclient$retargetFromPlayer(float tickDelta, CallbackInfo ci) {
         if (!Freecam.isActive()) return;
 

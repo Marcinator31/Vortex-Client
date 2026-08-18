@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityRenderDispatcher.class)
 public abstract class EntityRenderShouldRenderMixin {
 
-    @Inject(method = "method_3950", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void pvpclient$hideFreeCamera(Entity entity, Frustum frustum,
                                           double x, double y, double z,
                                           CallbackInfoReturnable<Boolean> cir) {

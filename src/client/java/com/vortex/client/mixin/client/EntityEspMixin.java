@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Entity.class)
 public abstract class EntityEspMixin {
 
-    @Inject(method = "method_5851", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "isCurrentlyGlowing", at = @At("HEAD"), cancellable = true)
     private void pvpclient$espGlow(CallbackInfoReturnable<Boolean> cir) {
         EspModule esp = pvpclient$esp();
         if (esp == null || !esp.isEnabled()) return;
@@ -31,7 +31,7 @@ public abstract class EntityEspMixin {
         }
     }
 
-    @Inject(method = "method_22861", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getTeamColor", at = @At("HEAD"), cancellable = true)
     private void pvpclient$espColor(CallbackInfoReturnable<Integer> cir) {
         EspModule esp = pvpclient$esp();
         if (esp == null || !esp.isEnabled()) return;

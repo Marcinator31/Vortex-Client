@@ -31,7 +31,7 @@ import net.minecraft.world.entity.player.PlayerSkin;
 @Mixin(PlayerInfo.class)
 public abstract class SkinOverrideMixin {
 
-    @Inject(method = "method_52810", at = @At("RETURN"), cancellable = true, require = 0)
+    @Inject(method = "getSkin", at = @At("RETURN"), cancellable = true, require = 0)
     private void pvpclient$applyCustomSkin(CallbackInfoReturnable<PlayerSkin> cir) {
         try {
             Identifier tex = ActiveSkin.textureId();
