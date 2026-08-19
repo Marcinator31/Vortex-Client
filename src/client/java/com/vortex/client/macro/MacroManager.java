@@ -116,7 +116,7 @@ public final class MacroManager {
         // button itself ended up in the macro. That looked like "clicks work,
         // keys do not", when in truth recording simply only happens in game.
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.gui.screen() != null) return;
+        if (mc == null || mc.screen != null) return;
 
         long now = System.currentTimeMillis();
         int delay = (int) Math.min(now - lastEventTime, 60_000L);
@@ -213,7 +213,7 @@ public final class MacroManager {
             recLastSlot = -1;
             return;
         }
-        if (client.gui.screen() != null) return;
+        if (client.screen != null) return;
 
         // EVERY key, not just a handful of movement keys.
         //
@@ -282,7 +282,7 @@ public final class MacroManager {
 
     /** Starts and stops macros by their assigned keys. */
     private static void tickKeys(Minecraft client) {
-        if (client.gui.screen() != null) {
+        if (client.screen != null) {
             keyDown.clear();
             return;
         }
@@ -340,7 +340,7 @@ public final class MacroManager {
         }
 
         // A screen interrupts playback: the macro would otherwise type into it.
-        if (client.gui.screen() != null) return;
+        if (client.screen != null) return;
 
         // Cap on how much runs in a single tick.
         //

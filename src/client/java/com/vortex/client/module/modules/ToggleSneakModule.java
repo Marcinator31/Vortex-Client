@@ -27,7 +27,7 @@ public class ToggleSneakModule extends Module {
 
             // While a screen is open the key must be released, otherwise you
             // stay stuck in a crouch inside your inventory.
-            boolean want = isEnabled() && client.gui.screen() == null;
+            boolean want = isEnabled() && client.screen == null;
 
             var binding = client.options.keyShift;
             if (binding == null) return;

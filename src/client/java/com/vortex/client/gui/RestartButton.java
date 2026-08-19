@@ -25,7 +25,7 @@ public final class RestartButton {
                 Button skins = Button.builder(
                         Component.literal("Skins"),
                         b -> net.minecraft.client.Minecraft.getInstance()
-                                .gui.setScreen(new SkinScreen(screen))
+                                .setScreen(new SkinScreen(screen))
                 ).bounds(6, 6, 70, 20).build();
                 Screens.getWidgets(screen).add(skins);
             } catch (Throwable pvpErr) {

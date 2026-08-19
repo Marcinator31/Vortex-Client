@@ -496,7 +496,7 @@ public class WaypointScreen extends Screen {
                 if (inRect(bx, y + 6, 12, 12)) {
                     // Farbe aendern -- ueber ein kurzlebiges ColorSetting.
                     var cs = new com.vortex.client.core.setting.ColorSetting("Marker Colour", w.color);
-                    Minecraft.getInstance().gui.setScreen(
+                    Minecraft.getInstance().setScreen(
                             new ColorPickerScreen(this, cs, () -> w.color = cs.get()));
                     return true;
                 }
@@ -856,6 +856,6 @@ public class WaypointScreen extends Screen {
         com.vortex.client.core.ConfigManager.save();
         // parent kann null sein, wenn die Verwaltung ueber die Taste geoeffnet
         // wurde -- dann zurueck ins Spiel statt in einen leeren Bildschirm.
-        this.minecraft.gui.setScreen(parent);
+        this.minecraft.setScreen(parent);
     }
 }

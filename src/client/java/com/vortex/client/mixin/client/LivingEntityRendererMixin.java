@@ -166,7 +166,7 @@ public class LivingEntityRendererMixin {
             int light = 0xF000F0;
             matrices.pushPose();
             OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
+            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
             matrices.popPose();
         } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("LivingEntityRendererMixin", pvpErr);
@@ -255,7 +255,7 @@ public class LivingEntityRendererMixin {
             int light = 0xF000F0;
             matrices.pushPose();
             OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
+            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
             matrices.popPose();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("TotemCountOverhead", pvpErr);
@@ -315,7 +315,7 @@ public class LivingEntityRendererMixin {
             matrices.pushPose();
             matrices.scale((float) scale, (float) scale, (float) scale);
             OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
+            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
             matrices.popPose();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("Nametags", pvpErr);
@@ -340,7 +340,7 @@ public class LivingEntityRendererMixin {
         matrices.pushPose();
         matrices.scale(sc, sc, sc);
         OrderedSubmitNodeCollector rcq = queue.order(light);
-        rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
+        rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
         matrices.popPose();
     }
 
@@ -376,7 +376,7 @@ public class LivingEntityRendererMixin {
         matrices.pushPose();
         matrices.scale(sc, sc, sc);
         OrderedSubmitNodeCollector rcq = queue.order(light);
-        rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
+        rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
         matrices.popPose();
     }
 
