@@ -39,7 +39,7 @@ public final class ChatCopy {
             try {
                 ChatModule mod = ModuleManager.INSTANCE.get(ChatModule.class);
                 if (mod == null || !mod.isEnabled() || !mod.copyKey.isBound()) return;
-                if (client.gui.screen() != null) {
+                if (client.screen != null) {
                     keyWasDown = false;
                     return;
                 }

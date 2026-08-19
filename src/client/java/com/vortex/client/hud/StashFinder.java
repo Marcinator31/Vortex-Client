@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
@@ -94,8 +94,8 @@ public final class StashFinder {
             // Tracer zeichnen.
             if (!mod.tracerEnabled()) return;
             PoseStack matrices = context.poseStack();
-            SubmitNodeCollector collector = context.submitNodeCollector();
-            if (matrices == null || collector == null) return;
+            MultiBufferSource consumers = context.bufferSource();
+            if (matrices == null || consumers == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
@@ -108,19 +108,34 @@ public final class StashFinder {
                     cam = com.vortex.client.freecam.Freecam.getPos();
                 }
 
+                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
+
                 int color = mod.getTracerColor();
                 if ((color >>> 24) == 0) color = 0xFF000000 | color;
-                final Vec3 tracerCam = cam;
-                final Vec3 tracerStart = pvpclient$tracerStart(client, tracerCam, tickDelta);
-                final int tracerColor = color;
-                final List<Stash> stashes = List.copyOf(RESULT.get());
+                float r = ((color >> 16) & 0xFF) / 255.0f;
+                float g = ((color >> 8) & 0xFF) / 255.0f;
+                float b = (color & 0xFF) / 255.0f;
+                float a = ((color >>> 24) & 0xFF) / 255.0f;
+                float tw = 2.0f;
 
-                EspRender.submitLines(collector, matrices, (matrix, lines) -> {
-                    for (Stash stash : stashes) {
-                        EspRender.drawTracer(matrix, lines, tracerStart, stash.center,
-                                tracerCam, tracerColor, 2.0f);
-                    }
-                });
+                // Tracer-Start: knapp vor der Kamera in Blickrichtung.
+                Vec3 start = pvpclient$tracerStart(client, cam, tickDelta);
+
+                org.joml.Matrix4f mat = matrices.last().pose();
+                List<Stash> stashes = RESULT.get();
+                for (int i = 0; i < stashes.size(); i++) {
+                    Vec3 c = stashes.get(i).center;
+                    double sx = start.x - cam.x, sy = start.y - cam.y, sz = start.z - cam.z;
+                    double ex = c.x - cam.x, ey = c.y - cam.y, ez = c.z - cam.z;
+                    double dx = ex - sx, dy = ey - sy, dz = ez - sz;
+                    double len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    if (len < 1.0e-4) continue;
+                    float nx = (float)(dx/len), ny = (float)(dy/len), nz = (float)(dz/len);
+                    lines.addVertex(mat, (float) sx, (float) sy, (float) sz)
+                            .setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(tw);
+                    lines.addVertex(mat, (float) ex, (float) ey, (float) ez)
+                            .setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(tw);
+                }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("StashFinder", pvpErr);
             } finally {

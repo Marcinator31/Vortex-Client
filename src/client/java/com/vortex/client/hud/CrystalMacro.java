@@ -65,7 +65,7 @@ public final class CrystalMacro {
             return;
         }
         // In Menues nichts tun.
-        if (client.gui.screen() != null) return;
+        if (client.screen != null) return;
 
         LocalPlayer self = client.player;
 
