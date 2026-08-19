@@ -35,7 +35,7 @@ public final class AutoHit {
             if (client.player == null || client.level == null) return;
             if (client.gameMode == null) return;
             // In einem Menue/Screen nicht zuschlagen.
-            if (client.gui.screen() != null) return;
+            if (client.screen != null) return;
 
             LocalPlayer self = client.player;
 

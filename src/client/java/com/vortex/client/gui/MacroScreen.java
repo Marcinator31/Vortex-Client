@@ -451,7 +451,7 @@ public class MacroScreen extends Screen {
                         // Record therefore looked exactly like a broken
                         // feature: you act, and nothing is captured. Closing
                         // it here removes the trap entirely.
-                        Minecraft.getInstance().gui.setScreen(null);
+                        Minecraft.getInstance().setScreen(null);
                     }
                     return true;
                 }
@@ -579,7 +579,7 @@ public class MacroScreen extends Screen {
                     return true;
                 }
                 case COMMUNITY:
-                    Minecraft.getInstance().gui.setScreen(new CommunityScreen(this));
+                    Minecraft.getInstance().setScreen(new CommunityScreen(this));
                     return true;
                 case APPLY:
                     applyInput();
@@ -752,6 +752,6 @@ public class MacroScreen extends Screen {
     @Override
     public void onClose() {
         save();
-        this.minecraft.gui.setScreen(parent);
+        this.minecraft.setScreen(parent);
     }
 }

@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -55,18 +55,19 @@ public final class SusChunks {
             ensureWorker();
 
             PoseStack matrices = context.poseStack();
-            SubmitNodeCollector collector = context.submitNodeCollector();
-            if (matrices == null || collector == null) return;
+            MultiBufferSource consumers = context.bufferSource();
+            if (matrices == null || consumers == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
                 float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 Vec3 cam = EspRender.cameraOffset(client, tickDelta);
+                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 List<ChunkMark> marks = RESULT.get();
                 for (int i = 0; i < marks.size(); i++) {
                     ChunkMark m = marks.get(i);
-                    EspRender.submitBox(collector, matrices, m.box, cam, m.color, 2.0f);
+                    EspRender.drawBox(matrices, lines, m.box, cam, m.color, 2.0f);
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("SusChunks", pvpErr);
