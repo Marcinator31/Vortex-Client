@@ -4,24 +4,22 @@ import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ContainerEspModule;
 import com.vortex.client.module.modules.SpawnerEspModule;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.chunk.WorldChunk;
-
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.world.Container;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 /**
  * ESP fuer Block-Entities: Container (alles mit Inventar) und Mob-Spawner.
@@ -36,10 +34,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class BlockEntityEsp {
 
     private static final class Hit {
-        final Box box;
-        final Vec3d center;
+        final AABB box;
+        final Vec3 center;
         final boolean spawner; // true = Spawner, false = Container
-        Hit(Box box, Vec3d center, boolean spawner) {
+        Hit(AABB box, Vec3 center, boolean spawner) {
             this.box = box; this.center = center; this.spawner = spawner;
         }
     }
@@ -65,7 +63,7 @@ public final class BlockEntityEsp {
     private static Thread worker;
 
     public static void register() {
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
             long pvpT0 = System.nanoTime();
             try {
             ContainerEspModule cont = (ContainerEspModule) find(ContainerEspModule.class);
@@ -74,27 +72,25 @@ public final class BlockEntityEsp {
             boolean spawnOn = spawn != null && spawn.isEnabled();
             if (!contOn && !spawnOn) return;
 
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client.world == null || client.player == null) return;
+            Minecraft client = Minecraft.getInstance();
+            if (client.level == null || client.player == null) return;
 
             ensureWorker();
 
-            MatrixStack matrices = context.matrices();
-            VertexConsumerProvider consumers = context.consumers();
-            if (matrices == null || consumers == null) return;
+            PoseStack matrices = context.poseStack();
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             try {
-                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
-                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
+                float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
 
                 int contColor = contOn ? cont.getColor() : 0;
                 if ((contColor >>> 24) == 0) contColor |= 0xFF000000;
                 int spawnColor = spawnOn ? spawn.getColor() : 0;
                 if ((spawnColor >>> 24) == 0) spawnColor |= 0xFF000000;
 
-                Vec3d start = EspRender.tracerStart(client, cam, tickDelta);
-                org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
+                Vec3 start = EspRender.tracerStart(client, cam, tickDelta);
 
                 List<Hit> hits = RESULT.get();
                 double maxDistSq = MAX_DRAW_DIST * MAX_DRAW_DIST;
@@ -106,14 +102,20 @@ public final class BlockEntityEsp {
                     if (h.spawner && !spawnOn) continue;
                     if (!h.spawner && !contOn) continue;
                     // Zu weit weg -> gar nicht erst zeichnen (spart Objekte + GPU).
-                    if (h.center.squaredDistanceTo(cam) > maxDistSq) continue;
+                    if (h.center.distanceToSqr(cam) > maxDistSq) continue;
                     drawn++;
                     int color = h.spawner ? spawnColor : contColor;
-                    EspRender.drawBox(matrices, lines, h.box, cam, color, 2.0f);
+                    EspRender.submitBox(collector, matrices, h.box, cam, color, 2.0f);
 
                     boolean tracer = h.spawner ? spawn.tracerEnabled() : cont.tracerEnabled();
                     if (tracer) {
-                        EspRender.drawTracer(mat, lines, start, h.center, cam, color, 2.0f);
+                        final Vec3 tracerStart = start;
+                        final Vec3 tracerTarget = h.center;
+                        final Vec3 tracerCam = cam;
+                        final int tracerColor = color;
+                        EspRender.submitLines(collector, matrices,
+                                (matrix, lines) -> EspRender.drawTracer(matrix, lines,
+                                        tracerStart, tracerTarget, tracerCam, tracerColor, 2.0f));
                     }
                 }
             } catch (Throwable pvpErr) {
@@ -185,9 +187,9 @@ public final class BlockEntityEsp {
     }
 
     private static Hit makeHit(BlockPos p, boolean spawner) {
-        Box box = new Box(p.getX(), p.getY(), p.getZ(),
+        AABB box = new AABB(p.getX(), p.getY(), p.getZ(),
                 p.getX() + 1.0, p.getY() + 1.0, p.getZ() + 1.0);
-        Vec3d center = new Vec3d(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5);
+        Vec3 center = new Vec3(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5);
         return new Hit(box, center, spawner);
     }
 

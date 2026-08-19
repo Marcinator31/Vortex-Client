@@ -2,16 +2,19 @@ package com.vortex.client.hud;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ProjectilePathModule;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.world.phys.AABB;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Berechnet und zeichnet die Flugbahn des Wurfobjekts in der Hand.
@@ -39,6 +42,9 @@ public final class ProjectilePath {
 
     private static final double DRAG = 0.99;
 
+    /** Immutable extraction result used by the deferred 26.2 draw callback. */
+    private record PathResult(List<Vec3> points, Vec3 hit) {}
+
     private ProjectilePath() {}
 
     /**
@@ -49,23 +55,23 @@ public final class ProjectilePath {
      * NOT exist under those names in the 1.21.11 mappings, so the id strings
      * stay and only run when the held item actually changes.)
      */
-    private static net.minecraft.item.Item lastKindItem = null;
+    private static net.minecraft.world.item.Item lastKindItem = null;
     private static Kind lastKind = null;
 
     /** bowKind memo: 0 = neither, 1 = bow, 2 = crossbow. */
-    private static net.minecraft.item.Item lastHeldItem = null;
+    private static net.minecraft.world.item.Item lastHeldItem = null;
     private static int lastHeldType = 0;
 
     /** Ordnet einem Gegenstand seine Wurfeigenschaften zu (oder null). */
     private static Kind kindOf(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
-        net.minecraft.item.Item item = stack.getItem();
+        net.minecraft.world.item.Item item = stack.getItem();
         if (item == lastKindItem) return lastKind;
 
         Kind k;
         String id;
         try {
-            id = Registries.ITEM.getId(item).toString();
+            id = BuiltInRegistries.ITEM.getKey(item).toString();
         } catch (Throwable t) {
             return null;
         }
@@ -100,14 +106,14 @@ public final class ProjectilePath {
      * Geschwindigkeit. Wird gerade nicht gespannt, gibt es keine Vorschau --
      * eine Bahn ohne bekannte Geschwindigkeit waere geraten.
      */
-    private static Kind bowKind(ClientPlayerEntity self) {
+    private static Kind bowKind(LocalPlayer self) {
         try {
             // Same one-entry memo as kindOf: classify the held ITEM once,
             // re-run only when it changes. The draw progress below still
             // updates per frame -- only the registry+string work is memoized.
-            net.minecraft.item.Item item = self.getMainHandStack().getItem();
+            net.minecraft.world.item.Item item = self.getMainHandItem().getItem();
             if (item != lastHeldItem) {
-                String held = Registries.ITEM.getId(item).toString();
+                String held = BuiltInRegistries.ITEM.getKey(item).toString();
                 lastHeldType = "minecraft:crossbow".equals(held) ? 2
                         : "minecraft:bow".equals(held) ? 1 : 0;
                 lastHeldItem = item;
@@ -123,8 +129,8 @@ public final class ProjectilePath {
 
             if (!self.isUsingItem()) return null;
             // Spannfortschritt aus der bisherigen Nutzungsdauer.
-            int useTicks = self.getActiveItem().getMaxUseTime(self) - self.getItemUseTime();
-            float pull = net.minecraft.item.BowItem.getPullProgress(useTicks);
+            int useTicks = self.getUseItem().getUseDuration(self) - self.getTicksUsingItem();
+            float pull = net.minecraft.world.item.BowItem.getPowerForTime(useTicks);
             if (pull <= 0.1f) return null;   // noch zu wenig gespannt
             return new Kind(pull * 3.0, 0.05, 0.0);
         } catch (Throwable t) {
@@ -133,21 +139,21 @@ public final class ProjectilePath {
     }
 
     public static void register() {
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
             long pvpT0 = System.nanoTime();
             try {
             ProjectilePathModule mod =
                     ModuleManager.INSTANCE.get(ProjectilePathModule.class);
             if (mod == null || !mod.isEnabled()) return;
 
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client.player == null || client.world == null) return;
+            Minecraft client = Minecraft.getInstance();
+            if (client.player == null || client.level == null) return;
 
             // Welches Wurfobjekt liegt in der Hand?
-            ClientPlayerEntity self = client.player;
-            Kind kind = kindOf(self.getMainHandStack());
+            LocalPlayer self = client.player;
+            Kind kind = kindOf(self.getMainHandItem());
             if (kind == null && mod.offHand.get()) {
-                kind = kindOf(self.getOffHandStack());
+                kind = kindOf(self.getOffhandItem());
             }
             // Pfeile: nur waehrend des Spannens, denn erst dann steht die
             // Geschwindigkeit fest.
@@ -156,29 +162,39 @@ public final class ProjectilePath {
             }
             if (kind == null) return;
 
-            MatrixStack matrices = context.matrices();
-            var consumers = context.consumers();
-            if (matrices == null || consumers == null) return;
+            PoseStack matrices = context.poseStack();
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             try {
-                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
-                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
-                org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
+                float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
 
                 int color = mod.color.get();
                 if ((color >>> 24) == 0) color |= 0xFF000000;
-                float lw = mod.lineWidth.getFloat();
+                float lineWidth = mod.lineWidth.getFloat();
+                PathResult path = simulate(client, self, kind, mod.maxSteps.getInt());
 
-                Vec3d hit = simulate(client, self, kind, mod.maxSteps.getInt(),
-                        mat, lines, cam, color, lw);
+                if (path.points().size() > 1) {
+                    final List<Vec3> points = List.copyOf(path.points());
+                    final Vec3 renderCam = cam;
+                    final int renderColor = color;
+                    final float renderWidth = lineWidth;
+                    EspRender.submitLines(collector, matrices, (matrix, lines) -> {
+                        for (int i = 1; i < points.size(); i++) {
+                            EspRender.drawTracer(matrix, lines, points.get(i - 1), points.get(i),
+                                    renderCam, renderColor, renderWidth);
+                        }
+                    });
+                }
 
                 // Kaestchen am Einschlagpunkt.
+                Vec3 hit = path.hit();
                 if (hit != null && mod.marker.get()) {
                     double s = 0.15;
-                    Box box = new Box(hit.x - s, hit.y - s, hit.z - s,
+                    AABB box = new AABB(hit.x - s, hit.y - s, hit.z - s,
                             hit.x + s, hit.y + s, hit.z + s);
-                    EspRender.drawBox(matrices, lines, box, cam, color, lw);
+                    EspRender.submitBox(collector, matrices, box, cam, color, lineWidth);
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("ProjectilePath", pvpErr);
@@ -195,18 +211,13 @@ public final class ProjectilePath {
      * Teilstueck. Rueckgabe ist der Auftreffpunkt (oder null, wenn die
      * Vorausschau vorher endet).
      */
-    private static Vec3d simulate(MinecraftClient client, ClientPlayerEntity self,
-                                  Kind kind, int maxSteps,
-                                  org.joml.Matrix4f mat, VertexConsumer lines,
-                                  Vec3d cam, int color, float lw) {
-        float yawDeg = self.getYaw();
-        float pitchDeg = self.getPitch() + (float) kind.pitchOffset;
+    private static PathResult simulate(Minecraft client, LocalPlayer self,
+                                       Kind kind, int maxSteps) {
+        float yawDeg = self.getYRot();
+        float pitchDeg = self.getXRot() + (float) kind.pitchOffset;
 
         double yaw = Math.toRadians(yawDeg);
         double pitch = Math.toRadians(pitchDeg);
-
-        // Blickrichtung als Einheitsvektor (selbst gerechnet, unabhaengig von
-        // Hilfsmethoden der Spielklassen).
         double dirX = -Math.sin(yaw) * Math.cos(pitch);
         double dirY = -Math.sin(pitch);
         double dirZ = Math.cos(yaw) * Math.cos(pitch);
@@ -214,45 +225,43 @@ public final class ProjectilePath {
         double vx = dirX * kind.speed;
         double vy = dirY * kind.speed;
         double vz = dirZ * kind.speed;
-
-        // Eigene Bewegung draufrechnen -- das macht Vanilla beim Werfen auch.
-        Vec3d own = self.getVelocity();
+        Vec3 own = self.getDeltaMovement();
         vx += own.x;
         vz += own.z;
-        if (!self.isOnGround()) vy += own.y;
+        if (!self.onGround()) vy += own.y;
 
         double x = self.getX();
         double y = self.getEyeY() - 0.1;
         double z = self.getZ();
-
-        Vec3d prev = new Vec3d(x, y, z);
+        List<Vec3> points = new ArrayList<>();
+        Vec3 previous = new Vec3(x, y, z);
+        points.add(previous);
 
         for (int i = 0; i < maxSteps; i++) {
             x += vx;
             y += vy;
             z += vz;
-
             vx *= DRAG;
             vy *= DRAG;
             vz *= DRAG;
             vy -= kind.gravity;
 
-            Vec3d cur = new Vec3d(x, y, z);
-            EspRender.drawTracer(mat, lines, prev, cur, cam, color, lw);
-            prev = cur;
+            Vec3 current = new Vec3(x, y, z);
+            points.add(current);
 
-            // Auf festen Block getroffen?
             try {
-                BlockPos bp = BlockPos.ofFloored(cur);
-                if (!client.world.getBlockState(bp).isAir()) {
-                    return cur;
+                BlockPos blockPos = BlockPos.containing(current);
+                if (!client.level.getBlockState(blockPos).isAir()) {
+                    return new PathResult(points, current);
                 }
-                // Unterhalb der Welt -> abbrechen.
-                if (y < client.world.getBottomY() - 8) return cur;
-            } catch (Throwable t) {
-                return cur; // Chunk nicht geladen -> hier aufhoeren
+                if (y < client.level.getMinY() - 8) {
+                    return new PathResult(points, current);
+                }
+            } catch (Throwable ignored) {
+                return new PathResult(points, current);
             }
+            previous = current;
         }
-        return null;
+        return new PathResult(points, null);
     }
 }

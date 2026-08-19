@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
  * Common-Einstiegspunkt. Registriert hier die vier gebuendelten
@@ -39,7 +39,7 @@ public class VortexClient implements ModInitializer {
 
     private void registerPack(ModContainer container, String path) {
         ResourceManagerHelper.registerBuiltinResourcePack(
-            Identifier.of(MOD_ID, path),
+            Identifier.fromNamespaceAndPath(MOD_ID, path),
             container,
             ResourcePackActivationType.NORMAL
         );

@@ -4,13 +4,13 @@ import com.vortex.client.core.Errors;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.AutoReconnectModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.DisconnectedScreen;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
 /**
  * Counts down on the disconnect screen and dials back in.
@@ -25,7 +25,7 @@ import net.minecraft.client.network.ServerInfo;
 public final class AutoReconnect {
 
     /** The last server we were actually connected to. */
-    private static ServerInfo lastServer = null;
+    private static ServerData lastServer = null;
 
     /** Ticks left before the next attempt, or -1 when nothing is pending. */
     private static int ticksLeft = -1;
@@ -37,9 +37,9 @@ public final class AutoReconnect {
     private static boolean cancelled = false;
 
     /** The button on the disconnect screen, so its label can be kept current. */
-    private static net.minecraft.client.gui.widget.ButtonWidget button = null;
+    private static net.minecraft.client.gui.components.Button button = null;
 
-    public static void setButton(net.minecraft.client.gui.widget.ButtonWidget b) {
+    public static void setButton(net.minecraft.client.gui.components.Button b) {
         button = b;
     }
 
@@ -66,9 +66,9 @@ public final class AutoReconnect {
      * Has to happen here: by the time the disconnect screen appears the entry
      * is gone, and there would be nothing left to reconnect to.
      */
-    private static void remember(MinecraftClient client) {
-        if (client.world == null) return;
-        var entry = client.getCurrentServerEntry();
+    private static void remember(Minecraft client) {
+        if (client.level == null) return;
+        var entry = client.getCurrentServer();
         if (entry != null) {
             lastServer = entry;
             tries = 0;          // a working connection clears the count
@@ -156,9 +156,9 @@ public final class AutoReconnect {
     }
 
     /** Advances the countdown; connects when it runs out. */
-    public static void tick(MinecraftClient client) {
+    public static void tick(Minecraft client) {
         if (ticksLeft < 0 || cancelled) return;
-        if (!(client.currentScreen instanceof DisconnectedScreen)) {
+        if (!(client.gui.screen() instanceof DisconnectedScreen)) {
             // Screen gone -- someone moved on, so the countdown is void.
             ticksLeft = -1;
             return;
@@ -168,7 +168,7 @@ public final class AutoReconnect {
 
         // Keep the countdown on the button visible.
         if (button != null) {
-            button.setMessage(net.minecraft.text.Text.literal(buttonLabel()));
+            button.setMessage(net.minecraft.network.chat.Component.literal(buttonLabel()));
         }
 
         if (ticksLeft > 0) return;
@@ -178,13 +178,13 @@ public final class AutoReconnect {
     }
 
     /** Starts the connection attempt. */
-    public static void connectNow(MinecraftClient client) {
+    public static void connectNow(Minecraft client) {
         if (lastServer == null) return;
         try {
             tries++;
-            var parent = new MultiplayerScreen(new TitleScreen());
-            ConnectScreen.connect(parent, client,
-                    ServerAddress.parse(lastServer.address),
+            var parent = new JoinMultiplayerScreen(new TitleScreen());
+            ConnectScreen.startConnecting(parent, client,
+                    ServerAddress.parseString(lastServer.ip),
                     lastServer, false, null);
         } catch (Throwable pvpErr) {
             Errors.report("AutoReconnect.connect", pvpErr);
@@ -201,7 +201,7 @@ public final class AutoReconnect {
 
     /** Button pressed: cancel a running countdown, otherwise connect at once. */
     public static void buttonPressed() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (ticksLeft > 0 && !cancelled) {
             cancelled = true;
             ticksLeft = -1;

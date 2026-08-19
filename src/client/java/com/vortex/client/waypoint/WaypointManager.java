@@ -58,7 +58,7 @@ public final class WaypointManager {
          * Bloecke und benennt die Gruppe. Sie werden nur eingeblendet, wenn man
          * in der Naehe ist -- sonst waere das Bild voller Kaesten.
          */
-        public final java.util.List<net.minecraft.util.math.BlockPos> blocks =
+        public final java.util.List<net.minecraft.core.BlockPos> blocks =
                 new java.util.ArrayList<>();
 
         public Waypoint(String name, int x, int y, int z, int color, String dimension) {
@@ -375,7 +375,7 @@ public final class WaypointManager {
     private static String serializeBlocks(Waypoint w) {
         if (w.blocks.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
-        for (net.minecraft.util.math.BlockPos b : w.blocks) {
+        for (net.minecraft.core.BlockPos b : w.blocks) {
             if (sb.length() > 0) sb.append(' ');
             sb.append(b.getX()).append(',').append(b.getY()).append(',').append(b.getZ());
         }
@@ -389,7 +389,7 @@ public final class WaypointManager {
             String[] c = part.split(",");
             if (c.length != 3) continue;
             try {
-                w.blocks.add(new net.minecraft.util.math.BlockPos(
+                w.blocks.add(new net.minecraft.core.BlockPos(
                         Integer.parseInt(c[0]), Integer.parseInt(c[1]),
                         Integer.parseInt(c[2])));
             } catch (Throwable ignored) {

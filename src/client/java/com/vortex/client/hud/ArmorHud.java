@@ -2,11 +2,11 @@ package com.vortex.client.hud;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ArmorHudModule;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * ArmorHUD -- Ruestungsteile + Waffe mit Haltbarkeit.
@@ -40,19 +40,19 @@ public final class ArmorHud {
         return ModuleManager.INSTANCE.get(ArmorHudModule.class);
     }
 
-    public static void render(DrawContext context, MinecraftClient client) {
-        ClientPlayerEntity player = client.player;
+    public static void render(GuiGraphicsExtractor context, Minecraft client) {
+        LocalPlayer player = client.player;
         if (player == null) return;
 
         ArmorHudModule mod = module();
         if (mod == null) return;
 
         ItemStack[] stacks = new ItemStack[] {
-            player.getEquippedStack(EquipmentSlot.HEAD),
-            player.getEquippedStack(EquipmentSlot.CHEST),
-            player.getEquippedStack(EquipmentSlot.LEGS),
-            player.getEquippedStack(EquipmentSlot.FEET),
-            player.getMainHandStack()
+            player.getItemBySlot(EquipmentSlot.HEAD),
+            player.getItemBySlot(EquipmentSlot.CHEST),
+            player.getItemBySlot(EquipmentSlot.LEGS),
+            player.getItemBySlot(EquipmentSlot.FEET),
+            player.getMainHandItem()
         };
 
         // Offsets in ein wiederverwendetes Feld schreiben.
@@ -73,8 +73,8 @@ public final class ArmorHud {
             offsets[i][1] = werte[i][1];
         }
 
-        int screenW = context.getScaledWindowWidth();
-        int screenH = context.getScaledWindowHeight();
+        int screenW = context.guiWidth();
+        int screenH = context.guiHeight();
 
         // Abstand zwischen den Teilen, beeinflusst von 'scale'.
         double scale = mod.scale.get();
@@ -96,7 +96,7 @@ public final class ArmorHud {
             int y = startY + i * step + offsets[i][1];
 
             // Das Item-Icon immer zeichnen.
-            context.drawItem(stack, x, y);
+            context.item(stack, x, y);
 
             // Der Vanilla-"drawStackOverlay" zeichnet u.a. den Haltbarkeits-
             // BALKEN (gruen->rot) und die Stapelgroesse. Den wollen wir nur im
@@ -104,13 +104,13 @@ public final class ArmorHud {
             // erscheinen. Die Stapelgroesse (z.B. bei Totem-Stacks) ist selten
             // relevant fuer Ruestung, daher ist das ok.
             if (mode.equals("Balken")) {
-                context.drawStackOverlay(client.textRenderer, stack, x, y);
+                context.itemDecorations(client.font, stack, x, y);
             }
 
             // Bei Prozent/Schlaege eine Zahl links neben das Icon schreiben.
-            if (!mode.equals("Balken") && stack.isDamageable()) {
+            if (!mode.equals("Balken") && stack.isDamageableItem()) {
                 int max = stack.getMaxDamage();
-                int leftDur = max - stack.getDamage();
+                int leftDur = max - stack.getDamageValue();
 
                 String txt;
                 if (mode.equals("Schlaege")) {
@@ -122,9 +122,9 @@ public final class ArmorHud {
                     txt = percent + "%";
                 }
 
-                int textW = client.textRenderer.getWidth(txt);
-                context.drawTextWithShadow(
-                    client.textRenderer, txt,
+                int textW = client.font.width(txt);
+                context.text(
+                    client.font, txt,
                     x - textW - 4, y + (SLOT - 8) / 2, textColor
                 );
             }

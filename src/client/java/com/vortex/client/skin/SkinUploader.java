@@ -1,7 +1,5 @@
 package com.vortex.client.skin;
 
-import net.minecraft.client.MinecraftClient;
-
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import net.minecraft.client.Minecraft;
 
 /**
  * Laedt einen Skin auf das eigene Minecraft-Konto hoch -- danach sehen ihn auch
@@ -53,9 +52,9 @@ public final class SkinUploader {
     }
 
     private static String token() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.getSession() == null) return null;
-        return client.getSession().getAccessToken();
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.getUser() == null) return null;
+        return client.getUser().getAccessToken();
     }
 
     /**

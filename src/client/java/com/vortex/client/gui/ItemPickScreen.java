@@ -1,10 +1,10 @@
 package com.vortex.client.gui;
 
 import com.vortex.client.hud.ItemCounter;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.Item;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
 
 /**
  * Picks the items one counter adds up.
@@ -24,12 +24,12 @@ public class ItemPickScreen extends SelectionScreen {
 
     @Override
     protected void buildEntries() {
-        for (Item item : Registries.ITEM) {
-            Identifier id = Registries.ITEM.getId(item);
+        for (Item item : BuiltInRegistries.ITEM) {
+            Identifier id = BuiltInRegistries.ITEM.getKey(item);
             if (id == null) continue;
             // Air is in the registry but is not an item anyone carries.
             if ("minecraft:air".equals(id.toString())) continue;
-            entries.add(new Entry(item, id.toString(), item.getName().getString()));
+            entries.add(new Entry(item, id.toString(), item.getName(new net.minecraft.world.item.ItemStack(item)).getString()));
         }
     }
 

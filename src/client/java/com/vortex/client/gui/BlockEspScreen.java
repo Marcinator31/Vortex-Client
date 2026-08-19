@@ -2,12 +2,12 @@ package com.vortex.client.gui;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.BlockEspModule;
-import net.minecraft.block.Block;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 
 /**
  * Auswahl der Bloecke fuers Block-ESP.
@@ -24,10 +24,10 @@ public class BlockEspScreen extends SelectionScreen {
 
     @Override
     protected void buildEntries() {
-        for (Block block : Registries.BLOCK) {
+        for (Block block : BuiltInRegistries.BLOCK) {
             Item item = block.asItem();
             if (item == Items.AIR) continue;
-            Identifier id = Registries.BLOCK.getId(block);
+            Identifier id = BuiltInRegistries.BLOCK.getKey(block);
             if (id == null) continue;
             entries.add(new Entry(item, id.toString(), block.getName().getString()));
         }

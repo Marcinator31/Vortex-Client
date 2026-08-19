@@ -3,18 +3,18 @@ package com.vortex.client.hud;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.AimbotModule;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Nahkampf-Aimbot mit sanftem, FLUESSIGEM Gleiten.
  *
  * Wichtiger Unterschied zur ersten Version: Die Rotation wird PRO FRAME
- * angepasst (WorldRenderEvents.BEFORE_ENTITIES), nicht mehr pro Tick. Ticks
+ * angepasst (LevelRenderEvents.START_MAIN), nicht mehr pro Tick. Ticks
  * laufen nur 20x/Sekunde -- bei 60-140 FPS blieb der Blick zwischen den Ticks
  * starr und sprang dann, was aus Spielersicht ruckelte. Pro Frame gleitet der
  * Blick durchgehend weich.
@@ -25,7 +25,7 @@ import net.minecraft.util.math.Vec3d;
  * normiert. Ergebnis: exakt dieselbe Effizienz/Staerke wie vorher, nur eben
  * fluessig ueber alle Frames verteilt statt in 20 Spruengen.
  *
- * Da WorldRenderEvents.BEFORE_ENTITIES vor dem eigentlichen Rendern und laufend
+ * Da LevelRenderEvents.START_MAIN vor dem eigentlichen Rendern und laufend
  * vor den Tick-Bewegungspaketen liegt, uebernimmt der naechste Paket-Versand
  * automatisch die aktuelle (bereits naeher am Ziel liegende) Rotation.
  */
@@ -36,26 +36,26 @@ public final class Aimbot {
     private Aimbot() {}
 
     public static void register() {
-        WorldRenderEvents.BEFORE_ENTITIES.register(context -> {
+        LevelRenderEvents.START_MAIN.register(context -> {
             long pvpT0 = System.nanoTime();
             try {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
 
             AimbotModule mod = (AimbotModule) find(AimbotModule.class);
             if (mod == null || !mod.isEnabled()) { lastFrameNano = 0L; return; }
-            if (client.player == null || client.world == null) { lastFrameNano = 0L; return; }
+            if (client.player == null || client.level == null) { lastFrameNano = 0L; return; }
 
             // Optional nur ziehen, wenn die Angriffstaste gehalten wird.
-            if (mod.onlyWhenAttacking() && !client.options.attackKey.isPressed()) {
+            if (mod.onlyWhenAttacking() && !client.options.keyAttack.isDown()) {
                 lastFrameNano = 0L;
                 return;
             }
 
-            ClientPlayerEntity self = client.player;
-            Vec3d eye = self.getEyePos();
+            LocalPlayer self = client.player;
+            Vec3 eye = self.getEyePosition();
 
             // Bestes Ziel bestimmen (gleiche Logik wie zuvor).
-            AbstractClientPlayerEntity target = findBestTarget(client, mod, self, eye);
+            AbstractClientPlayer target = findBestTarget(client, mod, self, eye);
             if (target == null) { lastFrameNano = 0L; return; }
 
             // Frame-Zeit messen (Sekunden), gegen Spruenge begrenzt.
@@ -71,11 +71,11 @@ public final class Aimbot {
             // Auf Tick-Rate normieren: 1.0 = genau ein 20-tel Sekunde (ein Tick).
             double tickScale = dt * 20.0;
 
-            float curYaw = self.getYaw();
-            float curPitch = self.getPitch();
+            float curYaw = self.getYRot();
+            float curPitch = self.getXRot();
 
             // Zielpunkt am Gegner (Naechster / Kopf / Koerper / Fuesse).
-            Vec3d aimPoint = aimPointFor(target, mod.getTargetPoint(),
+            Vec3 aimPoint = aimPointFor(target, mod.getTargetPoint(),
                     eye, curYaw, curPitch);
 
             double dx = aimPoint.x - eye.x;
@@ -86,7 +86,7 @@ public final class Aimbot {
             float targetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
             float targetPitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
 
-            float yawDiff = MathHelper.wrapDegrees(targetYaw - curYaw);
+            float yawDiff = Mth.wrapDegrees(targetYaw - curYaw);
             float pitchDiff = targetPitch - curPitch;
 
             // Staerke/Glaettung wie zuvor -- aber pro Frame skaliert (tickScale),
@@ -106,10 +106,10 @@ public final class Aimbot {
 
             float newYaw = curYaw + (float) stepYaw;
             float newPitch = curPitch + (float) stepPitch;
-            newPitch = MathHelper.clamp(newPitch, -90.0f, 90.0f);
+            newPitch = Mth.clamp(newPitch, -90.0f, 90.0f);
 
-            self.setYaw(newYaw);
-            self.setPitch(newPitch);
+            self.setYRot(newYaw);
+            self.setXRot(newPitch);
                     } finally {
                 com.vortex.client.core.Profiler.record("Aimbot",
                         System.nanoTime() - pvpT0);
@@ -118,28 +118,28 @@ public final class Aimbot {
     }
 
     /** Findet den besten Zielspieler nach den Modul-Einstellungen. */
-    private static AbstractClientPlayerEntity findBestTarget(
-            MinecraftClient client, AimbotModule mod,
-            ClientPlayerEntity self, Vec3d eye) {
+    private static AbstractClientPlayer findBestTarget(
+            Minecraft client, AimbotModule mod,
+            LocalPlayer self, Vec3 eye) {
 
         double range = mod.getRange();
         double rangeSq = range * range;
         double fov = mod.getFov();
         boolean byAngle = mod.chooseByAngle();
 
-        AbstractClientPlayerEntity best = null;
+        AbstractClientPlayer best = null;
         double bestScore = Double.MAX_VALUE;
 
-        for (AbstractClientPlayerEntity p : client.world.getPlayers()) {
+        for (AbstractClientPlayer p : client.level.players()) {
             if (p == self) continue;
             if (!p.isAlive()) continue;
             if (p.isSpectator()) continue;
 
-            double distSq = self.squaredDistanceTo(p);
+            double distSq = self.distanceToSqr(p);
             if (distSq > rangeSq) continue;
 
-            Vec3d aimPoint = aimPointFor(p, mod.getTargetPoint(),
-                    eye, self.getYaw(), self.getPitch());
+            Vec3 aimPoint = aimPointFor(p, mod.getTargetPoint(),
+                    eye, self.getYRot(), self.getXRot());
             double dx = aimPoint.x - eye.x;
             double dy = aimPoint.y - eye.y;
             double dz = aimPoint.z - eye.z;
@@ -147,8 +147,8 @@ public final class Aimbot {
             float tYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
             float tPitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
 
-            float yawDiff = Math.abs(MathHelper.wrapDegrees(tYaw - self.getYaw()));
-            float pitchDiff = Math.abs(tPitch - self.getPitch());
+            float yawDiff = Math.abs(Mth.wrapDegrees(tYaw - self.getYRot()));
+            float pitchDiff = Math.abs(tPitch - self.getXRot());
             double angle = Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
 
             if (angle > fov) continue;
@@ -171,12 +171,12 @@ public final class Aimbot {
      * Fuer "Nearest" braucht es den Augpunkt + die aktuelle Blickrichtung, um
      * die Winkel zu den drei Stellen zu vergleichen.
      */
-    private static Vec3d aimPointFor(AbstractClientPlayerEntity target, int mode,
-                                     Vec3d eye, float curYaw, float curPitch) {
+    private static Vec3 aimPointFor(AbstractClientPlayer target, int mode,
+                                     Vec3 eye, float curYaw, float curPitch) {
         double x = target.getX();
         double z = target.getZ();
         double baseY = target.getY();
-        double height = target.getHeight();
+        double height = target.getBbHeight();
 
         double headY = baseY + height * 0.9;
         double bodyY = baseY + height * 0.5;
@@ -184,15 +184,15 @@ public final class Aimbot {
 
         switch (mode) {
             case 1:
-                return new Vec3d(x, headY, z);
+                return new Vec3(x, headY, z);
             case 2:
-                return new Vec3d(x, bodyY, z);
+                return new Vec3(x, bodyY, z);
             case 3:
-                return new Vec3d(x, feetY, z);
+                return new Vec3(x, feetY, z);
             default: // 0 = Naechster: die Stelle mit der kleinsten Winkeldifferenz
-                Vec3d head = new Vec3d(x, headY, z);
-                Vec3d body = new Vec3d(x, bodyY, z);
-                Vec3d feet = new Vec3d(x, feetY, z);
+                Vec3 head = new Vec3(x, headY, z);
+                Vec3 body = new Vec3(x, bodyY, z);
+                Vec3 feet = new Vec3(x, feetY, z);
                 double aHead = angleTo(eye, head, curYaw, curPitch);
                 double aBody = angleTo(eye, body, curYaw, curPitch);
                 double aFeet = angleTo(eye, feet, curYaw, curPitch);
@@ -203,14 +203,14 @@ public final class Aimbot {
     }
 
     /** Winkelabstand (Grad) vom aktuellen Blick zu einem Zielpunkt. */
-    private static double angleTo(Vec3d eye, Vec3d point, float curYaw, float curPitch) {
+    private static double angleTo(Vec3 eye, Vec3 point, float curYaw, float curPitch) {
         double dx = point.x - eye.x;
         double dy = point.y - eye.y;
         double dz = point.z - eye.z;
         double horizontal = Math.sqrt(dx * dx + dz * dz);
         float tYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         float tPitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
-        float yawDiff = Math.abs(MathHelper.wrapDegrees(tYaw - curYaw));
+        float yawDiff = Math.abs(Mth.wrapDegrees(tYaw - curYaw));
         float pitchDiff = Math.abs(tPitch - curPitch);
         return Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
     }

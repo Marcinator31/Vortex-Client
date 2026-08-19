@@ -4,11 +4,11 @@ import com.vortex.client.core.setting.ColorSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.hud.HudElement;
 import com.vortex.client.module.Module;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Totem-Counter: zeigt an, wie viele Totems der Unsterblichkeit man gerade
@@ -46,7 +46,7 @@ public class TotemCountModule extends Module implements HudElement {
     /** Liefert das Totem-Item (lazy, einmalig aus der Registry). */
     public static Item totem() {
         if (totemItem == null) {
-            totemItem = Registries.ITEM.get(Identifier.ofVanilla("totem_of_undying"));
+            totemItem = BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace("totem_of_undying"));
         }
         return totemItem;
     }
@@ -57,7 +57,7 @@ public class TotemCountModule extends Module implements HudElement {
      * Spieler da ist.
      */
     public static int countTotems() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client.player == null) return 0;
 
         Item totem = totem();
@@ -65,11 +65,11 @@ public class TotemCountModule extends Module implements HudElement {
 
         int count = 0;
         var inv = client.player.getInventory();
-        for (int i = 0; i < inv.size(); i++) {
-            ItemStack stack = inv.getStack(i);
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
             // isEmpty()-Pruefung zuerst: leere Slots nie mitzaehlen (falls die
             // Registry wider Erwarten das Default-Item liefern wuerde).
-            if (stack != null && !stack.isEmpty() && stack.isOf(totem)) {
+            if (stack != null && !stack.isEmpty() && stack.is(totem)) {
                 count += stack.getCount();
             }
         }
