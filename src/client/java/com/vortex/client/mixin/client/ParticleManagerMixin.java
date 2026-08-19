@@ -2,9 +2,9 @@ package com.vortex.client.mixin.client;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.NoParticlesModule;
-import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.client.particle.ParticleManager;
+import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleTypes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,21 +14,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Faengt addParticle ab und bricht bestimmte Partikel ab, wenn das
  * NoParticlesModule sie unterdruecken soll.
  *
- * Signatur verifiziert (Yarn): addParticle(ParticleOptions, double x,y,z,
+ * Signatur verifiziert (Yarn): addParticle(ParticleEffect, double x,y,z,
  * double vx,vy,vz) -> Particle (nullbar).
  *
  * Wir injizieren am HEAD und canceln per Rueckgabe null, wenn der
  * Partikeltyp unterdrueckt werden soll.
  */
-@Mixin(ParticleEngine.class)
+@Mixin(ParticleManager.class)
 public class ParticleManagerMixin {
 
     @Inject(
-        method = "createParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)Lnet/minecraft/client/particle/Particle;",
+        method = "addParticle(Lnet/minecraft/particle/ParticleEffect;DDDDDD)Lnet/minecraft/client/particle/Particle;",
         at = @At("HEAD"),
         cancellable = true
     )
-    private void pvpclient$filterParticle(ParticleOptions parameters, double x, double y, double z,
+    private void pvpclient$filterParticle(ParticleEffect parameters, double x, double y, double z,
                                           double vx, double vy, double vz,
                                           CallbackInfoReturnable<Object> cir) {
         NoParticlesModule mod = find();

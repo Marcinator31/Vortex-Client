@@ -1,13 +1,11 @@
 package com.vortex.client.freecam;
 
-import net.minecraft.client.ClientRecipeBook;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.multiplayer.chat.ChatAbilities;
-import net.minecraft.client.multiplayer.chat.ChatAbilities;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.stats.StatsCounter;
-import net.minecraft.world.entity.player.Input;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.recipebook.ClientRecipeBook;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.stat.StatHandler;
+import net.minecraft.util.PlayerInput;
 
 /**
  * Eine rein CLIENTSEITIGE Kamera-Entity, die als cameraEntity gesetzt wird,
@@ -15,12 +13,12 @@ import net.minecraft.world.entity.player.Input;
  * der Freecam-Position orientiert statt am echten Spieler.
  *
  * SERVER-SICHERHEIT -- das ist entscheidend: Diese Entity darf NICHTS an den
- * Server senden. Eine normale LocalPlayer meldet jeden Tick ihre Position
+ * Server senden. Eine normale ClientPlayerEntity meldet jeden Tick ihre Position
  * (sendMovementPackets) -- das wuerde der Server als Teleport/Flug werten und
  * Anticheat ausloesen. Deshalb ueberschreiben wir:
  *   - tick(): tut nichts (kein Ticking, keine Pakete)
  *   - sendMovementPackets(): leer (sendet garantiert nichts)
- * Die Entity existiert nur lokal in der ClientLevel. Der echte Spieler bleibt
+ * Die Entity existiert nur lokal in der ClientWorld. Der echte Spieler bleibt
  * stehen und meldet weiter ganz normal seine Steh-Position. Der Server sieht
  * also keinen Unterschied -- du stehst still, die Kamera fliegt nur im Client.
  *
@@ -28,21 +26,20 @@ import net.minecraft.world.entity.player.Input;
  * cameraEntity gesetzt; beim Deaktivieren wieder entfernt und die Kamera auf den
  * Spieler zurueckgesetzt.
  */
-public class FreeCamera extends LocalPlayer {
+public class FreeCamera extends ClientPlayerEntity {
 
     public FreeCamera() {
         super(
-            Minecraft.getInstance(),
-            Minecraft.getInstance().level,
-            Minecraft.getInstance().getConnection(),
-            new StatsCounter(),
+            MinecraftClient.getInstance(),
+            MinecraftClient.getInstance().world,
+            MinecraftClient.getInstance().getNetworkHandler(),
+            new StatHandler(),
             new ClientRecipeBook(),
-            Input.EMPTY,
-            false,
-            ChatAbilities.NO_RESTRICTIONS
+            PlayerInput.DEFAULT,
+            false
         );
         // Durch Bloecke hindurch -- die Kamera soll frei fliegen.
-        this.noPhysics = true;
+        this.noClip = true;
         // Unsichtbar: sonst sieht man einen Koerper / eine Hitbox ueber dem
         // Freecam-Kopf. setInvisible ist ein normaler Aufruf (kein Override),
         // also build-sicher, und setzt das Invisible-Flag der Entity.
@@ -63,17 +60,17 @@ public class FreeCamera extends LocalPlayer {
     }
 
     /**
-     * Spawnt die Kamera-Entity lokal in die ClientLevel (kein Server-Paket) und
+     * Spawnt die Kamera-Entity lokal in die ClientWorld (kein Server-Paket) und
      * setzt sie als aktive Kamera. Position/Blick werden von Freecam gesetzt.
      */
     public void spawn() {
-        Minecraft client = Minecraft.getInstance();
-        ClientLevel world = client.level;
+        MinecraftClient client = MinecraftClient.getInstance();
+        ClientWorld world = client.world;
         if (world == null) return;
         world.addEntity(this);
     }
 
-    /** Entfernt die Kamera-Entity wieder aus der ClientLevel. */
+    /** Entfernt die Kamera-Entity wieder aus der ClientWorld. */
     public void despawn() {
         this.discard();
     }

@@ -3,11 +3,11 @@ package com.vortex.client.hud;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.waypoint.WaypointSettings;
 import com.vortex.client.waypoint.WaypointManager;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.world.phys.Vec3;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Zeichnet die Waypoints in der Welt: je Marker eine senkrechte Saeule aus vier
@@ -21,9 +21,9 @@ public final class WaypointRenderer {
     private WaypointRenderer() {}
 
     /** Aktuelle Dimension als Text, oder null wenn nicht ermittelbar. */
-    public static String currentDimension(Minecraft client) {
+    public static String currentDimension(MinecraftClient client) {
         try {
-            return client.level.dimension().identifier().toString();
+            return client.world.getRegistryKey().getValue().toString();
         } catch (Throwable t) {
             return null;
         }
@@ -52,14 +52,14 @@ public final class WaypointRenderer {
     private static long cachedAt = 0L;
     private static Object cachedWorld = null;
 
-    public static String currentWorldKey(Minecraft client) {
+    public static String currentWorldKey(MinecraftClient client) {
         // Tied to the world object, not just to a timer.
         //
         // When a proxy moves you to another server the client throws the world
         // away and builds a new one. Recognising that here means the switch is
         // noticed the moment it happens, instead of up to half a second later
         // with markers from the previous server still on screen.
-        Object world = client.level;
+        Object world = client.world;
         long now = System.currentTimeMillis();
         if (cachedKey != null && world == cachedWorld && (now - cachedAt) < 500L) {
             return cachedKey;
@@ -77,7 +77,7 @@ public final class WaypointRenderer {
         cachedWorld = null;
     }
 
-    private static String buildWorldKey(Minecraft client) {
+    private static String buildWorldKey(MinecraftClient client) {
         // A profile the player set by hand always wins.
         String profile = com.vortex.client.waypoint.WorldProfiles.getActive();
         if (profile != null) {
@@ -87,15 +87,15 @@ public final class WaypointRenderer {
 
         String place = "?";
         try {
-            if (client.isLocalServer()) {
-                var server = client.getSingleplayerServer();
-                String name = (server != null && server.getWorldData() != null)
-                        ? server.getWorldData().getLevelName() : "Singleplayer";
+            if (client.isInSingleplayer()) {
+                var server = client.getServer();
+                String name = (server != null && server.getSaveProperties() != null)
+                        ? server.getSaveProperties().getLevelName() : "Singleplayer";
                 place = "sp:" + name;
             } else {
-                var entry = client.getCurrentServer();
-                place = "mp:" + ((entry != null && entry.ip != null)
-                        ? entry.ip : "unknown");
+                var entry = client.getCurrentServerEntry();
+                place = "mp:" + ((entry != null && entry.address != null)
+                        ? entry.address : "unknown");
             }
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("WaypointRenderer.worldKey", pvpErr);
@@ -120,10 +120,10 @@ public final class WaypointRenderer {
     }
 
     /** World seed as text, or null if it cannot be read. */
-    private static String worldSeed(Minecraft client) {
+    private static String worldSeed(MinecraftClient client) {
         try {
-            if (client.level == null) return null;
-            var access = client.level.getBiomeManager();
+            if (client.world == null) return null;
+            var access = client.world.getBiomeAccess();
             if (access == null) return null;
             long s = ((com.vortex.client.mixin.client.BiomeAccessSeedAccessor) (Object) access)
                     .vortex$getSeed();
@@ -136,31 +136,31 @@ public final class WaypointRenderer {
     }
 
     public static void register() {
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             long pvpT0 = System.nanoTime();
             try {
             WaypointSettings mod = WaypointSettings.INSTANCE;
             if (!mod.isEnabled()) return;
 
-            Minecraft client = Minecraft.getInstance();
-            if (client.player == null || client.level == null) return;
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player == null || client.world == null) return;
 
-            PoseStack matrices = context.poseStack();
-            var consumers = context.bufferSource();
+            MatrixStack matrices = context.matrices();
+            var consumers = context.consumers();
             if (matrices == null || consumers == null) return;
 
             try {
-                float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
+                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
+                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
                 VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
-                org.joml.Matrix4f mat = matrices.last().pose();
+                org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
 
                 float lw = mod.lineWidth.getFloat();
                 double maxDist = mod.maxDistance.get();
 
                 // Startpunkt immer berechnen -- einzelne Marker koennen einen
                 // Tracer haben, auch wenn er global aus ist.
-                Vec3 tracerStart = EspRender.tracerStart(client, cam, tickDelta);
+                Vec3d tracerStart = EspRender.tracerStart(client, cam, tickDelta);
 
                 String dim = currentWorldKey(client);
                 // Sichtweite fuer markierte Bloecke (einstellbar).
@@ -189,13 +189,13 @@ public final class WaypointRenderer {
                     // Gruppe kann sich ueber mehrere Bloecke erstrecken, und es
                     // soll das gezeigt werden, was wirklich in der Naehe ist.
                     if (!w.blocks.isEmpty()) {
-                        for (net.minecraft.core.BlockPos bp : w.blocks) {
+                        for (net.minecraft.util.math.BlockPos bp : w.blocks) {
                             double bdx = bp.getX() + 0.5 - pxx;
                             double bdy = bp.getY() + 0.5 - pyy;
                             double bdz = bp.getZ() + 0.5 - pzz;
                             if (bdx * bdx + bdy * bdy + bdz * bdz > blockRangeSq) continue;
-                            net.minecraft.world.phys.AABB box =
-                                    new net.minecraft.world.phys.AABB(
+                            net.minecraft.util.math.Box box =
+                                    new net.minecraft.util.math.Box(
                                             bp.getX(), bp.getY(), bp.getZ(),
                                             bp.getX() + 1.0, bp.getY() + 1.0, bp.getZ() + 1.0);
                             // Eigene Farbe und Breite fuer Block-Umrandungen;
@@ -210,7 +210,7 @@ public final class WaypointRenderer {
                     // Tracer: global ODER fuer diesen Marker einzeln eingeschaltet.
                     if (tracerStart != null && (mod.tracers.get() || w.tracer)) {
                         EspRender.drawTracer(mat, lines, tracerStart,
-                                new Vec3(cx, w.y, cz), cam, color, lw);
+                                new Vec3d(cx, w.y, cz), cam, color, lw);
                     }
                 }
             } catch (Throwable pvpErr) {

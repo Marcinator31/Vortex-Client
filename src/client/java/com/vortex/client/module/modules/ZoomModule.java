@@ -55,9 +55,6 @@ public class ZoomModule extends Module {
 
     public ZoomModule() {
         super("Zoom", Category.MISC);
-        // Zoom ist ein reines Hold-Feature: Es verändert ohne gedrückte Taste
-        // nichts und soll daher im frischen Preset direkt verfügbar sein.
-        enabledByDefault();
         addSetting(key);
         addSetting(level);
         addSetting(step);

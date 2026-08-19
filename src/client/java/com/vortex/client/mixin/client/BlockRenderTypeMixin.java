@@ -1,7 +1,7 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.BlockRenderType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,11 +22,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * not go through this path at all. Those are handled by BlockEntityHideMixin,
  * which hooks the renderer they do use.
  */
-@Mixin(BlockBehaviour.BlockStateBase.class)
+@Mixin(AbstractBlock.AbstractBlockState.class)
 public abstract class BlockRenderTypeMixin {
 
-    @Inject(method = "getRenderShape", at = @At("HEAD"), cancellable = true, require = 0)
-    private void vortex$hideSelectedBlocks(CallbackInfoReturnable<RenderShape> cir) {
+    @Inject(method = "method_26217", at = @At("HEAD"), cancellable = true, require = 0)
+    private void vortex$hideSelectedBlocks(CallbackInfoReturnable<BlockRenderType> cir) {
         try {
             com.vortex.client.module.modules.NoRenderBlocksModule mod =
                     com.vortex.client.module.ModuleManager.INSTANCE.get(
@@ -34,12 +34,12 @@ public abstract class BlockRenderTypeMixin {
             if (mod == null || !mod.isEnabled()) return;
             if (mod.getHiddenBlocks().isEmpty()) return;
 
-            BlockBehaviour.BlockStateBase self = (BlockBehaviour.BlockStateBase) (Object) this;
-            var id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(self.getBlock());
+            AbstractBlock.AbstractBlockState self = (AbstractBlock.AbstractBlockState) (Object) this;
+            var id = net.minecraft.registry.Registries.BLOCK.getId(self.getBlock());
             if (id == null) return;
 
             if (mod.isHidden(id.toString())) {
-                cir.setReturnValue(RenderShape.INVISIBLE);
+                cir.setReturnValue(BlockRenderType.INVISIBLE);
             }
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("BlockRenderTypeMixin", pvpErr);

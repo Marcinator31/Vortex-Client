@@ -6,12 +6,13 @@ import com.vortex.client.hud.HudElement;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ArmorHudModule;
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
+
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.Component;
 
 /**
  * HUD-Editor: HUD-Elemente und die einzelnen ArmorHUD-Teile mit der Maus
@@ -56,7 +57,7 @@ public class HudEditorScreen extends Screen {
     private final List<int[]> guidesH = new ArrayList<>(); // {y, x1, x2}
 
     public HudEditorScreen() {
-        super(Component.literal("HUD Editor"));
+        super(Text.literal("HUD Editor"));
     }
 
     private List<HudElement> elements() {
@@ -82,7 +83,7 @@ public class HudEditorScreen extends Screen {
     // -------------------------------------------------------------- Zeichnen
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
 
@@ -113,11 +114,11 @@ public class HudEditorScreen extends Screen {
 
             ctx.fill(x, y, x + w, y + h, fill);
             drawBorder(ctx, x, y, w, h, border);
-            ctx.text(this.font, he.hudName(), x + 3, y + 3, 0xFFFFFFFF);
+            ctx.drawTextWithShadow(this.textRenderer, he.hudName(), x + 3, y + 3, 0xFFFFFFFF);
 
             if (active) {
                 String pos = x + ", " + y;
-                ctx.text(this.font, Component.literal(pos),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal(pos),
                         x, y - 11, accent);
             }
         }
@@ -135,7 +136,7 @@ public class HudEditorScreen extends Screen {
 
                 ctx.fill(x, y, x + s, y + s, fill);
                 drawBorder(ctx, x, y, s, s, border);
-                ctx.text(this.font,
+                ctx.drawTextWithShadow(this.textRenderer,
                         part.name.substring(0, 1), x + 5, y + 4, 0xFFFFFFFF);
             }
         }
@@ -149,10 +150,10 @@ public class HudEditorScreen extends Screen {
         }
 
         drawToolbar(ctx, accent);
-        super.extractRenderState(ctx, mouseX, mouseY, delta);
+        super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawGrid(GuiGraphicsExtractor ctx) {
+    private void drawGrid(DrawContext ctx) {
         for (int x = 0; x < this.width; x += GRID) {
             ctx.fill(x, 0, x + 1, this.height, 0x0CFFFFFF);
         }
@@ -161,15 +162,15 @@ public class HudEditorScreen extends Screen {
         }
     }
 
-    private void drawToolbar(GuiGraphicsExtractor ctx, int accent) {
+    private void drawToolbar(DrawContext ctx, int accent) {
         int h = 26;
         ctx.fill(0, 0, this.width, h, C_BAR);
         ctx.fill(0, h, this.width, h + 1, 0xFF31313A);
 
-        ctx.text(this.font, Component.literal("HUD Editor"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("HUD Editor"),
                 8, 9, 0xFFFFFFFF);
-        ctx.text(this.font,
-                Component.literal("Drag to move  \u00B7  ESC saves and closes"),
+        ctx.drawText(this.textRenderer,
+                Text.literal("Drag to move  \u00B7  ESC saves and closes"),
                 74, 9, 0xFF74747F, false);
 
         // Umschalter rechts.
@@ -179,32 +180,32 @@ public class HudEditorScreen extends Screen {
 
     /** X-Position der Werkzeug-Knoepfe (von rechts gezaehlt). */
     private int toolbarX(int index) {
-        int w1 = this.font.width("Raster") + 16;
-        int w2 = this.font.width("Einrasten") + 16;
+        int w1 = this.textRenderer.getWidth("Raster") + 16;
+        int w2 = this.textRenderer.getWidth("Einrasten") + 16;
         if (index == 1) return this.width - w2 - 8;
         return this.width - w2 - 8 - w1 - 6;
     }
 
-    private void drawToggle(GuiGraphicsExtractor ctx, int x, int y, String label,
+    private void drawToggle(DrawContext ctx, int x, int y, String label,
                             boolean on, int accent) {
-        int w = this.font.width(label) + 16;
+        int w = this.textRenderer.getWidth(label) + 16;
         boolean hov = inside(mx, my, x, y, w, 16);
         int bg = on ? mixColor(C_INNER, accent, 0.45f) : (hov ? 0xFF2E2E38 : C_INNER);
         ctx.fill(x + 1, y, x + w - 1, y + 16, bg);
         ctx.fill(x, y + 1, x + 1, y + 15, bg);
         ctx.fill(x + w - 1, y + 1, x + w, y + 15, bg);
-        ctx.text(this.font, Component.literal(label),
+        ctx.drawText(this.textRenderer, Text.literal(label),
                 x + 8, y + 4, on ? 0xFFFFFFFF : 0xFF9A9AA6, false);
     }
 
     // ---------------------------------------------------------------- Eingabe
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+    public boolean mouseClicked(Click click, boolean doubled) {
         if (click.button() == 0) {
             // Werkzeugleiste zuerst.
-            int w1 = this.font.width("Raster") + 16;
-            int w2 = this.font.width("Einrasten") + 16;
+            int w1 = this.textRenderer.getWidth("Raster") + 16;
+            int w2 = this.textRenderer.getWidth("Einrasten") + 16;
             if (inside(mx, my, toolbarX(0), 5, w1, 16)) {
                 showGrid = !showGrid;
                 return true;
@@ -250,7 +251,7 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent click, double offsetX, double offsetY) {
+    public boolean mouseDragged(Click click, double offsetX, double offsetY) {
         guidesV.clear();
         guidesH.clear();
 
@@ -364,7 +365,7 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent click) {
+    public boolean mouseReleased(Click click) {
         boolean was = (draggingElement != null) || (dragPartOffX != null);
         draggingElement = null;
         dragPartOffX = null;
@@ -382,7 +383,7 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 
@@ -397,7 +398,7 @@ public class HudEditorScreen extends Screen {
         return px >= x && px <= x + w && py >= y && py <= y + h;
     }
 
-    private void drawBorder(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
+    private void drawBorder(DrawContext ctx, int x, int y, int w, int h, int color) {
         ctx.fill(x, y, x + w, y + 1, color);
         ctx.fill(x, y + h - 1, x + w, y + h, color);
         ctx.fill(x, y, x + 1, y + h, color);

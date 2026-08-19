@@ -1,17 +1,17 @@
 package com.vortex.client.module;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.resource.ResourcePackManager;
 
 /**
  * Basisklasse fuer Module, die ein gebuendeltes Resource Pack an- und
  * ausschalten.
  *
  * APIs gegen die offizielle 1.21.11-Javadoc verifiziert:
- *  - Minecraft.getResourcePackManager() -> PackRepository
+ *  - MinecraftClient.getResourcePackManager() -> ResourcePackManager
  *  - manager.getIds() -> Collection<String> (alle Pack-IDs)
  *  - manager.enable(String) / manager.disable(String) -> aktiviert/deaktiviert
- *  - Minecraft.reloadResources() -> wendet Aenderung an
+ *  - MinecraftClient.reloadResources() -> wendet Aenderung an
  *
  * Der interne Pack-Name enthaelt die ID, die wir bei der Registrierung
  * vergeben haben. Da das genaue Praefix je nach Version variiert, suchen
@@ -37,15 +37,15 @@ public abstract class ResourcePackModule extends Module {
     }
 
     private void setPackEnabled(boolean enable) {
-        Minecraft client = Minecraft.getInstance();
+        MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return;
 
-        PackRepository manager = client.getResourcePackRepository();
+        ResourcePackManager manager = client.getResourcePackManager();
         if (manager == null) return;
 
         // Die vollstaendige Pack-ID finden, die unseren ID-Teil enthaelt.
         String fullId = null;
-        for (String id : manager.getAvailableIds()) {
+        for (String id : manager.getIds()) {
             if (id.contains(packIdPart)) {
                 fullId = id;
                 break;
@@ -56,18 +56,18 @@ public abstract class ResourcePackModule extends Module {
         // Ist das Pack bereits im gewuenschten Zustand? Dann nichts tun --
         // wichtig, damit beim Client-Start (syncState) kein unnoetiger
         // reloadResources() ausgeloest wird, wenn sich gar nichts aendert.
-        boolean alreadyEnabled = manager.getSelectedIds().contains(fullId);
+        boolean alreadyEnabled = manager.getEnabledIds().contains(fullId);
         if (alreadyEnabled == enable) {
             return;
         }
 
         if (enable) {
-            manager.addPack(fullId);
+            manager.enable(fullId);
         } else {
-            manager.removePack(fullId);
+            manager.disable(fullId);
         }
 
         // Ressourcen neu laden, damit die Aenderung sofort wirkt.
-        client.reloadResourcePacks();
+        client.reloadResources();
     }
 }

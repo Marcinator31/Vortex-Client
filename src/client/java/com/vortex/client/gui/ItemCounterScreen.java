@@ -4,13 +4,14 @@ import com.vortex.client.hud.ItemCounter;
 import com.vortex.client.hud.ItemCounterRenderer;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ItemCounterModule;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.Text;
+
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 
 /**
  * Manages the item counters.
@@ -36,7 +37,7 @@ public class ItemCounterScreen extends Screen {
 
     private final Screen parent;
 
-    private EditBox nameField;
+    private TextFieldWidget nameField;
     private ItemCounter renaming = null;
     private ItemCounter pendingDelete = null;
     private String status = "";
@@ -60,7 +61,7 @@ public class ItemCounterScreen extends Screen {
     private final List<Hit> hits = new ArrayList<>();
 
     public ItemCounterScreen(Screen parent) {
-        super(Component.literal("Item counters"));
+        super(Text.literal("Item counters"));
         this.parent = parent;
     }
 
@@ -76,16 +77,16 @@ public class ItemCounterScreen extends Screen {
         winY = (this.height - winH) / 2;
         listH = winH - HEADER_H - FOOTER_H;
 
-        nameField = new EditBox(this.font,
-                winX + 90, winY + winH - 18, 180, 14, Component.literal(""));
-        nameField.setBordered(false);
+        nameField = new TextFieldWidget(this.textRenderer,
+                winX + 90, winY + winH - 18, 180, 14, Text.literal(""));
+        nameField.setDrawsBackground(false);
         nameField.setMaxLength(24);
         nameField.setVisible(false);
-        this.addRenderableWidget(nameField);
+        this.addDrawableChild(nameField);
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
         hits.clear();
@@ -108,11 +109,11 @@ public class ItemCounterScreen extends Screen {
         ctx.fill(winX, winY + HEADER_H - 1, winX + winW, winY + HEADER_H, fade(C_LINE, openAnim));
 
         boolean backHov = in(winX + 8, winY + 8, 16, 16);
-        ctx.text(this.font, Component.literal("<"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
                 winX + 12, winY + 12, backHov ? accent : 0xFF9A9AA6);
         hits.add(new Hit(winX + 8, winY + 8, 16, 16, Act.BACK, null));
 
-        ctx.text(this.font, Component.literal("Item counters"),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Item counters"),
                 winX + 30, winY + 11, 0xFFFFFFFF);
 
         button(ctx, winX + 12, winY + 30, "New counter", Act.NEW, null, accent, false);
@@ -121,7 +122,7 @@ public class ItemCounterScreen extends Screen {
         // a single counter is just setting its colour.
         ItemCounterModule mAll = mod();
         if (mAll != null && mAll.getCounters().size() > 1) {
-            int nx = winX + 12 + this.font.width("New counter") + 16 + 6;
+            int nx = winX + 12 + this.textRenderer.getWidth("New counter") + 16 + 6;
             button(ctx, nx, winY + 30, "One colour for all", Act.COLOR_ALL, null, accent, false);
         }
 
@@ -129,18 +130,18 @@ public class ItemCounterScreen extends Screen {
         List<ItemCounter> list = (m == null) ? List.of() : m.getCounters();
 
         String c = list.size() + " on screen";
-        int cw = this.font.width(c);
-        ctx.text(this.font, Component.literal(c),
+        int cw = this.textRenderer.getWidth(c);
+        ctx.drawText(this.textRenderer, Text.literal(c),
                 winX + winW - cw - 12, winY + 12, 0xFF74747F, false);
 
         // List
         ctx.enableScissor(winX, winY + HEADER_H, winX + winW, winY + HEADER_H + listH);
         int y = winY + HEADER_H + 4 - (int) scroll;
-        Minecraft client = Minecraft.getInstance();
+        MinecraftClient client = MinecraftClient.getInstance();
 
         if (list.isEmpty()) {
-            ctx.text(this.font,
-                    Component.literal("No counters yet. Press New counter, then pick items."),
+            ctx.drawText(this.textRenderer,
+                    Text.literal("No counters yet. Press New counter, then pick items."),
                     winX + 16, y + 8, 0xFF6A6A76, false);
         }
 
@@ -149,23 +150,23 @@ public class ItemCounterScreen extends Screen {
                 boolean hov = in(winX + 8, y, winW - 16, ROW_H);
                 roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
 
-                ctx.text(this.font, Component.literal(counter.name),
+                ctx.drawText(this.textRenderer, Text.literal(counter.name),
                         winX + 16, y + 4, 0xFFFFFFFF, false);
 
                 int n = (client.player == null) ? 0
                         : ItemCounterRenderer.count(client, counter);
                 String sub = counter.items.size() + " items  ·  currently " + n;
-                ctx.text(this.font, Component.literal(sub),
+                ctx.drawText(this.textRenderer, Text.literal(sub),
                         winX + 16, y + 14, 0xFF74747F, false);
 
                 int bx = winX + winW - 24;
-                ctx.text(this.font, Component.literal("x"),
+                ctx.drawText(this.textRenderer, Text.literal("x"),
                         bx - 12, y + 9, pendingDelete == counter ? 0xFFFF3030 : 0xFFFF7A7A, false);
-                ctx.text(this.font, Component.literal("R"),
+                ctx.drawText(this.textRenderer, Text.literal("R"),
                         bx - 30, y + 9, 0xFF9A9AA6, false);
-                ctx.text(this.font, Component.literal("H"),
+                ctx.drawText(this.textRenderer, Text.literal("H"),
                         bx - 48, y + 9, counter.hideEmpty.get() ? accent : 0xFF9A9AA6, false);
-                ctx.text(this.font, Component.literal("S"),
+                ctx.drawText(this.textRenderer, Text.literal("S"),
                         bx - 66, y + 9, 0xFF9AD8FF, false);
 
                 // Colour swatch: shows the colour and opens the picker.
@@ -175,9 +176,9 @@ public class ItemCounterScreen extends Screen {
                 ctx.fill(swx + 1, y + 7, swx + 15, y + 19, counter.color.get());
 
                 String pick = "Items";
-                int pw = this.font.width(pick) + 14;
+                int pw = this.textRenderer.getWidth(pick) + 14;
                 roundRect(ctx, bx - 94 - pw, y + 5, pw, 16, C_INNER);
-                ctx.text(this.font, Component.literal(pick),
+                ctx.drawText(this.textRenderer, Text.literal(pick),
                         bx - 87 - pw, y + 9, 0xFFD0D0DA, false);
 
                 hits.add(new Hit(bx - 94 - pw, y + 5, pw, 16, Act.PICK, counter));
@@ -197,41 +198,41 @@ public class ItemCounterScreen extends Screen {
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
 
         if (renaming != null) {
-            ctx.text(this.font, Component.literal("Name:"),
+            ctx.drawText(this.textRenderer, Text.literal("Name:"),
                     winX + 12, fy + 8, 0xFFD0D0DA, false);
             roundRect(ctx, winX + 86, fy + 4, 188, 16, C_INNER);
             String ok = "Apply";
-            int okw = this.font.width(ok) + 14;
+            int okw = this.textRenderer.getWidth(ok) + 14;
             boolean hov = in(winX + 282, fy + 4, okw, 16);
             roundRect(ctx, winX + 282, fy + 4, okw, 16,
                     hov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-            ctx.text(this.font, Component.literal(ok),
+            ctx.drawText(this.textRenderer, Text.literal(ok),
                     winX + 289, fy + 8, 0xFFFFFFFF, false);
             hits.add(new Hit(winX + 282, fy + 4, okw, 16, Act.APPLY, null));
         } else {
             String hint = status.isEmpty()
                     ? "Square = colour  ·  S style  ·  H hide at zero  ·  R rename  ·  position in the HUD editor"
                     : status;
-            ctx.text(this.font, Component.literal(hint),
+            ctx.drawText(this.textRenderer, Text.literal(hint),
                     winX + 12, fy + 8, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
         }
 
         if (nameField != null) { nameField.setX(winX + 90); nameField.setY(winY + winH - 18); }
-        super.extractRenderState(ctx, mouseX, mouseY, delta);
+        super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void button(GuiGraphicsExtractor ctx, int x, int y, String label, Act act,
+    private void button(DrawContext ctx, int x, int y, String label, Act act,
                         ItemCounter data, int accent, boolean active) {
-        int w = this.font.width(label) + 16;
+        int w = this.textRenderer.getWidth(label) + 16;
         boolean hov = in(x, y, w, 20);
         roundRect(ctx, x, y, w, 20,
                 active ? mix(C_INNER, accent, 0.5f) : (hov ? mix(C_INNER, accent, 0.3f) : C_INNER));
-        ctx.text(this.font, Component.literal(label), x + 8, y + 6, 0xFFE6E6EC, false);
+        ctx.drawText(this.textRenderer, Text.literal(label), x + 8, y + 6, 0xFFE6E6EC, false);
         hits.add(new Hit(x, y, w, 20, act, data));
     }
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
 
         for (int i = hits.size() - 1; i >= 0; i--) {
@@ -240,7 +241,7 @@ public class ItemCounterScreen extends Screen {
             ItemCounterModule m = mod();
             switch (h.act) {
                 case BACK:
-                    this.onClose();
+                    this.close();
                     return true;
                 case NEW:
                     if (m != null) {
@@ -250,7 +251,7 @@ public class ItemCounterScreen extends Screen {
                     }
                     return true;
                 case PICK:
-                    Minecraft.getInstance().setScreen(
+                    MinecraftClient.getInstance().setScreen(
                             new ItemPickScreen(this, h.data));
                     return true;
                 case STYLE:
@@ -267,7 +268,7 @@ public class ItemCounterScreen extends Screen {
                 case RENAME:
                     renaming = h.data;
                     if (nameField != null) {
-                        nameField.setValue(h.data.name);
+                        nameField.setText(h.data.name);
                         nameField.setVisible(true);
                         this.setFocused(nameField);
                     }
@@ -285,7 +286,7 @@ public class ItemCounterScreen extends Screen {
                     return true;
                 case COLOR:
                     // The picker writes straight into this counter's setting.
-                    Minecraft.getInstance().setScreen(
+                    MinecraftClient.getInstance().setScreen(
                             new ColorPickerScreen(this, h.data.color));
                     return true;
                 case COLOR_ALL: {
@@ -294,7 +295,7 @@ public class ItemCounterScreen extends Screen {
                     // rather than only after closing the picker.
                     if (m == null || m.getCounters().isEmpty()) return true;
                     ItemCounter first = m.getCounters().get(0);
-                    Minecraft.getInstance().setScreen(
+                    MinecraftClient.getInstance().setScreen(
                             new ColorPickerScreen(this, first.color, () -> {
                                 int col = first.color.get();
                                 for (ItemCounter other : m.getCounters()) {
@@ -316,7 +317,7 @@ public class ItemCounterScreen extends Screen {
 
     private void applyName() {
         if (renaming == null || nameField == null) return;
-        String n = nameField.getValue().trim();
+        String n = nameField.getText().trim();
         if (n.isEmpty()) {
             status = "Name cannot be empty.";
             return;
@@ -345,7 +346,7 @@ public class ItemCounterScreen extends Screen {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
-    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -370,13 +371,13 @@ public class ItemCounterScreen extends Screen {
     }
 
     @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 
     @Override
-    public void onClose() {
+    public void close() {
         com.vortex.client.core.ConfigManager.save();
-        Minecraft.getInstance().setScreen(parent);
+        MinecraftClient.getInstance().setScreen(parent);
     }
 }

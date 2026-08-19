@@ -4,8 +4,8 @@ import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.FlyModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerAbilities;
 
 /**
  * Logik fuer das Fly-Modul.
@@ -33,11 +33,11 @@ public final class Fly {
                 return;
             }
 
-            LocalPlayer self = client.player;
-            Abilities abilities = self.getAbilities();
+            ClientPlayerEntity self = client.player;
+            PlayerAbilities abilities = self.getAbilities();
 
             // Kreativ/Spectator: Finger weg, da fliegt man sowieso.
-            if (abilities.instabuild || self.isSpectator()) {
+            if (abilities.creativeMode || self.isSpectator()) {
                 wasActive = false;
                 return;
             }
@@ -46,16 +46,16 @@ public final class Fly {
             boolean active = mod != null && mod.isEnabled();
 
             if (active) {
-                abilities.mayfly = true;
+                abilities.allowFlying = true;
                 abilities.flying = true;
-                abilities.setFlyingSpeed(mod.flySpeed());
+                abilities.setFlySpeed(mod.flySpeed());
                 wasActive = true;
             } else if (wasActive) {
                 // Genau einmal beim Ausschalten aufraeumen.
                 boolean keep = mod != null && mod.keepAllowFlying.get();
                 abilities.flying = false;
-                abilities.mayfly = keep;
-                abilities.setFlyingSpeed(0.05f);
+                abilities.allowFlying = keep;
+                abilities.setFlySpeed(0.05f);
                 wasActive = false;
             }
                     } finally {

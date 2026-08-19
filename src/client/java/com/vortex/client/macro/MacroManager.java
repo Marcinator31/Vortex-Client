@@ -1,14 +1,13 @@
 package com.vortex.client.macro;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.vortex.client.core.Errors;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Records and plays back macros.
@@ -115,8 +114,8 @@ public final class MacroManager {
         // mixin and were recorded even in a menu -- so the click on the Record
         // button itself ended up in the macro. That looked like "clicks work,
         // keys do not", when in truth recording simply only happens in game.
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.screen != null) return;
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc == null || mc.currentScreen != null) return;
 
         long now = System.currentTimeMillis();
         int delay = (int) Math.min(now - lastEventTime, 60_000L);
@@ -172,10 +171,10 @@ public final class MacroManager {
         //
         // This is the behaviour of 2.11.0. It produces action rates no hardware
         // can reach, which is the single most conspicuous thing a macro can do.
-        net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES
+        net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents.AFTER_ENTITIES
                 .register(context -> {
             try {
-                Minecraft client = Minecraft.getInstance();
+                MinecraftClient client = MinecraftClient.getInstance();
                 if (client != null) tickPlayback(client);
             } catch (Throwable pvpErr) {
                 Errors.report("MacroManager.frame", pvpErr);
@@ -207,13 +206,13 @@ public final class MacroManager {
      * 400 ms" is a very different step from "tap forward". The hotbar is
      * recorded whenever the selected slot changes.
      */
-    private static void tickRecording(Minecraft client) {
+    private static void tickRecording(MinecraftClient client) {
         if (recording == null || client.player == null) {
             recHeld.clear();
             recLastSlot = -1;
             return;
         }
-        if (client.screen != null) return;
+        if (client.currentScreen != null) return;
 
         // EVERY key, not just a handful of movement keys.
         //
@@ -233,7 +232,7 @@ public final class MacroManager {
 
             boolean down;
             try {
-                down = InputConstants.isKeyDown(client.getWindow(), code);
+                down = InputUtil.isKeyPressed(client.getWindow(), code);
             } catch (Throwable pvpErr) {
                 continue;   // not every code in the range is a real key
             }
@@ -281,8 +280,8 @@ public final class MacroManager {
     }
 
     /** Starts and stops macros by their assigned keys. */
-    private static void tickKeys(Minecraft client) {
-        if (client.screen != null) {
+    private static void tickKeys(MinecraftClient client) {
+        if (client.currentScreen != null) {
             keyDown.clear();
             return;
         }
@@ -325,9 +324,9 @@ public final class MacroManager {
     }
 
     /** Runs the steps of the macro currently playing. */
-    private static void tickPlayback(Minecraft client) {
+    private static void tickPlayback(MinecraftClient client) {
         if (playing == null) return;
-        if (client.player == null || client.level == null) {
+        if (client.player == null || client.world == null) {
             stop();
             return;
         }
@@ -340,7 +339,7 @@ public final class MacroManager {
         }
 
         // A screen interrupts playback: the macro would otherwise type into it.
-        if (client.screen != null) return;
+        if (client.currentScreen != null) return;
 
         // Cap on how much runs in a single tick.
         //
@@ -394,7 +393,7 @@ public final class MacroManager {
         }
     }
 
-    private static void runStep(Minecraft client, Macro.Step step) {
+    private static void runStep(MinecraftClient client, Macro.Step step) {
         try {
             switch (step.action) {
                 case LEFT_CLICK:
@@ -439,11 +438,11 @@ public final class MacroManager {
      * from a key that was actually pressed -- because as far as the game is
      * concerned, one was.
      */
-    private static void pressBinding(net.minecraft.client.KeyMapping binding) {
+    private static void pressBinding(net.minecraft.client.option.KeyBinding binding) {
         if (binding == null) return;
         try {
-            net.minecraft.client.KeyMapping.click(
-                    InputConstants.getKey(binding.saveString()));
+            net.minecraft.client.option.KeyBinding.onKeyPressed(
+                    InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey()));
         } catch (Throwable pvpErr) {
             Errors.report("MacroManager.press", pvpErr);
         }
@@ -457,10 +456,10 @@ public final class MacroManager {
      * as if the key were really down, including everything the game does about
      * it.
      */
-    private static void holdKey(Minecraft client, int code, int ms) {
+    private static void holdKey(MinecraftClient client, int code, int ms) {
         releaseHeldKey();
         try {
-            net.minecraft.client.KeyMapping.set(keyOf(code), true);
+            net.minecraft.client.option.KeyBinding.setKeyPressed(keyOf(code), true);
             heldKey = code;
             releaseHeldAt = System.currentTimeMillis() + Math.max(20, ms);
         } catch (Throwable pvpErr) {
@@ -482,20 +481,20 @@ public final class MacroManager {
     }
 
     /** Turns a code into the key object the game expects. */
-    private static com.mojang.blaze3d.platform.InputConstants.Key keyOf(int code) {
+    private static net.minecraft.client.util.InputUtil.Key keyOf(int code) {
         return isMouse(code)
-                ? InputConstants.Type.MOUSE.getOrCreate(code - MOUSE_BASE)
-                : InputConstants.Type.KEYSYM.getOrCreate(code);
+                ? InputUtil.Type.MOUSE.createFromCode(code - MOUSE_BASE)
+                : InputUtil.Type.KEYSYM.createFromCode(code);
     }
 
     /** Is this code currently held down? Works for keyboard and mouse. */
-    public static boolean isDown(Minecraft client, int code) {
+    public static boolean isDown(MinecraftClient client, int code) {
         try {
             if (isMouse(code)) {
-                return GLFW.glfwGetMouseButton(client.getWindow().handle(),
+                return GLFW.glfwGetMouseButton(client.getWindow().getHandle(),
                         code - MOUSE_BASE) == GLFW.GLFW_PRESS;
             }
-            return InputConstants.isKeyDown(client.getWindow(), code);
+            return InputUtil.isKeyPressed(client.getWindow(), code);
         } catch (Throwable pvpErr) {
             return false;
         }
@@ -504,7 +503,7 @@ public final class MacroManager {
     private static void releaseHeldKey() {
         if (heldKey == GLFW.GLFW_KEY_UNKNOWN) return;
         try {
-            net.minecraft.client.KeyMapping.set(keyOf(heldKey), false);
+            net.minecraft.client.option.KeyBinding.setKeyPressed(keyOf(heldKey), false);
         } catch (Throwable pvpErr) {
             Errors.report("MacroManager.releaseKey", pvpErr);
         }

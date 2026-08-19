@@ -1,9 +1,9 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public interface BlockEntityHideMixin {
 
     @Inject(method = "method_33892", at = @At("HEAD"), cancellable = true, require = 0)
-    private void vortex$hideBlockEntity(BlockEntity blockEntity, Vec3 cameraPos,
+    private void vortex$hideBlockEntity(BlockEntity blockEntity, Vec3d cameraPos,
                                         CallbackInfoReturnable<Boolean> cir) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
@@ -40,7 +40,7 @@ public interface BlockEntityHideMixin {
             if (mod.getHiddenBlocks().isEmpty()) return;
             if (blockEntity == null) return;
 
-            var id = BuiltInRegistries.BLOCK.getKey(blockEntity.getBlockState().getBlock());
+            var id = Registries.BLOCK.getId(blockEntity.getCachedState().getBlock());
             if (id != null && mod.isHidden(id.toString())) {
                 cir.setReturnValue(false);
             }

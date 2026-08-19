@@ -3,22 +3,23 @@ package com.vortex.client.hud;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.SusChunksModule;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.world.phys.AABB;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.chunk.WorldChunk;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.Container;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.phys.Vec3;
 
 /**
  * Sus Chunks: faerbt Chunks als Heatmap nach Spieler-Aktivitaet.
@@ -32,9 +33,9 @@ import net.minecraft.world.phys.Vec3;
 public final class SusChunks {
 
     private static final class ChunkMark {
-        final AABB box;
+        final Box box;
         final int color;
-        ChunkMark(AABB box, int color) { this.box = box; this.color = color; }
+        ChunkMark(Box box, int color) { this.box = box; this.color = color; }
     }
 
     private static final AtomicReference<List<ChunkMark>> RESULT =
@@ -45,23 +46,23 @@ public final class SusChunks {
     private static Thread worker;
 
     public static void register() {
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             SusChunksModule mod = (SusChunksModule) find(SusChunksModule.class);
             if (mod == null || !mod.isEnabled()) return;
 
-            Minecraft client = Minecraft.getInstance();
-            if (client.level == null || client.player == null) return;
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.world == null || client.player == null) return;
 
             ensureWorker();
 
-            PoseStack matrices = context.poseStack();
-            MultiBufferSource consumers = context.bufferSource();
+            MatrixStack matrices = context.matrices();
+            VertexConsumerProvider consumers = context.consumers();
             if (matrices == null || consumers == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
-                float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
+                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
+                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
                 VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 List<ChunkMark> marks = RESULT.get();
@@ -92,13 +93,13 @@ public final class SusChunks {
             try {
                 Thread.sleep(400);
 
-                Minecraft client = Minecraft.getInstance();
+                MinecraftClient client = MinecraftClient.getInstance();
                 SusChunksModule mod = (SusChunksModule) find(SusChunksModule.class);
                 if (client == null || mod == null || !mod.isEnabled()) {
                     if (!RESULT.get().isEmpty()) RESULT.set(new ArrayList<>());
                     continue;
                 }
-                ClientLevel world = client.level;
+                ClientWorld world = client.world;
                 if (world == null || client.player == null) {
                     if (!RESULT.get().isEmpty()) RESULT.set(new ArrayList<>());
                     continue;
@@ -106,8 +107,8 @@ public final class SusChunks {
 
                 int minScore = mod.getMinScore();
                 int maxScore = Math.max(mod.getMaxScore(), minScore + 1);
-                int minY = world.getMinY();
-                int maxY = world.getMaxY();
+                int minY = world.getBottomY();
+                int maxY = world.getTopYInclusive();
 
                 // Daten aus der sicheren Momentaufnahme (Haupt-Thread).
                 WorldScan.Snapshot snap = WorldScan.get();
@@ -133,7 +134,7 @@ public final class SusChunks {
                     int color = heatColor(t);
 
                     double x0 = ccx << 4, z0 = ccz << 4;
-                    AABB box = new AABB(x0 + 0.5, minY, z0 + 0.5,
+                    Box box = new Box(x0 + 0.5, minY, z0 + 0.5,
                             x0 + 15.5, maxY, z0 + 15.5);
                     marks.add(new ChunkMark(box, color));
                 }

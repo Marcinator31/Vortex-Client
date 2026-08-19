@@ -37,6 +37,7 @@
     "NoFallMixin",
     "NoPumpkinBlurMixin",
     "ParticleManagerMixin",
+    "SkinOverrideMixin",
     "ZoomFovMixin",
     "ZoomScrollMixin"
   ],

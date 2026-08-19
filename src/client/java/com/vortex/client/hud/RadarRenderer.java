@@ -2,15 +2,16 @@ package com.vortex.client.hud;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.RadarModule;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.AgeableMob;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.PlayerSkinDrawer;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.passive.AnimalEntity;
+import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 
 /**
  * Zeichnet den runden Entity-Radar.
@@ -39,10 +40,10 @@ public final class RadarRenderer {
      * never change. Bounded by the number of mob types (~80).
      * Render thread only, so a plain HashMap is fine.
      */
-    private static final java.util.Map<net.minecraft.world.item.Item, net.minecraft.world.item.ItemStack>
+    private static final java.util.Map<net.minecraft.item.Item, net.minecraft.item.ItemStack>
             EGG_STACKS = new java.util.HashMap<>();
 
-    public static void render(GuiGraphicsExtractor context, Minecraft client) {
+    public static void render(DrawContext context, MinecraftClient client) {
         // Same wrapper pattern as HudRenderer.onHudRender: time everything,
         // record in finally so early returns and errors are counted too.
         // Subset of the "HUD" section in /lag.
@@ -55,8 +56,8 @@ public final class RadarRenderer {
         }
     }
 
-    private static void renderInner(GuiGraphicsExtractor context, Minecraft client) {
-        if (client.player == null || client.level == null) return;
+    private static void renderInner(DrawContext context, MinecraftClient client) {
+        if (client.player == null || client.world == null) return;
 
         RadarModule mod = (RadarModule) module();
         if (mod == null || !mod.isEnabled()) return;
@@ -82,7 +83,7 @@ public final class RadarRenderer {
 
         // 3) Reichweite + Blickrichtung des Spielers.
         double maxRange = mod.range.get();        // Bloecke, die der Rand bedeutet
-        float yaw = client.player.getYRot();
+        float yaw = client.player.getYaw();
         double yawRad = Math.toRadians(yaw);
 
         // Basisvektoren fuer "Blickrichtung = oben" (verifizierte Formel V2):
@@ -102,7 +103,7 @@ public final class RadarRenderer {
             // Typ bestimmen + Filter. dotColor fuer Punkt-Darstellung,
             // useEgg=true bedeutet: als Spawn-Ei-Icon zeichnen (Tiere/Mobs).
             int dotColor;
-            boolean isPlayer = e instanceof Player;
+            boolean isPlayer = e instanceof PlayerEntity;
             boolean useEgg = false;
             if (isPlayer) {
                 if (!mod.showPlayers.get()) continue;
@@ -142,10 +143,10 @@ public final class RadarRenderer {
             //      der Kopf selbst die exakte Position markiert.
             //    - sonst: kleiner Punkt.
             boolean playerWithHead = isPlayer && mod.playerDetails.get()
-                    && e instanceof AbstractClientPlayer;
+                    && e instanceof AbstractClientPlayerEntity;
 
             boolean drewEgg = false;
-            if (useEgg && e instanceof net.minecraft.world.entity.LivingEntity living) {
+            if (useEgg && e instanceof net.minecraft.entity.LivingEntity living) {
                 drewEgg = drawMobEgg(context, living, dotX, dotY, scale);
             }
             if (!drewEgg && !playerWithHead) {
@@ -156,7 +157,7 @@ public final class RadarRenderer {
 
             // 6) Bei Spielern: Kopf (mittig auf der Position), Name, Entfernung.
             if (playerWithHead) {
-                drawPlayerInfo(context, client, (AbstractClientPlayer) e, dotX, dotY, dist);
+                drawPlayerInfo(context, client, (AbstractClientPlayerEntity) e, dotX, dotY, dist);
             }
         }
 
@@ -170,14 +171,13 @@ public final class RadarRenderer {
      * Gibt true zurueck, wenn ein Ei gezeichnet wurde, sonst false (dann
      * faellt der Aufrufer auf einen Punkt zurueck).
      */
-    private static boolean drawMobEgg(GuiGraphicsExtractor context,
-                                      net.minecraft.world.entity.LivingEntity living,
+    private static boolean drawMobEgg(DrawContext context,
+                                      net.minecraft.entity.LivingEntity living,
                                       int dotX, int dotY, double scale) {
         try {
             var type = living.getType();
-            var eggHolder = net.minecraft.world.item.SpawnEggItem.byId(type);
-            if (eggHolder.isEmpty()) return false;
-            var egg = eggHolder.get().value();
+            var egg = net.minecraft.item.SpawnEggItem.forEntity(type);
+            if (egg == null) return false;
             // Icon-Groesse klein halten (5px Basis), damit der Radar
             // uebersichtlich bleibt und sich die Icons nicht gegenseitig
             // (und den Mittel-Pfeil) verdecken.
@@ -187,12 +187,12 @@ public final class RadarRenderer {
 
             // Item-Icons sind immer 16px; per Matrix auf iconSize skalieren.
             float factor = iconSize / 16.0f;
-            var m = context.pose();
+            var m = context.getMatrices();
             m.pushMatrix();
             m.translate(ix, iy);
             m.scale(factor, factor);
-            context.item(EGG_STACKS.computeIfAbsent(egg,
-                    net.minecraft.world.item.ItemStack::new), 0, 0);
+            context.drawItem(EGG_STACKS.computeIfAbsent(egg,
+                    net.minecraft.item.ItemStack::new), 0, 0);
             m.popMatrix();
             return true;
         } catch (Throwable ignored) {
@@ -201,8 +201,8 @@ public final class RadarRenderer {
     }
 
     /** Zeichnet Kopf + Name + Entfernung neben einem Spieler-Punkt (klein). */
-    private static void drawPlayerInfo(GuiGraphicsExtractor context, Minecraft client,
-                                       AbstractClientPlayer player,
+    private static void drawPlayerInfo(DrawContext context, MinecraftClient client,
+                                       AbstractClientPlayerEntity player,
                                        int dotX, int dotY, double dist) {
         try {
             // Sehr kleiner Kopf, ZENTRIERT auf der exakten Position (dotX,dotY).
@@ -217,24 +217,18 @@ public final class RadarRenderer {
             // getPlayerListEntry, weil player.getName().getString() bereits
             // nachweislich kompiliert (gleiche Datei, Namensanzeige unten) --
             // so umgehen wir die authlib-GameProfile-Accessor-Unterschiede.
-            var handler = client.getConnection();
+            var handler = client.getNetworkHandler();
             String playerName = player.getName().getString();
             if (handler != null) {
-                var entry = handler.getPlayerInfo(playerName);
+                var entry = handler.getPlayerListEntry(playerName);
                 if (entry != null) {
-                    var skin = entry.getSkin();
+                    var skin = entry.getSkinTextures();
                     // Kopf zeichnen (inkl. Hut-Overlay).
-                    // GuiGraphicsExtractor erwartet in 26.x x1/y1 und x2/y2,
-                    // nicht x/y plus Breite/Höhe. headSize als Endpunkt hatte
-                    // deshalb riesige Rechtecke bis zur oberen linken Ecke erzeugt.
-                    context.blit(skin.body().texturePath(), hx, hy, hx + headSize, hy + headSize,
-                            0.125F, 0.125F, 0.25F, 0.25F);
-                    context.blit(skin.body().texturePath(), hx, hy, hx + headSize, hy + headSize,
-                            0.625F, 0.125F, 0.75F, 0.25F);
+                    PlayerSkinDrawer.draw(context, skin, hx, hy, headSize, 0xFFFFFFFF);
                 }
             }
 
-            // Name + Entfernung kleiner darstellen (Component auf 0.7 skaliert).
+            // Name + Entfernung kleiner darstellen (Text auf 0.7 skaliert).
             // Die Schriftgroesse ist fix, daher skalieren wir per Matrix um den
             // Textanker herum.
             String info = playerName + " " + (int) Math.round(dist) + "m";
@@ -242,11 +236,11 @@ public final class RadarRenderer {
             int textX = dotX + headSize / 2 + 2; // rechts neben dem Kopf
             int textY = dotY - 2;
 
-            var m = context.pose();
+            var m = context.getMatrices();
             m.pushMatrix();
             m.translate(textX, textY);
             m.scale(textScale, textScale);
-            context.text(client.font, Component.literal(info),
+            context.drawTextWithShadow(client.textRenderer, Text.literal(info),
                     0, 0, 0xFFFFFFFF);
             m.popMatrix();
         } catch (Throwable ignored) {
@@ -255,7 +249,7 @@ public final class RadarRenderer {
     }
 
     /** Zeichnet einen Kreis-Umriss aus kurzen Liniensegmenten. */
-    private static void drawCircle(GuiGraphicsExtractor context, int cx, int cy, int r, int color) {
+    private static void drawCircle(DrawContext context, int cx, int cy, int r, int color) {
         if (r <= 0) return;
         int segments = Math.max(24, r * 2);
         double step = (Math.PI * 2) / segments;
@@ -271,7 +265,7 @@ public final class RadarRenderer {
     }
 
     /** Zeichnet eine duenne Linie zwischen zwei Punkten (Bresenham-artig). */
-    private static void drawLine(GuiGraphicsExtractor context, int x0, int y0, int x1, int y1, int color) {
+    private static void drawLine(DrawContext context, int x0, int y0, int x1, int y1, int color) {
         int dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
         int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
         int err = dx - dy;
@@ -292,14 +286,14 @@ public final class RadarRenderer {
      * darunter) hebt es klar von den Mob-Icons ab. Cyan-Spitze faellt zudem
      * farblich auf.
      */
-    private static void drawPlayerArrow(GuiGraphicsExtractor context, int cx, int cy, int size) {
+    private static void drawPlayerArrow(DrawContext context, int cx, int cy, int size) {
         // Erst dunkler Rand, dann helle Fuellung darueber.
         fillTriangleUp(context, cx, cy, size + 1, 0xFF000000);
         fillTriangleUp(context, cx, cy, size, 0xFF66E0FF);
     }
 
     /** Fuellt ein nach oben zeigendes Dreieck (Spitze oben) um (cx,cy). */
-    private static void fillTriangleUp(GuiGraphicsExtractor context, int cx, int cy, int size, int color) {
+    private static void fillTriangleUp(DrawContext context, int cx, int cy, int size, int color) {
         int apexY = cy - size;
         int baseY = cy + size;
         int height = baseY - apexY;
@@ -314,11 +308,11 @@ public final class RadarRenderer {
 
     private static boolean isHostile(Entity e) {
         // Monster-Interface faengt auch Slimes/Magma-Wuerfel.
-        return e instanceof net.minecraft.world.entity.monster.Enemy;
+        return e instanceof net.minecraft.entity.mob.Monster;
     }
 
     private static boolean isAnimal(Entity e) {
-        return e instanceof Animal || e instanceof AgeableMob;
+        return e instanceof AnimalEntity || e instanceof PassiveEntity;
     }
 
     private static com.vortex.client.module.Module module() {

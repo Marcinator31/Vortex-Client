@@ -8,6 +8,12 @@ import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.core.setting.Setting;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.Text;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,11 +21,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 
 /**
  * Das ClickGUI -- die Hauptoberflaeche des Clients.
@@ -94,7 +95,7 @@ public class ClickGui extends Screen {
     private float scrollTarget = 0f;
     private int contentHeight = 0;
 
-    private EditBox search;
+    private TextFieldWidget search;
 
     private long lastNano = 0L;
     private String presetInfo = null;
@@ -143,7 +144,7 @@ public class ClickGui extends Screen {
     private final List<Hit> hits = new ArrayList<>();
 
     public ClickGui() {
-        super(Component.literal("Vortex Client"));
+        super(Text.literal("Vortex Client"));
     }
 
     // ---------------------------------------------------------------- Aufbau
@@ -155,11 +156,11 @@ public class ClickGui extends Screen {
         int winY = (this.height - windowHeight()) / 2;
 
         int sw = 120;
-        this.search = new EditBox(this.font,
-                winX + winW - sw - PAD, winY + 10, sw, 14, Component.literal(""));
-        this.search.setBordered(false);
+        this.search = new TextFieldWidget(this.textRenderer,
+                winX + winW - sw - PAD, winY + 10, sw, 14, Text.literal(""));
+        this.search.setDrawsBackground(false);
         this.search.setMaxLength(32);
-        this.addRenderableWidget(this.search);
+        this.addDrawableChild(this.search);
     }
 
     /**
@@ -196,7 +197,7 @@ public class ClickGui extends Screen {
     // -------------------------------------------------------------- Zeichnen
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
         hits.clear();
@@ -257,10 +258,10 @@ public class ClickGui extends Screen {
             search.setX(winX + winW - search.getWidth() - PAD);
             search.setY(winY + 10);
         }
-        super.extractRenderState(ctx, mouseX, mouseY, delta);
+        super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawHeader(GuiGraphicsExtractor ctx, int x, int y, int w, int accent, Theme t) {
+    private void drawHeader(DrawContext ctx, int x, int y, int w, int accent, Theme t) {
         ctx.fill(x, y, x + w, y + HEADER_H, fade(C_SIDEBAR, openAnim));
         ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
 
@@ -270,21 +271,21 @@ public class ClickGui extends Screen {
         int markColor = fade(Branding.accent(), openAnim);
         drawRingMark(ctx, x + PAD + 6, y + 17, 6, markColor);
 
-        ctx.text(this.font, Component.literal(Branding.title()),
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(Branding.title()),
                 x + PAD + 17, y + 8, fade(t.text.get(), openAnim));
 
         int active = 0;
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             if (m.isEnabled()) active++;
         }
-        ctx.text(this.font, Component.literal(active + " active"),
+        ctx.drawText(this.textRenderer, Text.literal(active + " active"),
                 x + PAD + 9, y + 19, fade(t.textDim.get(), openAnim), false);
 
         // Rueckmeldung nach einem Preset-Wechsel, blendet nach 3 Sekunden aus.
         if (presetInfo != null && presetInfoTime < 3f) {
-            int iw = this.font.width(presetInfo);
+            int iw = this.textRenderer.getWidth(presetInfo);
             float alpha = (presetInfoTime > 2f) ? (3f - presetInfoTime) : 1f;
-            ctx.text(this.font, Component.literal(presetInfo),
+            ctx.drawText(this.textRenderer, Text.literal(presetInfo),
                     x + (w - iw) / 2, y + 19, fade(accent, alpha * openAnim), false);
         }
 
@@ -298,23 +299,23 @@ public class ClickGui extends Screen {
             boolean hov = inRect(mx, my, px, y + 17, bw, 13);
             int bg = isCur ? mix(C_INNER, accent, 0.55f) : (hov ? C_CARD : C_INNER);
             roundRect(ctx, px, y + 17, bw, 13, fade(bg, openAnim));
-            int lw = this.font.width(lbl);
-            ctx.text(this.font, Component.literal(lbl),
+            int lw = this.textRenderer.getWidth(lbl);
+            ctx.drawText(this.textRenderer, Text.literal(lbl),
                     px + (bw - lw) / 2, y + 20,
                     fade(isCur ? 0xFFFFFFFF : 0xFF8A8A96, openAnim), false);
             hits.add(new Hit(px, y + 17, bw, 13, Act.PRESET, null, null, Integer.valueOf(i)));
             px += bw + 4;
         }
-        ctx.text(this.font, Component.literal("Preset"),
+        ctx.drawText(this.textRenderer, Text.literal("Preset"),
                 x + PAD + 70, y + 6, fade(0xFF74747F, openAnim), false);
 
         // Knopf zum Design-Menue (Farben der Oberflaeche).
         String design = "Theme";
-        int dw = this.font.width(design) + 14;
+        int dw = this.textRenderer.getWidth(design) + 14;
         int dx = px + 6;
         boolean dHov = inRect(mx, my, dx, y + 17, dw, 13);
         roundRect(ctx, dx, y + 17, dw, 13, fade(dHov ? mix(C_INNER, accent, 0.4f) : C_INNER, openAnim));
-        ctx.text(this.font, Component.literal(design),
+        ctx.drawText(this.textRenderer, Text.literal(design),
                 dx + 7, y + 20, fade(dHov ? 0xFFFFFFFF : 0xFF9A9AA6, openAnim), false);
         hits.add(new Hit(dx, y + 17, dw, 13, Act.THEME, null, null, null));
 
@@ -323,23 +324,23 @@ public class ClickGui extends Screen {
             int sy = y + 7;
             int sw = search.getWidth() + 20;
             roundRect(ctx, sx, sy, sw, 20, fade(C_INNER, openAnim));
-            ctx.text(this.font, Component.literal("Q"),
+            ctx.drawText(this.textRenderer, Text.literal("Q"),
                     sx + 6, sy + 6, fade(0xFF6A6A76, openAnim), false);
-            if (search.getValue().isEmpty()) {
-                ctx.text(this.font, Component.literal("Search..."),
+            if (search.getText().isEmpty()) {
+                ctx.drawText(this.textRenderer, Text.literal("Search..."),
                         sx + 18, sy + 6, fade(0xFF6A6A76, openAnim), false);
             }
         }
     }
 
-    private void drawSidebar(GuiGraphicsExtractor ctx, int x, int y, int h,
+    private void drawSidebar(DrawContext ctx, int x, int y, int h,
                              int accent, Theme t, float dt) {
         ctx.fill(x, y, x + SIDEBAR_W, y + h, fade(C_SIDEBAR, openAnim));
         ctx.fill(x + SIDEBAR_W - 1, y, x + SIDEBAR_W, y + h, fade(C_LINE, openAnim));
 
         sideScroll = anim(sideScroll, sideScrollTarget, 18f, dt);
 
-        boolean searching = search != null && !search.getValue().isEmpty();
+        boolean searching = search != null && !search.getText().isEmpty();
         int cy = y + PAD - (int) sideScroll;
         int cyStart = cy;
 
@@ -354,12 +355,12 @@ public class ClickGui extends Screen {
             if ((bg >>> 24) != 0) {
                 roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
             }
-            ctx.text(this.font, Component.literal("* Favourites"),
+            ctx.drawText(this.textRenderer, Text.literal("* Favourites"),
                     x + 16, cy + 7,
                     fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
             String badge = String.valueOf(GuiState.getFavorites().size());
-            int bw0 = this.font.width(badge);
-            ctx.text(this.font, Component.literal(badge),
+            int bw0 = this.textRenderer.getWidth(badge);
+            ctx.drawText(this.textRenderer, Text.literal(badge),
                     x + SIDEBAR_W - 12 - bw0, cy + 7, fade(accent, openAnim), false);
             hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, 22, Act.FAVCAT, null, null, null));
             if (isSel) {
@@ -384,7 +385,7 @@ public class ClickGui extends Screen {
                 roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
             }
 
-            ctx.text(this.font, Component.literal(pretty(cat.name())),
+            ctx.drawText(this.textRenderer, Text.literal(pretty(cat.name())),
                     x + 16, cy + 7, fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
 
             int on = 0, total = 0;
@@ -393,8 +394,8 @@ public class ClickGui extends Screen {
                 if (m.isEnabled()) on++;
             }
             String badge = on + "/" + total;
-            int bw = this.font.width(badge);
-            ctx.text(this.font, Component.literal(badge),
+            int bw = this.textRenderer.getWidth(badge);
+            ctx.drawText(this.textRenderer, Text.literal(badge),
                     x + SIDEBAR_W - 12 - bw, cy + 7,
                     fade(on > 0 ? accent : 0xFF5A5A66, openAnim), false);
 
@@ -443,7 +444,7 @@ public class ClickGui extends Screen {
     }
 
     /** Eine Zeile in der Leiste fuer einen Bereich ausserhalb der Module. */
-    private int drawSectionEntry(GuiGraphicsExtractor ctx, int x, int cy, String label,
+    private int drawSectionEntry(DrawContext ctx, int x, int cy, String label,
                                  Section sec, String badge, int accent, Theme t,
                                  float dt, boolean searching) {
         boolean isSel = !searching && !favView && section == sec;
@@ -452,11 +453,11 @@ public class ClickGui extends Screen {
         if ((bg >>> 24) != 0) {
             roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
         }
-        ctx.text(this.font, Component.literal(label), x + 16, cy + 7,
+        ctx.drawText(this.textRenderer, Text.literal(label), x + 16, cy + 7,
                 fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
         if (badge != null) {
-            int bw = this.font.width(badge);
-            ctx.text(this.font, Component.literal(badge),
+            int bw = this.textRenderer.getWidth(badge);
+            ctx.drawText(this.textRenderer, Text.literal(badge),
                     x + SIDEBAR_W - 12 - bw, cy + 7, fade(accent, openAnim), false);
         }
         hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, 22, Act.SECTION, null, null, sec));
@@ -467,12 +468,12 @@ public class ClickGui extends Screen {
         return cy + 26;
     }
 
-    private void drawContent(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+    private void drawContent(DrawContext ctx, int x, int y, int w, int h,
                              int accent, Theme t, float dt) {
         scroll = anim(scroll, scrollTarget, 18f, dt);
 
         // Bereiche ausserhalb der Module haben eigene Inhalte.
-        boolean searchingNow = search != null && !search.getValue().isEmpty();
+        boolean searchingNow = search != null && !search.getText().isEmpty();
         if (!searchingNow && !favView && section != Section.MODULE) {
             drawSectionContent(ctx, x, y, w, h, accent, t);
             return;
@@ -509,16 +510,16 @@ public class ClickGui extends Screen {
                 if (on > 0.01f) {
                     ctx.fill(cx, cy + 5, cx + 2, cy + CARD_H - 5, fade(accent, on));
                 }
-                ctx.text(this.font, Component.literal(m.getName()),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal(m.getName()),
                         cx + 12, cy + 9, m.isEnabled() ? t.text.get() : 0xFFA8A8B4);
                 if (hasContent(m)) {
-                    ctx.text(this.font, Component.literal(ex > 0.5f ? "-" : "+"),
+                    ctx.drawText(this.textRenderer, Text.literal(ex > 0.5f ? "-" : "+"),
                             cx + cw - 46, cy + 9, 0xFF8A8A96, false);
                 }
                 // Stern zum Anpinnen (leuchtet, wenn das Modul Favorit ist).
                 boolean fav = GuiState.isFavorite(m.getName());
                 boolean starHov = inRect(mx, my, cx + cw - 62, cy + 6, 14, 14);
-                ctx.text(this.font, Component.literal("*"),
+                ctx.drawText(this.textRenderer, Text.literal("*"),
                         cx + cw - 58, cy + 9,
                         fav ? accent : (starHov ? 0xFFD0D0DA : 0xFF55555F), false);
                 drawSwitch(ctx, cx + cw - 32, cy + 8, on, accent);
@@ -578,8 +579,8 @@ public class ClickGui extends Screen {
 
         if (list.isEmpty()) {
             String msg = "No results";
-            ctx.text(this.font, Component.literal(msg),
-                    x + (w - this.font.width(msg)) / 2, y + h / 2 - 4,
+            ctx.drawText(this.textRenderer, Text.literal(msg),
+                    x + (w - this.textRenderer.getWidth(msg)) / 2, y + h / 2 - 4,
                     0xFF6A6A76, false);
         }
     }
@@ -591,7 +592,7 @@ public class ClickGui extends Screen {
      * elemente wie bei Modulen) plus einen Knopf zur Verwaltung. Skins und
      * Design oeffnen ihre eigenen Bildschirme.
      */
-    private void drawSectionContent(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+    private void drawSectionContent(DrawContext ctx, int x, int y, int w, int h,
                                     int accent, Theme t) {
         int cx = x + PAD;
         int cw = w - PAD * 2 - 4;
@@ -607,10 +608,10 @@ public class ClickGui extends Screen {
                 var wp = com.vortex.client.waypoint.WaypointSettings.INSTANCE;
                 int count = com.vortex.client.waypoint.WaypointManager.all().size();
 
-                ctx.text(this.font, Component.literal("Waypoints"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Waypoints"),
                         cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal(count + (count == 1 ? " markers"
+                ctx.drawText(this.textRenderer,
+                        Text.literal(count + (count == 1 ? " markers"
                                                          : " markers")),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
@@ -619,9 +620,9 @@ public class ClickGui extends Screen {
                 boolean hov = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20,
                         hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Manage markers"),
+                ctx.drawText(this.textRenderer, Text.literal("Manage markers"),
                         cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
+                ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
                 hits.add(new Hit(cx, cy, cw, 20, Act.WP_MANAGE, null, null, null));
                 cy += 28;
@@ -640,91 +641,91 @@ public class ClickGui extends Screen {
                 break;
             }
             case MACROS: {
-                ctx.text(this.font, Component.literal("Macros"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Macros"),
                         cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Record clicks and keys, edit the timing, bind a key"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Record clicks and keys, edit the timing, bind a key"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean mh = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, mh ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open macro editor"),
+                ctx.drawText(this.textRenderer, Text.literal("Open macro editor"),
                         cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
+                ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
                 hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openMacros"));
                 cy += 28;
 
                 int n = com.vortex.client.macro.MacroManager.all().size();
-                ctx.text(this.font,
-                        Component.literal(n == 0 ? "No macros yet" : n + " saved"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal(n == 0 ? "No macros yet" : n + " saved"),
                         cx, cy, t.textDim.get(), false);
                 break;
             }
             case COMMUNITY: {
-                ctx.text(this.font, Component.literal("Community"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Community"),
                         cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Macros and presets shared by other players"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Macros and presets shared by other players"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean ch = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, ch ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Browse shared macros"),
+                ctx.drawText(this.textRenderer, Text.literal("Browse shared macros"),
                         cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
+                ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
                 hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openCommunity"));
                 cy += 26;
-                ctx.text(this.font,
-                        Component.literal("Share your own on the website"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Share your own on the website"),
                         cx, cy, t.textDim.get(), false);
                 break;
             }
             case KEYS: {
-                ctx.text(this.font, Component.literal("Keys"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Keys"),
                         cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Every assigned key in one list, conflicts marked"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Every assigned key in one list, conflicts marked"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean kh = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, kh ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open key list"),
+                ctx.drawText(this.textRenderer, Text.literal("Open key list"),
                         cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
+                ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
                 hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openKeys"));
                 break;
             }
             case SKINS: {
-                ctx.text(this.font, Component.literal("Skins"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Skins"),
                         cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Wardrobe, player name lookup, your own files"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Wardrobe, player name lookup, your own files"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean hov = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open skin wardrobe"),
+                ctx.drawText(this.textRenderer, Text.literal("Open skin wardrobe"),
                         cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
+                ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
                 hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openSkins"));
                 break;
             }
             case DESIGN: {
-                ctx.text(this.font, Component.literal("Theme"),
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("Theme"),
                         cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Customise the interface colours"),
+                ctx.drawText(this.textRenderer,
+                        Text.literal("Customise the interface colours"),
                         cx, cy + 11, t.textDim.get(), false);
                 cy += 28;
                 boolean hov = inRect(mx, my, cx, cy, cw, 20);
                 roundRect(ctx, cx, cy, cw, 20, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open theme editor"),
+                ctx.drawText(this.textRenderer, Text.literal("Open theme editor"),
                         cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
+                ctx.drawText(this.textRenderer, Text.literal(">"),
                         cx + cw - 14, cy + 6, accent, false);
                 hits.add(new Hit(cx, cy, cw, 20, Act.THEME, null, null, null));
                 break;
@@ -751,7 +752,7 @@ public class ClickGui extends Screen {
     }
 
     /** Knopf, der ein Auswahl-Menue oeffnet (Mobs / Bloecke / Entities). */
-    private int drawSubButton(GuiGraphicsExtractor ctx, Module m, int cx, int sy, int cw,
+    private int drawSubButton(DrawContext ctx, Module m, int cx, int sy, int cw,
                               int accent, Theme t) {
         String label;
         Act act;
@@ -774,31 +775,31 @@ public class ClickGui extends Screen {
         int bw = cw - 16;
         boolean hov = inRect(mx, my, bx, sy, bw, 18);
         roundRect(ctx, bx, sy, bw, 18, hov ? mix(C_INNER, accent, 0.28f) : C_INNER);
-        ctx.text(this.font, Component.literal(label),
+        ctx.drawText(this.textRenderer, Text.literal(label),
                 bx + 8, sy + 5, t.text.get(), false);
-        ctx.text(this.font, Component.literal(">"),
+        ctx.drawText(this.textRenderer, Text.literal(">"),
                 bx + bw - 12, sy + 5, accent, false);
         hits.add(new Hit(bx, sy, bw, 18, act, m, null, null));
         return sy + SUB_H;
     }
 
     /** Eine Einstellungs-Zeile, je nach Typ unterschiedlich dargestellt. */
-    private void drawSetting(GuiGraphicsExtractor ctx, Module m, Setting s,
+    private void drawSetting(DrawContext ctx, Module m, Setting s,
                              int x, int y, int w, int accent, Theme t) {
         String name = s.getName();
 
         if (s instanceof BooleanSetting b) {
-            ctx.text(this.font, Component.literal(name), x, y + 6,
+            ctx.drawText(this.textRenderer, Text.literal(name), x, y + 6,
                     b.get() ? t.text.get() : t.textDim.get(), false);
             drawSwitch(ctx, x + w - 24, y + 4, b.get() ? 1f : 0f, accent);
             hits.add(new Hit(x, y, w, SET_H, Act.S_BOOL, m, s, null));
 
         } else if (s instanceof NumberSetting n) {
-            ctx.text(this.font, Component.literal(name), x, y + 1,
+            ctx.drawText(this.textRenderer, Text.literal(name), x, y + 1,
                     t.textDim.get(), false);
             String val = fmt(n.get());
-            int vw = this.font.width(val);
-            ctx.text(this.font, Component.literal(val), x + w - vw, y + 1, accent, false);
+            int vw = this.textRenderer.getWidth(val);
+            ctx.drawText(this.textRenderer, Text.literal(val), x + w - vw, y + 1, accent, false);
 
             int ty = y + 13;
             double span = n.getMax() - n.getMin();
@@ -812,52 +813,52 @@ public class ClickGui extends Screen {
             hits.add(new Hit(x, y + 7, w, 13, Act.S_NUM, m, s, null));
 
         } else if (s instanceof ModeSetting mode) {
-            ctx.text(this.font, Component.literal(name), x, y + 6,
+            ctx.drawText(this.textRenderer, Text.literal(name), x, y + 6,
                     t.textDim.get(), false);
             String val = mode.get();
-            int vw = this.font.width(val);
+            int vw = this.textRenderer.getWidth(val);
             int rightX = x + w;
-            ctx.text(this.font, Component.literal("<"),
+            ctx.drawText(this.textRenderer, Text.literal("<"),
                     rightX - vw - 22, y + 6, 0xFF9A9AA6, false);
-            ctx.text(this.font, Component.literal(val),
+            ctx.drawText(this.textRenderer, Text.literal(val),
                     rightX - vw - 10, y + 6, accent, false);
-            ctx.text(this.font, Component.literal(">"),
+            ctx.drawText(this.textRenderer, Text.literal(">"),
                     rightX - 6, y + 6, 0xFF9A9AA6, false);
             hits.add(new Hit(rightX - vw - 26, y, 14, SET_H, Act.S_MODE_PREV, m, s, null));
             hits.add(new Hit(rightX - 10, y, 14, SET_H, Act.S_MODE_NEXT, m, s, null));
 
         } else if (s instanceof ColorSetting c) {
-            ctx.text(this.font, Component.literal(name), x, y + 6,
+            ctx.drawText(this.textRenderer, Text.literal(name), x, y + 6,
                     t.textDim.get(), false);
             roundRect(ctx, x + w - 26, y + 4, 24, 12, 0xFF000000);
             roundRect(ctx, x + w - 25, y + 5, 22, 10, c.get() | 0xFF000000);
             hits.add(new Hit(x, y, w, SET_H, Act.S_COLOR, m, s, null));
 
         } else if (s instanceof KeySetting k) {
-            ctx.text(this.font, Component.literal(name), x, y + 6,
+            ctx.drawText(this.textRenderer, Text.literal(name), x, y + 6,
                     t.textDim.get(), false);
             String val = k.isListening() ? "Press a key" : k.getKeyName();
-            int vw = this.font.width(val);
+            int vw = this.textRenderer.getWidth(val);
             roundRect(ctx, x + w - vw - 10, y + 3, vw + 8, 14,
                     k.isListening() ? mix(C_INNER, accent, 0.4f) : C_INNER);
-            ctx.text(this.font, Component.literal(val),
+            ctx.drawText(this.textRenderer, Text.literal(val),
                     x + w - vw - 6, y + 6, k.isListening() ? accent : t.text.get(), false);
             hits.add(new Hit(x, y, w, SET_H, Act.S_KEY, m, s, null));
 
         } else {
-            ctx.text(this.font, Component.literal(name), x, y + 6,
+            ctx.drawText(this.textRenderer, Text.literal(name), x, y + 6,
                     t.textDim.get(), false);
         }
     }
 
     /** Kleiner Hinweiskasten neben der Maus, mit Umbruch bei Bedarf. */
-    private void drawTooltip(GuiGraphicsExtractor ctx, String text, int accent) {
+    private void drawTooltip(DrawContext ctx, String text, int accent) {
         int maxW = 210;
         java.util.List<String> lines = new java.util.ArrayList<>();
         StringBuilder cur = new StringBuilder();
         for (String word : text.split(" ")) {
             String test = cur.length() == 0 ? word : cur + " " + word;
-            if (this.font.width(test) > maxW && cur.length() > 0) {
+            if (this.textRenderer.getWidth(test) > maxW && cur.length() > 0) {
                 lines.add(cur.toString());
                 cur = new StringBuilder(word);
             } else {
@@ -867,7 +868,7 @@ public class ClickGui extends Screen {
         if (cur.length() > 0) lines.add(cur.toString());
 
         int w = 0;
-        for (String l : lines) w = Math.max(w, this.font.width(l));
+        for (String l : lines) w = Math.max(w, this.textRenderer.getWidth(l));
         w += 12;
         int h = lines.size() * 10 + 8;
 
@@ -880,18 +881,18 @@ public class ClickGui extends Screen {
         ctx.fill(tx, ty, tx + w, ty + 1, accent);
         int ly = ty + 5;
         for (String l : lines) {
-            ctx.text(this.font, Component.literal(l), tx + 6, ly, 0xFFD0D0DA, false);
+            ctx.drawText(this.textRenderer, Text.literal(l), tx + 6, ly, 0xFFD0D0DA, false);
             ly += 10;
         }
     }
 
-    private void drawSwitch(GuiGraphicsExtractor ctx, int x, int y, float on, int accent) {
+    private void drawSwitch(DrawContext ctx, int x, int y, float on, int accent) {
         roundRect(ctx, x, y, 22, 11, mix(0xFF43434F, accent, on));
         int kx = x + 2 + (int) (on * 10f);
         ctx.fill(kx, y + 2, kx + 8, y + 9, 0xFFFFFFFF);
     }
 
-    private void drawFooter(GuiGraphicsExtractor ctx, int x, int y, int w) {
+    private void drawFooter(DrawContext ctx, int x, int y, int w) {
         ctx.fill(x, y, x + w, y + FOOTER_H, fade(C_SIDEBAR, openAnim * opacity()));
         ctx.fill(x, y, x + w, y + 1, fade(C_LINE, openAnim));
 
@@ -904,15 +905,15 @@ public class ClickGui extends Screen {
             ctx.fill(gx + 8 - o, gy + 8, gx + 10 - o, gy + 10, gc);
             ctx.fill(gx + 8, gy + 8 - o, gx + 10, gy + 10 - o, gc);
         }
-        ctx.text(this.font,
-                Component.literal("Click to expand   ·   Toggle on the right   ·   ESC to close"),
+        ctx.drawText(this.textRenderer,
+                Text.literal("Click to expand   ·   Toggle on the right   ·   ESC to close"),
                 x + PAD, y + 5, fade(0xFF74747F, openAnim), false);
     }
 
     // ---------------------------------------------------------------- Eingabe
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
 
         int button = click.button();
@@ -954,36 +955,36 @@ public class ClickGui extends Screen {
                 case SECTION:
                     // Skin-Garderobe hat einen eigenen Bildschirm.
                     if ("openSkins".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new SkinScreen(this));
+                        MinecraftClient.getInstance().setScreen(new SkinScreen(this));
                         break;
                     }
                     if ("openMacros".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new MacroScreen(this));
+                        MinecraftClient.getInstance().setScreen(new MacroScreen(this));
                         break;
                     }
                     if ("openKeys".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new KeyListScreen(this));
+                        MinecraftClient.getInstance().setScreen(new KeyListScreen(this));
                         break;
                     }
                     if ("openCommunity".equals(hit.extra)) {
-                        Minecraft.getInstance().setScreen(new CommunityScreen(this));
+                        MinecraftClient.getInstance().setScreen(new CommunityScreen(this));
                         break;
                     }
                     section = (Section) hit.extra;
                     favView = false;
                     scrollTarget = 0f;
                     scroll = 0f;
-                    if (search != null) search.setValue("");
+                    if (search != null) search.setText("");
                     break;
                 case WP_MANAGE:
-                    Minecraft.getInstance().setScreen(new WaypointScreen(this));
+                    MinecraftClient.getInstance().setScreen(new WaypointScreen(this));
                     break;
                 case FAVCAT:
                     favView = true;
                     section = Section.MODULE;
                     scrollTarget = 0f;
                     scroll = 0f;
-                    if (search != null) search.setValue("");
+                    if (search != null) search.setText("");
                     break;
                 case STAR:
                     GuiState.toggleFavorite(hit.module.getName());
@@ -991,7 +992,7 @@ public class ClickGui extends Screen {
                     if (favView && !GuiState.hasFavorites()) favView = false;
                     break;
                 case THEME:
-                    Minecraft.getInstance().setScreen(new ThemeScreen(this));
+                    MinecraftClient.getInstance().setScreen(new ThemeScreen(this));
                     break;
                 case PRESET: {
                     // Wechselt das Preset: sichert den aktuellen Stand und laedt
@@ -1015,7 +1016,7 @@ public class ClickGui extends Screen {
                     selected = (Module.Category) hit.extra;
                     scrollTarget = 0f;
                     scroll = 0f;
-                    if (search != null) search.setValue("");
+                    if (search != null) search.setText("");
                     break;
                 case TOGGLE:
                     hit.module.toggle();
@@ -1028,22 +1029,22 @@ public class ClickGui extends Screen {
                     }
                     break;
                 case SUB_ESP:
-                    Minecraft.getInstance().setScreen(new EspScreen(this));
+                    MinecraftClient.getInstance().setScreen(new EspScreen(this));
                     break;
                 case SUB_BLOCK:
-                    Minecraft.getInstance().setScreen(new BlockEspScreen(this));
+                    MinecraftClient.getInstance().setScreen(new BlockEspScreen(this));
                     break;
                 case SUB_ANTI:
-                    Minecraft.getInstance().setScreen(new AntiRenderScreen(this));
+                    MinecraftClient.getInstance().setScreen(new AntiRenderScreen(this));
                     break;
                 case SUB_NORENDER:
-                    Minecraft.getInstance().setScreen(new NoRenderBlocksScreen(this));
+                    MinecraftClient.getInstance().setScreen(new NoRenderBlocksScreen(this));
                     break;
                 case SUB_COUNTER:
-                    Minecraft.getInstance().setScreen(new ItemCounterScreen(this));
+                    MinecraftClient.getInstance().setScreen(new ItemCounterScreen(this));
                     break;
                 case SUB_WAYPOINT:
-                    Minecraft.getInstance().setScreen(new WaypointScreen(this));
+                    MinecraftClient.getInstance().setScreen(new WaypointScreen(this));
                     break;
                 case S_BOOL:
                     handleBool(hit.module, (BooleanSetting) hit.setting);
@@ -1075,7 +1076,7 @@ public class ClickGui extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent click, double dx, double dy) {
+    public boolean mouseDragged(net.minecraft.client.gui.Click click, double dx, double dy) {
         if (resizingWindow) {
             // Neue Groesse aus der Mausbewegung -- die Grenzen setzt
             // windowWidth()/windowHeight() selbst.
@@ -1100,7 +1101,7 @@ public class ClickGui extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent click) {
+    public boolean mouseReleased(net.minecraft.client.gui.Click click) {
         if (movingWindow || resizingWindow) {
             // Position und Groesse gleich sichern.
             com.vortex.client.core.ConfigManager.save();
@@ -1147,11 +1148,11 @@ public class ClickGui extends Screen {
     private void openColor(Module m, ColorSetting c) {
         if (m != null && m instanceof com.vortex.client.module.modules.GlobalHudColorModule ghc
                 && c == ghc.color) {
-            Minecraft.getInstance()
+            MinecraftClient.getInstance()
                     .setScreen(new ColorPickerScreen(this, c, ghc::applyToAll));
             return;
         }
-        Minecraft.getInstance().setScreen(new ColorPickerScreen(this, c));
+        MinecraftClient.getInstance().setScreen(new ColorPickerScreen(this, c));
     }
 
     /**
@@ -1198,7 +1199,7 @@ public class ClickGui extends Screen {
 
     /** Aktuell sichtbare Module: Suchtreffer, sonst die gewaehlte Kategorie. */
     private List<Module> visibleModules() {
-        String q = (search == null) ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
+        String q = (search == null) ? "" : search.getText().trim().toLowerCase(Locale.ROOT);
         List<Module> out = new ArrayList<>();
         if (!q.isEmpty()) {
             for (Module m : ModuleManager.INSTANCE.getModules()) {
@@ -1268,7 +1269,7 @@ public class ClickGui extends Screen {
      * Built from horizontal strips, the same way the waypoint markers are: only
      * the two edge pieces of each row are filled, so the middle stays open.
      */
-    private static void drawRingMark(GuiGraphicsExtractor ctx, int cx, int cy, int r, int color) {
+    private static void drawRingMark(DrawContext ctx, int cx, int cy, int r, int color) {
         int inner = Math.max(1, r - 2);
         for (int dy = -r; dy <= r; dy++) {
             int outerHalf = rowHalf(dy, r);
@@ -1329,7 +1330,7 @@ public class ClickGui extends Screen {
     }
 
     /** Rechteck mit leicht abgerundet wirkenden Ecken. */
-    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -1397,7 +1398,7 @@ public class ClickGui extends Screen {
         KeySetting listening = pvpclient$listeningSetting();
         if (listening == null) return;
 
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
 
         // Escape CLEARS the binding instead of just cancelling.
         //
@@ -1405,7 +1406,7 @@ public class ClickGui extends Screen {
         // to get rid of it again, only to swap it for another one. Escape is
         // the obvious "I want none of it" key, and it can never be a sensible
         // binding itself, since it closes the menu.
-        if (com.mojang.blaze3d.platform.InputConstants.isKeyDown(
+        if (net.minecraft.client.util.InputUtil.isKeyPressed(
                 mc.getWindow(), org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE)) {
             listening.setKeyCode(org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
             listening.setListening(false);
@@ -1414,7 +1415,7 @@ public class ClickGui extends Screen {
         }
         for (int code = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
              code <= org.lwjgl.glfw.GLFW.GLFW_KEY_LAST; code++) {
-            if (com.mojang.blaze3d.platform.InputConstants.isKeyDown(mc.getWindow(), code)) {
+            if (net.minecraft.client.util.InputUtil.isKeyPressed(mc.getWindow(), code)) {
                 listening.setKeyCode(code);
                 listening.setListening(false);
                 com.vortex.client.core.ConfigManager.save();
@@ -1424,7 +1425,7 @@ public class ClickGui extends Screen {
     }
 
     @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 

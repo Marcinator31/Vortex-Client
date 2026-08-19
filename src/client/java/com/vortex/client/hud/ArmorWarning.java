@@ -3,11 +3,11 @@ package com.vortex.client.hud;
 import com.vortex.client.core.Errors;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ArmorWarningModule;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 
 /**
  * Watches armour durability and says something before a piece goes.
@@ -33,7 +33,7 @@ public final class ArmorWarning {
     private static long checked = 0L;
 
     /** Works out which pieces are running low. */
-    private static void rebuild(Minecraft client, int warnAt) {
+    private static void rebuild(MinecraftClient client, int warnAt) {
         LOW.clear();
         if (client.player == null) return;
 
@@ -44,13 +44,13 @@ public final class ArmorWarning {
         String[] names = { "Helmet", "Chestplate", "Leggings", "Boots" };
 
         for (int i = 0; i < slots.length; i++) {
-            int p = percent(client.player.getItemBySlot(slots[i]));
+            int p = percent(client.player.getEquippedStack(slots[i]));
             if (p >= 0 && p <= warnAt) LOW.add(new Piece(names[i], p));
         }
 
         var mod = ModuleManager.INSTANCE.get(ArmorWarningModule.class);
         if (mod != null && mod.includeHand.get()) {
-            int p = percent(client.player.getMainHandItem());
+            int p = percent(client.player.getMainHandStack());
             if (p >= 0 && p <= warnAt) LOW.add(new Piece("Held item", p));
         }
     }
@@ -58,14 +58,14 @@ public final class ArmorWarning {
     /** Percentage of durability left, or -1 for things that do not wear. */
     private static int percent(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return -1;
-        if (!stack.isDamageableItem()) return -1;
+        if (!stack.isDamageable()) return -1;
         int max = stack.getMaxDamage();
         if (max <= 0) return -1;
-        int left = max - stack.getDamageValue();
+        int left = max - stack.getDamage();
         return (int) Math.round(left * 100.0 / max);
     }
 
-    public static void render(GuiGraphicsExtractor ctx, Minecraft client) {
+    public static void render(DrawContext ctx, MinecraftClient client) {
         try {
             ArmorWarningModule mod = ModuleManager.INSTANCE.get(ArmorWarningModule.class);
             if (mod == null || !mod.isEnabled()) return;
@@ -112,7 +112,7 @@ public final class ArmorWarning {
                 }
 
                 String text = p.name() + ": " + p.pct() + "%";
-                ctx.text(client.font, Component.literal(text),
+                ctx.drawTextWithShadow(client.textRenderer, Text.literal(text),
                         x, y + line * 10, color);
                 line++;
 
@@ -127,12 +127,12 @@ public final class ArmorWarning {
     }
 
     /** A short note, once per piece. */
-    private static void ping(Minecraft client, boolean critical) {
+    private static void ping(MinecraftClient client, boolean critical) {
         try {
             if (client.player == null) return;
             client.player.playSound(
-                    critical ? net.minecraft.sounds.SoundEvents.ANVIL_LAND
-                             : net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(),
+                    critical ? net.minecraft.sound.SoundEvents.BLOCK_ANVIL_LAND
+                             : net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(),
                     0.5f, critical ? 0.8f : 1.6f);
         } catch (Throwable pvpErr) {
             Errors.report("ArmorWarning.sound", pvpErr);

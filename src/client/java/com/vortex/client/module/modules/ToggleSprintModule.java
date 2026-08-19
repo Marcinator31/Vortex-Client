@@ -2,8 +2,8 @@ package com.vortex.client.module.modules;
 
 import com.vortex.client.module.Module;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 
 /**
  * Toggle-Sprint: dauerhaftes Sprinten, ohne die Taste zu halten.
@@ -26,9 +26,9 @@ public class ToggleSprintModule extends Module {
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
     }
 
-    private void onTick(Minecraft client) {
+    private void onTick(MinecraftClient client) {
         if (!isEnabled()) return;
-        LocalPlayer player = client.player;
+        ClientPlayerEntity player = client.player;
         if (player == null) return;
 
         // Einfach und robust: immer auf sprintend setzen, solange das Modul

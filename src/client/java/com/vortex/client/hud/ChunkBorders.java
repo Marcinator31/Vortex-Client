@@ -1,13 +1,12 @@
 package com.vortex.client.hud;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ChunkBordersModule;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.minecraft.world.phys.Vec3;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Zeichnet die Kanten des Chunks, in dem man steht (auf Wunsch auch der
@@ -23,25 +22,25 @@ public final class ChunkBorders {
     private ChunkBorders() {}
 
     public static void register() {
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             long pvpT0 = System.nanoTime();
             try {
             ChunkBordersModule mod =
                     ModuleManager.INSTANCE.get(ChunkBordersModule.class);
             if (mod == null || !mod.isEnabled()) return;
 
-            Minecraft client = Minecraft.getInstance();
-            if (client.player == null || client.level == null) return;
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player == null || client.world == null) return;
 
-            PoseStack matrices = context.poseStack();
-            var consumers = context.bufferSource();
+            MatrixStack matrices = context.matrices();
+            var consumers = context.consumers();
             if (matrices == null || consumers == null) return;
 
             try {
-                float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-                Vec3 cam = EspRender.cameraOffset(client, tickDelta);
+                float tickDelta = client.getRenderTickCounter().getTickProgress(false);
+                Vec3d cam = EspRender.cameraOffset(client, tickDelta);
                 VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
-                org.joml.Matrix4f mat = matrices.last().pose();
+                org.joml.Matrix4f mat = matrices.peek().getPositionMatrix();
 
                 int color = mod.color.get();
                 if ((color >>> 24) == 0) color |= 0xFF000000;
@@ -74,7 +73,7 @@ public final class ChunkBorders {
     }
 
     /** Kanten eines einzelnen Chunks: vier Senkrechte + Rahmen oben und unten. */
-    private static void drawChunk(org.joml.Matrix4f mat, VertexConsumer lines, Vec3 cam,
+    private static void drawChunk(org.joml.Matrix4f mat, VertexConsumer lines, Vec3d cam,
                                   int x0, int z0, double yLow, double yHigh,
                                   int color, float lw) {
         double x1 = x0 + 16.0;
@@ -95,11 +94,11 @@ public final class ChunkBorders {
         }
     }
 
-    private static void line(org.joml.Matrix4f mat, VertexConsumer lines, Vec3 cam,
+    private static void line(org.joml.Matrix4f mat, VertexConsumer lines, Vec3d cam,
                              double x1, double y1, double z1,
                              double x2, double y2, double z2,
                              int color, float lw) {
         EspRender.drawTracer(mat, lines,
-                new Vec3(x1, y1, z1), new Vec3(x2, y2, z2), cam, color, lw);
+                new Vec3d(x1, y1, z1), new Vec3d(x2, y2, z2), cam, color, lw);
     }
 }

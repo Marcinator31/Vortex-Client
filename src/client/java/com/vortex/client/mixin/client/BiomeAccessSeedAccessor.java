@@ -1,6 +1,6 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.biome.source.BiomeAccess;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -20,9 +20,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  * The field is private, hence this accessor. Nothing is modified; it is read
  * only, and the value is one the client already holds.
  */
-@Mixin(BiomeManager.class)
+@Mixin(BiomeAccess.class)
 public interface BiomeAccessSeedAccessor {
 
-    @Accessor("biomeZoomSeed")
+    @Accessor("field_20641")
     long vortex$getSeed();
 }

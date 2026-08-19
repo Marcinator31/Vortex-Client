@@ -1,11 +1,12 @@
 package com.vortex.client.util;
 
+import net.minecraft.client.MinecraftClient;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import net.minecraft.client.Minecraft;
 
 /**
  * Startet das Spiel neu: baut die Kommandozeile des laufenden Java-Prozesses
@@ -44,8 +45,8 @@ public final class GameRestarter {
 
         // Erst nach erfolgreichem Start herunterfahren (scheduleStop speichert
         // Optionen und schliesst sauber).
-        Minecraft client = Minecraft.getInstance();
-        if (client != null) client.stop();
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client != null) client.scheduleStop();
     }
 
     /** Baut die Kommandozeile des laufenden Prozesses nach. */

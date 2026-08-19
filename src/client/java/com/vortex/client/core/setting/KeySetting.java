@@ -1,7 +1,6 @@
 package com.vortex.client.core.setting;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.util.InputUtil;
 
 /**
  * Eine Tasten-Einstellung: speichert einen GLFW-Keycode. Im GUI klickt man
@@ -41,8 +40,8 @@ public class KeySetting extends Setting {
         // showing a question mark that leaves the reader guessing.
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) return "Not bound";
         try {
-            return InputConstants.Type.KEYSYM.getOrCreate(keyCode)
-                    .getDisplayName().getString().toUpperCase();
+            return InputUtil.Type.KEYSYM.createFromCode(keyCode)
+                    .getLocalizedText().getString().toUpperCase();
         } catch (Throwable t) {
             return "Not bound";
         }

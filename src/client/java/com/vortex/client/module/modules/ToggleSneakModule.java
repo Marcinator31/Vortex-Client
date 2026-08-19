@@ -1,10 +1,9 @@
 package com.vortex.client.module.modules;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.vortex.client.module.Module;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.InputUtil;
 
 /**
  * Keeps you sneaking without holding the key.
@@ -21,20 +20,20 @@ public class ToggleSneakModule extends Module {
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
     }
 
-    private void onTick(Minecraft client) {
+    private void onTick(MinecraftClient client) {
         try {
             if (client.player == null) return;
 
             // While a screen is open the key must be released, otherwise you
             // stay stuck in a crouch inside your inventory.
-            boolean want = isEnabled() && client.screen == null;
+            boolean want = isEnabled() && client.currentScreen == null;
 
-            var binding = client.options.keyShift;
+            var binding = client.options.sneakKey;
             if (binding == null) return;
 
-            net.minecraft.client.KeyMapping.set(
-                    InputConstants.getKey(binding.saveString()),
-                    want || binding.isDown());
+            net.minecraft.client.option.KeyBinding.setKeyPressed(
+                    InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey()),
+                    want || binding.isPressed());
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("ToggleSneak", pvpErr);
         }
@@ -44,11 +43,11 @@ public class ToggleSneakModule extends Module {
     protected void onDisable() {
         // Let go at once, so you are not left crouching after switching off.
         try {
-            var client = Minecraft.getInstance();
-            var binding = client.options.keyShift;
+            var client = MinecraftClient.getInstance();
+            var binding = client.options.sneakKey;
             if (binding != null) {
-                net.minecraft.client.KeyMapping.set(
-                        InputConstants.getKey(binding.saveString()),
+                net.minecraft.client.option.KeyBinding.setKeyPressed(
+                        InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey()),
                         false);
             }
         } catch (Throwable pvpErr) {

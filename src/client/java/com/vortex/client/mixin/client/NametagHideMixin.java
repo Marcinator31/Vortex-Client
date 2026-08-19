@@ -1,6 +1,6 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.render.entity.EntityRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,12 +16,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityRenderer.class)
 public abstract class NametagHideMixin {
 
-    @Inject(method = "renderNameTag", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "method_3926", at = @At("HEAD"), cancellable = true, require = 0)
     private void vortex$hideVanillaNametag(
-            net.minecraft.client.renderer.entity.state.EntityRenderState state,
-            com.mojang.blaze3d.vertex.PoseStack matrices,
-            net.minecraft.client.renderer.SubmitNodeCollector queue,
-            net.minecraft.client.renderer.state.level.CameraRenderState camState,
+            net.minecraft.client.render.entity.state.EntityRenderState state,
+            net.minecraft.client.util.math.MatrixStack matrices,
+            net.minecraft.client.render.command.OrderedRenderCommandQueue queue,
+            net.minecraft.client.render.state.CameraRenderState camState,
             CallbackInfo ci) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
@@ -29,7 +29,7 @@ public abstract class NametagHideMixin {
             if (mod == null || !mod.isEnabled()) return;
 
             // Only for players -- our own tag covers those, and only those.
-            if (state instanceof net.minecraft.client.renderer.entity.state.AvatarRenderState) {
+            if (state instanceof net.minecraft.client.render.entity.state.PlayerEntityRenderState) {
                 ci.cancel();
             }
         } catch (Throwable pvpErr) {

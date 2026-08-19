@@ -2,9 +2,10 @@ package com.vortex.client.module.modules;
 
 import com.vortex.client.core.setting.ColorSetting;
 import com.vortex.client.module.Module;
+import net.minecraft.util.Identifier;
+
 import java.util.HashSet;
 import java.util.Set;
-import net.minecraft.resources.Identifier;
 
 /**
  * ESP: laesst ausgewaehlte Mobs mit einer leuchtenden Outline durch Waende

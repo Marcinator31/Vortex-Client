@@ -60,13 +60,22 @@ public class NoRenderBlocksModule extends Module {
     }
 
     /**
-     * In 26.x dürfen Chunkdaten nicht mehr direkt über resetLevelRenderData()
-     * zurückgesetzt werden. Zwischen Reset und dem nächsten Aufbau ist die
-     * ViewArea null, wodurch der Renderthread abstürzen kann. Sichtbare Chunks
-     * werden daher über den regulären Vanilla-Refresh erneuert.
+     * Asks the game to rebuild the visible chunks.
+     *
+     * Goes through the same accessor Potato Mode uses, because the renderer
+     * field is not public. If it fails the change simply shows up a little
+     * later, when the chunks are rebuilt for other reasons.
      */
     public static void rebuildChunks() {
-        // Kein direkter Rendererreset; der reguläre Chunk-Refresh ist sicher.
+        try {
+            var client = net.minecraft.client.MinecraftClient.getInstance();
+            if (client == null || client.world == null) return;
+            var acc = (com.vortex.client.mixin.client.MinecraftClientAccessor) client;
+            var wr = acc.pvpclient$getWorldRenderer();
+            if (wr != null) wr.reload();
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("NoRenderBlocks.rebuild", pvpErr);
+        }
     }
 
     // ---- persistence ----

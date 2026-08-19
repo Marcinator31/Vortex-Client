@@ -2,11 +2,12 @@ package com.vortex.client.hud;
 
 import com.vortex.client.core.Errors;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+
 import java.net.URI;
 
 /**
@@ -41,7 +42,7 @@ public final class PerformanceHint {
     private PerformanceHint() {}
 
     /** Called after joining a world. */
-    public static void maybeShow(Minecraft client) {
+    public static void maybeShow(MinecraftClient client) {
         try {
             if (shown) return;
             if (client == null || client.player == null) return;
@@ -61,30 +62,30 @@ public final class PerformanceHint {
             }
 
             shown = true;
-            client.player.sendSystemMessage(Component.literal("§b[Vortex] §7For more frames:"));
+            client.player.sendMessage(Text.literal("§b[Vortex] §7For more frames:"), false);
 
             if (!sodium) {
-                client.player.sendSystemMessage(link("Sodium",
-                        "rewrites the rendering engine — the big one", SODIUM_URL));
+                client.player.sendMessage(link("Sodium",
+                        "rewrites the rendering engine — the big one", SODIUM_URL), false);
             }
             if (!lithium) {
-                client.player.sendSystemMessage(link("Lithium",
-                        "speeds up the game logic", LITHIUM_URL));
+                client.player.sendMessage(link("Lithium",
+                        "speeds up the game logic", LITHIUM_URL), false);
             }
-            client.player.sendSystemMessage(
-                    Component.literal("§8Click a name to open it. Turn this off in Potato Mode."));
+            client.player.sendMessage(
+                    Text.literal("§8Click a name to open it. Turn this off in Potato Mode."), false);
         } catch (Throwable pvpErr) {
             Errors.report("PerformanceHint", pvpErr);
         }
     }
 
     /** A clickable line. */
-    private static MutableComponent link(String name, String what, String url) {
-        MutableComponent text = Component.literal("  §b" + name + " §7- " + what);
+    private static MutableText link(String name, String what, String url) {
+        MutableText text = Text.literal("  §b" + name + " §7- " + what);
         try {
             return text.setStyle(Style.EMPTY
                     .withClickEvent(new ClickEvent.OpenUrl(URI.create(url)))
-                    .withUnderlined(Boolean.TRUE));
+                    .withUnderline(Boolean.TRUE));
         } catch (Throwable pvpErr) {
             // Without the link the line still says what to look for.
             Errors.report("PerformanceHint.link", pvpErr);

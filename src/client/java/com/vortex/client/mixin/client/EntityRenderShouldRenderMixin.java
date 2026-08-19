@@ -1,9 +1,9 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.freecam.FreeCamera;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.client.render.Frustum;
+import net.minecraft.client.render.entity.EntityRenderManager;
+import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Verhindert, dass die Freecam-Kamera-Entity gerendert wird (kein Koerper, keine
  * Hitbox ueber dem Freecam-Kopf).
  *
- * WICHTIG -- richtige Klasse: In 1.21.11 entscheidet EntityRenderDispatcher
+ * WICHTIG -- richtige Klasse: In 1.21.11 entscheidet EntityRenderManager
  * (intermediary class_898, frueher "EntityRenderDispatcher") per shouldRender,
  * ob eine Entity gezeichnet wird. (Ein frueherer Versuch zielte auf
  * EntityRenderer.shouldRender und griff nicht.) Fuer die FreeCamera geben wir
@@ -21,10 +21,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * shouldRender = method_3950 (Entity, Frustum, double, double, double) -> boolean.
  */
-@Mixin(EntityRenderDispatcher.class)
+@Mixin(EntityRenderManager.class)
 public abstract class EntityRenderShouldRenderMixin {
 
-    @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "method_3950", at = @At("HEAD"), cancellable = true)
     private void pvpclient$hideFreeCamera(Entity entity, Frustum frustum,
                                           double x, double y, double z,
                                           CallbackInfoReturnable<Boolean> cir) {
@@ -58,9 +58,9 @@ public abstract class EntityRenderShouldRenderMixin {
             double maxDist = ar.maxDistance.get();
             if (maxDist > 0) {
                 boolean isPlayer =
-                        entity instanceof net.minecraft.world.entity.player.Player;
+                        entity instanceof net.minecraft.entity.player.PlayerEntity;
                 if (!(isPlayer && ar.keepPlayers.get())) {
-                    double distSq = entity.distanceToSqr(x, y, z);
+                    double distSq = entity.squaredDistanceTo(x, y, z);
                     if (distSq > maxDist * maxDist) {
                         cir.setReturnValue(false);
                     }
@@ -79,7 +79,7 @@ public abstract class EntityRenderShouldRenderMixin {
 
     private static boolean pvpclient$isTypeHidden(
             com.vortex.client.module.modules.AntiRenderModule ar,
-            net.minecraft.world.entity.EntityType<?> type) {
+            net.minecraft.entity.EntityType<?> type) {
         if (type == null) return false;
         int v = ar.getVersion();
         if (v != pvpclient$cacheVersion) {
@@ -91,8 +91,8 @@ public abstract class EntityRenderShouldRenderMixin {
         // Nur beim ersten Mal je Typ: ID aufloesen (teuer) und merken.
         boolean hidden = false;
         try {
-            net.minecraft.resources.Identifier id =
-                    net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type);
+            net.minecraft.util.Identifier id =
+                    net.minecraft.registry.Registries.ENTITY_TYPE.getId(type);
             hidden = ar.isHidden(id);
         } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("EntityRenderShouldRenderMixin", pvpErr);

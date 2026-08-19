@@ -4,98 +4,91 @@ import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ClearLavaModule;
 import com.vortex.client.module.modules.ClearWaterModule;
 import com.vortex.client.module.modules.NoFogModule;
-import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.fog.FogData;
-import net.minecraft.client.renderer.fog.FogRenderer;
-import net.minecraft.world.level.material.FogType;
+import net.minecraft.block.enums.CameraSubmersionType;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.fog.FogData;
+import net.minecraft.client.render.fog.FogRenderer;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 /**
- * Entfernt atmosphaerischen Nebel sowie Nebel in Wasser und Lava.
+ * Entfernt verschiedene Nebel-Arten (No Fog / Klarsicht Wasser / Klarsicht Lava).
  *
- * Minecraft 26.2 erzeugt die Nebelparameter in {@code FogRenderer.setupFog}
- * als {@link FogData}. Der Hook erweitert nach der Berechnung die Distanzen
- * des Rueckgabeobjekts, damit die regulaere Fog-Buffer-Aktualisierung die
- * gewuenschten Werte uebernimmt.
+ * Ansatz uebernommen von BactroMod (das fuer 1.21.11 funktioniert): Wir haengen
+ * uns in FogRenderer.applyFog ein, und zwar GENAU an die Stelle, nachdem das
+ * Feld renderDistanceEnd der FogData gesetzt wurde (@At FIELD, shift=AFTER).
+ * Per Local-Capture holen wir die lokale FogData und den CameraSubmersionType
+ * heraus und schieben die Nebel-Distanzen auf Float.MAX_VALUE -> kein Nebel.
+ *
+ * Welcher Nebel gerade gilt, bestimmen wir ueber den CameraSubmersionType
+ * (LAVA / WATER) bzw. behandeln alles andere als den normalen (atmosphaerischen)
+ * Nebel.
+ *
+ * Die FogData-Felder werden ueber den FogDataAccessor gesetzt.
  */
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer {
 
-    private static boolean pvpclient$gemeldet = false;
-
-    @Inject(method = "setupFog", at = @At("RETURN"))
+    @Inject(
+        method = "applyFog(Lnet/minecraft/client/render/Camera;ILnet/minecraft/client/render/RenderTickCounter;FLnet/minecraft/client/world/ClientWorld;)Lorg/joml/Vector4f;",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/client/render/fog/FogData;renderDistanceEnd:F",
+            shift = At.Shift.AFTER
+        ),
+        locals = LocalCapture.CAPTURE_FAILSOFT
+    )
     private void pvpclient$removeFog(Camera camera, int renderDistance,
-                                     DeltaTracker tickCounter, float skyDarkness,
-                                     ClientLevel world,
-                                     CallbackInfoReturnable<FogData> cir) {
-        FogData data = cir.getReturnValue();
-        if (data == null) {
-            // Einmalige Meldung: liefert setupFog ueberhaupt ein Objekt?
-            // Ohne das laesst sich nicht unterscheiden, ob der Hook nicht
-            // greift oder ob die Werte nichts bewirken.
-            if (!pvpclient$gemeldet) {
-                pvpclient$gemeldet = true;
-                com.vortex.client.core.Errors.note("MixinFogRenderer",
-                        "setupFog lieferte null -- Nebel kann nicht geaendert werden");
-            }
-            return;
-        }
+                                     RenderTickCounter tickCounter, float skyDarkness,
+                                     ClientWorld world,
+                                     CallbackInfoReturnable<Vector4f> cir,
+                                     float f, Vector4f color, float f2,
+                                     CameraSubmersionType submersion, Entity entity,
+                                     FogData data) {
+        if (data == null) return;
 
-        FogType fogType = camera.getFluidInCamera();
         boolean remove;
-        if (fogType == FogType.LAVA) {
+        if (submersion == CameraSubmersionType.LAVA) {
             remove = isEnabled(ClearLavaModule.class);
-        } else if (fogType == FogType.WATER) {
+        } else if (submersion == CameraSubmersionType.WATER) {
             remove = isEnabled(ClearWaterModule.class);
         } else {
             remove = isEnabled(NoFogModule.class);
         }
         if (!remove) return;
 
-        // Einmal pro Sitzung melden, dass der Hook wirklich greift. Damit
-        // ist im Fehlerfall sofort klar, ob es am Mixin oder an den Werten
-        // liegt -- statt beides gleichzeitig zu vermuten.
-        if (!pvpclient$gemeldet) {
-            pvpclient$gemeldet = true;
-            com.vortex.client.core.Errors.note("MixinFogRenderer",
-                    "Nebel wird entfernt (Typ " + fogType + ", vorher "
-                            + data.environmentalStart + " bis " + data.environmentalEnd + ")");
-        }
-
         try {
-            // Start und Ende MUESSEN sich unterscheiden.
-            //
-            // Vorher stand hier zweimal Float.MAX_VALUE. Die Nebelstaerke
-            // ergibt sich aus (Entfernung - Start) / (Ende - Start) -- bei
-            // gleichen Werten wird durch null geteilt, und das Ergebnis ist
-            // keine Zahl. Je nach Grafikkarte bleibt der Nebel dann stehen
-            // oder das Bild wird milchig. Genau das war der Fehler.
-            //
-            // Ausserdem endliche Werte statt MAX_VALUE: damit bleibt Platz
-            // fuer die Rechnung, ohne ins Unendliche zu laufen.
-            float start = 1.0e7f;
-            float ende = 2.0e7f;
-            data.environmentalStart = start;
-            data.environmentalEnd = ende;
-            data.renderDistanceStart = start;
-            data.renderDistanceEnd = ende;
+            FogDataAccessor acc = (FogDataAccessor) (Object) data;
+            // Endliche Werte statt MAX_VALUE, und Start != Ende.
+            // Unendlich in einer Grafikkarten-Variable ist unsauber;
+            // gleiche Werte fuer Anfang und Ende erzeugen ausserdem
+            // eine Spanne von null in der Nebelrechnung.
+            float far = 1.0e7f;
+            float farEnde = 2.0e7f;
+            acc.pvpclient$setEnvironmentalStart(far);
+            acc.pvpclient$setEnvironmentalEnd(far);
+            acc.pvpclient$setRenderDistanceStart(far);
+            acc.pvpclient$setRenderDistanceEnd(far);
         } catch (Throwable pvpErr) {
-            com.vortex.client.core.Errors.report("MixinFogRenderer", pvpErr);
-        }
+                com.vortex.client.core.Errors.report("MixinFogRenderer", pvpErr);
+            }
     }
 
     private static boolean isEnabled(Class<? extends com.vortex.client.module.Module> type) {
         try {
-            com.vortex.client.module.Module module = ModuleManager.INSTANCE.get(type);
-            return module != null && module.isEnabled();
+            // Konstante Laufzeit statt Liste durchlaufen -- laeuft pro Frame.
+            com.vortex.client.module.Module m = ModuleManager.INSTANCE.get(type);
+            if (m != null) return m.isEnabled();
         } catch (Throwable pvpErr) {
-            com.vortex.client.core.Errors.report("MixinFogRenderer", pvpErr);
-            return false;
-        }
+                com.vortex.client.core.Errors.report("MixinFogRenderer", pvpErr);
+            }
+        return false;
     }
 }

@@ -3,12 +3,12 @@ package com.vortex.client.hud;
 import com.vortex.client.core.Errors;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ItemCounterModule;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 /**
  * Draws the item counters.
@@ -33,20 +33,20 @@ public final class ItemCounterRenderer {
      * Everything the draw loop needs, built once per 200 ms window instead of
      * per frame. Before this, EVERY FRAME did per counter: an Identifier.of
      * string parse plus a registry lookup plus a new ItemStack (firstIcon),
-     * and one or two Component.literal allocations -- for values that only change
+     * and one or two Text.literal allocations -- for values that only change
      * when the recount runs anyway. Plain class rather than a record so the
      * javalang session check keeps parsing this file.
      */
     private static final class Cached {
         final int n;
         final ItemStack icon;      // may be null
-        final Component numText;        // "42"
-        final Component nameText;       // "Pearls: 42"
+        final Text numText;        // "42"
+        final Text nameText;       // "Pearls: 42"
         Cached(int n, ItemStack icon, String name) {
             this.n = n;
             this.icon = icon;
-            this.numText = Component.literal(String.valueOf(n));
-            this.nameText = Component.literal(name + ": " + n);
+            this.numText = Text.literal(String.valueOf(n));
+            this.nameText = Text.literal(name + ": " + n);
         }
     }
 
@@ -56,23 +56,23 @@ public final class ItemCounterRenderer {
     private ItemCounterRenderer() {}
 
     /** How many of the chosen items are carried in total. */
-    public static int count(Minecraft client, ItemCounter counter) {
+    public static int count(MinecraftClient client, ItemCounter counter) {
         if (client.player == null || counter.items.isEmpty()) return 0;
         int total = 0;
         var inv = client.player.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            ItemStack stack = inv.getItem(i);
+        for (int i = 0; i < inv.size(); i++) {
+            ItemStack stack = inv.getStack(i);
             if (stack == null || stack.isEmpty()) continue;
-            Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            Identifier id = Registries.ITEM.getId(stack.getItem());
             if (id != null && counter.items.contains(id.toString())) {
                 total += stack.getCount();
             }
         }
         // The off hand sits outside the main inventory in some versions, so it
         // is added separately rather than assumed to be in there.
-        ItemStack off = client.player.getOffhandItem();
+        ItemStack off = client.player.getOffHandStack();
         if (off != null && !off.isEmpty()) {
-            Identifier id = BuiltInRegistries.ITEM.getKey(off.getItem());
+            Identifier id = Registries.ITEM.getId(off.getItem());
             if (id != null && counter.items.contains(id.toString())) {
                 total += off.getCount();
             }
@@ -80,7 +80,7 @@ public final class ItemCounterRenderer {
         return total;
     }
 
-    public static void render(GuiGraphicsExtractor ctx, Minecraft client) {
+    public static void render(DrawContext ctx, MinecraftClient client) {
         long pvpT0 = System.nanoTime();
         try {
             ItemCounterModule mod = ModuleManager.INSTANCE.get(ItemCounterModule.class);
@@ -88,7 +88,7 @@ public final class ItemCounterRenderer {
             if (client.player == null) return;
 
             // Recount a few times a second, then draw from that. The icon and
-            // the Component objects are rebuilt here too -- the 200 ms staleness
+            // the Text objects are rebuilt here too -- the 200 ms staleness
             // after editing a counter in the GUI is imperceptible.
             long now = System.currentTimeMillis();
             if (now - counted > 200) {
@@ -115,12 +115,12 @@ public final class ItemCounterRenderer {
 
                 switch (c.style.getIndex()) {
                     case 1:
-                        ctx.text(client.font,
+                        ctx.drawTextWithShadow(client.textRenderer,
                                 cd.numText, x, y, color);
                         break;
 
                     case 2: {
-                        ctx.text(client.font,
+                        ctx.drawTextWithShadow(client.textRenderer,
                                 cd.nameText, x, y, color);
                         break;
                     }
@@ -132,11 +132,11 @@ public final class ItemCounterRenderer {
                         // group it is without a row of pictures.
                         // Icon and texts come prebuilt from the cache.
                         if (cd.icon != null && !cd.icon.isEmpty()) {
-                            ctx.item(cd.icon, x, y - 4);
-                            ctx.text(client.font,
+                            ctx.drawItem(cd.icon, x, y - 4);
+                            ctx.drawTextWithShadow(client.textRenderer,
                                     cd.numText, x + 20, y, color);
                         } else {
-                            ctx.text(client.font,
+                            ctx.drawTextWithShadow(client.textRenderer,
                                     cd.numText, x, y, color);
                         }
                         break;
@@ -158,7 +158,7 @@ public final class ItemCounterRenderer {
     private static ItemStack firstIcon(ItemCounter c) {
         for (String id : c.items) {
             try {
-                var item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id));
+                var item = Registries.ITEM.get(Identifier.of(id));
                 if (item != null) return new ItemStack(item);
             } catch (Throwable ignored) {
                 // Unknown id -- try the next one.

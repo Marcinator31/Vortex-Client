@@ -14,10 +14,10 @@ import com.vortex.client.module.modules.PingModule;
 import com.vortex.client.module.modules.TotemCountModule;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 /**
  * Zeichnet die HUD-Overlays ueber die HudElementRegistry-API.
@@ -29,7 +29,7 @@ public final class HudRenderer {
     public static void register() {
         HudElementRegistry.attachElementAfter(
             VanillaHudElements.MISC_OVERLAYS,
-            Identifier.fromNamespaceAndPath(MOD_ID, "hud"),
+            Identifier.of(MOD_ID, "hud"),
             (context, tickCounter) -> onHudRender(context)
         );
 
@@ -37,7 +37,7 @@ public final class HudRenderer {
         // eigene Effekt-Anzeige links nicht doppelt ist. removeElement tut
         // nichts, falls der Identifier nicht existiert -> kein Crash-Risiko.
         try {
-            HudElementRegistry.removeElement(Identifier.withDefaultNamespace("status_effects"));
+            HudElementRegistry.removeElement(Identifier.ofVanilla("status_effects"));
         } catch (Throwable ignored) {
             // Falls der Name in dieser Version abweicht: ignorieren.
         }
@@ -48,7 +48,7 @@ public final class HudRenderer {
         return ModuleManager.INSTANCE.get(type);
     }
 
-    private static void onHudRender(GuiGraphicsExtractor context) {
+    private static void onHudRender(DrawContext context) {
         long pvpT0 = System.nanoTime();
         try {
             onHudRenderInner(context);
@@ -57,14 +57,14 @@ public final class HudRenderer {
         }
     }
 
-    private static void onHudRenderInner(GuiGraphicsExtractor context) {
-        Minecraft client = Minecraft.getInstance();
+    private static void onHudRenderInner(DrawContext context) {
+        MinecraftClient client = MinecraftClient.getInstance();
 
         // KEINE frühen return-Checks mehr. Vorher brach hier
         // 'if (client.player == null) return;' oder der Debug-Check die
         // Methode ab, BEVOR die HUDs gezeichnet wurden -- deshalb erschien
         // nur das (frühere) Diagnose-Rechteck, aber nie CPS/FPS.
-        if (client.font == null) return;
+        if (client.textRenderer == null) return;
 
         com.vortex.client.hud.WaypointHud.draw(context, client);
         drawKeystrokes(context, client);
@@ -94,7 +94,7 @@ public final class HudRenderer {
                     break;
             }
             pushScale(context, cps.x.getInt(), cps.y.getInt(), cps.scale.getFloat());
-            context.text(client.font, Component.literal(text),
+            context.drawTextWithShadow(client.textRenderer, Text.literal(text),
                     cps.x.getInt(), cps.y.getInt(), cps.color.get());
             popScale(context);
         }
@@ -102,9 +102,9 @@ public final class HudRenderer {
         // --- FPS ---
         FpsModule fps = (FpsModule) find(FpsModule.class);
         if (fps != null && fps.isEnabled()) {
-            String text = client.getFps() + " FPS";
+            String text = client.getCurrentFps() + " FPS";
             pushScale(context, fps.x.getInt(), fps.y.getInt(), fps.scale.getFloat());
-            context.text(client.font, Component.literal(text),
+            context.drawTextWithShadow(client.textRenderer, Text.literal(text),
                     fps.x.getInt(), fps.y.getInt(), fps.color.get());
             popScale(context);
         }
@@ -112,7 +112,7 @@ public final class HudRenderer {
         // --- Ping (aktuelle Latenz zum Server) ---
         PingModule ping = (PingModule) find(PingModule.class);
         if (ping != null && ping.isEnabled() && client.player != null
-                && client.getConnection() != null) {
+                && client.getNetworkHandler() != null) {
             int latency = 0;
             boolean own = false;
             if (ping.measure.get()) {
@@ -128,9 +128,9 @@ public final class HudRenderer {
             }
             if (!own) {
                 try {
-                    net.minecraft.client.multiplayer.PlayerInfo entry =
-                            client.getConnection()
-                            .getPlayerInfo(client.player.getUUID());
+                    net.minecraft.client.network.PlayerListEntry entry =
+                            client.getNetworkHandler()
+                            .getPlayerListEntry(client.player.getUuid());
                     if (entry != null) latency = entry.getLatency();
                 } catch (Throwable ignored) {
                 }
@@ -143,7 +143,7 @@ public final class HudRenderer {
             // ping goes unexplained for weeks.
             String text = own ? (latency + " ms") : (latency + " ms*");
             pushScale(context, ping.x.getInt(), ping.y.getInt(), ping.scale.getFloat());
-            context.text(client.font, Component.literal(text),
+            context.drawTextWithShadow(client.textRenderer, Text.literal(text),
                     ping.x.getInt(), ping.y.getInt(), ping.color.get());
             popScale(context);
         }
@@ -158,7 +158,7 @@ public final class HudRenderer {
 
             // Blickrichtung als Himmelsrichtung.
             String dir;
-            switch (client.player.getDirection()) {
+            switch (client.player.getHorizontalFacing()) {
                 case NORTH -> dir = "N";
                 case SOUTH -> dir = "S";
                 case EAST  -> dir = "O";
@@ -168,7 +168,7 @@ public final class HudRenderer {
 
             String text = "XYZ: " + px + " " + py + " " + pz + "  [" + dir + "]";
             pushScale(context, coords.x.getInt(), coords.y.getInt(), coords.scale.getFloat());
-            context.text(client.font, Component.literal(text),
+            context.drawTextWithShadow(client.textRenderer, Text.literal(text),
                     coords.x.getInt(), coords.y.getInt(), coords.color.get());
             popScale(context);
         }
@@ -180,22 +180,22 @@ public final class HudRenderer {
             int lineX = potions.x.getInt();
 
             pushScale(context, lineX, lineY, potions.scale.getFloat());
-            for (var effect : client.player.getActiveEffects()) {
+            for (var effect : client.player.getStatusEffects()) {
                 // Namen + Stufe vorbereiten (fuer Box-Breite).
-                String key = effect.getDescriptionId();
+                String key = effect.getTranslationKey();
                 String raw = key.substring(key.lastIndexOf('.') + 1);
                 String name = capitalize(raw.replace('_', ' '));
                 int amp = effect.getAmplifier();
                 if (amp > 0) {
                     name = name + " " + toRoman(amp + 1);
                 }
-                String time = net.minecraft.world.effect.MobEffectUtil
-                        .formatDuration(effect, 1.0f, 20.0f).getString();
+                String time = net.minecraft.entity.effect.StatusEffectUtil
+                        .getDurationText(effect, 1.0f, 20.0f).getString();
 
                 // Box-Breite: Icon (22) + breiterer der beiden Texte + Rand.
                 int textW = Math.max(
-                        client.font.width(name),
-                        client.font.width(time));
+                        client.textRenderer.getWidth(name),
+                        client.textRenderer.getWidth(time));
                 int boxW = 24 + textW + 6;
                 int boxH = 22;
 
@@ -204,21 +204,21 @@ public final class HudRenderer {
 
                 // 2) Vanilla-Icon links ueber den GUI-Sprite-Pfad
                 //    "mob_effect/<name>" (drawGuiTexture nimmt einen Identifier).
-                String effId = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
-                        .getKey(effect.getEffect().value()).getPath();
-                var spriteId = Identifier.withDefaultNamespace("mob_effect/" + effId);
+                String effId = net.minecraft.registry.Registries.STATUS_EFFECT
+                        .getId(effect.getEffectType().value()).getPath();
+                var spriteId = Identifier.ofVanilla("mob_effect/" + effId);
                 try {
-                    context.blitSprite(
-                        net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+                    context.drawGuiTexture(
+                        net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
                         spriteId, lineX + 2, lineY + 2, 18, 18);
                 } catch (Throwable ignored) {
-                    // Icon nicht ladbar -> nur Component/Box.
+                    // Icon nicht ladbar -> nur Text/Box.
                 }
 
                 // 3) Name oben, Restzeit darunter -- rechts neben dem Icon.
-                context.text(client.font, Component.literal(name),
+                context.drawTextWithShadow(client.textRenderer, Text.literal(name),
                         lineX + 24, lineY + 2, potions.color.get());
-                context.text(client.font, Component.literal(time),
+                context.drawTextWithShadow(client.textRenderer, Text.literal(time),
                         lineX + 24, lineY + 12, 0xFFAAAAAA);
 
                 lineY += boxH + 3; // naechste Box mit kleinem Abstand
@@ -245,20 +245,20 @@ public final class HudRenderer {
             var totemItem = TotemCountModule.totem();
             if (totemItem != null) {
                 if (totemIcon == null
-                        || !totemIcon.is(totemItem)) {
-                    totemIcon = new net.minecraft.world.item.ItemStack(totemItem);
+                        || !totemIcon.isOf(totemItem)) {
+                    totemIcon = new net.minecraft.item.ItemStack(totemItem);
                 }
-                context.item(totemIcon, tx, ty);
+                context.drawItem(totemIcon, tx, ty);
             }
 
             // Anzahl rechts neben dem Icon, vertikal mittig zum 16px-Icon.
-            // Component object rebuilt only when the count changes -- same idea as
+            // Text object rebuilt only when the count changes -- same idea as
             // the icon above it.
             if (count != lastTotemCount || totemCountText == null) {
                 lastTotemCount = count;
-                totemCountText = Component.literal("x" + count);
+                totemCountText = Text.literal("x" + count);
             }
-            context.text(client.font, totemCountText,
+            context.drawTextWithShadow(client.textRenderer, totemCountText,
                     tx + 20, ty + 4, totem.color.get());
 
             popScale(context);
@@ -278,7 +278,7 @@ public final class HudRenderer {
                 (com.vortex.client.module.modules.PlayerListEspModule)
                         find(com.vortex.client.module.modules.PlayerListEspModule.class);
         if (plist != null && plist.isEnabled() && client.player != null
-                && client.level != null) {
+                && client.world != null) {
             try {
                 // Spieler sammeln (ohne den eigenen) mit Distanz.
                 // Rebuilt a few times a second, not on every frame.
@@ -292,8 +292,8 @@ public final class HudRenderer {
                 if (nowMs - playerListBuilt > 200) {
                     playerListBuilt = nowMs;
                     playerLines.clear();
-                    for (net.minecraft.client.player.AbstractClientPlayer p
-                            : client.level.players()) {
+                    for (net.minecraft.client.network.AbstractClientPlayerEntity p
+                            : client.world.getPlayers()) {
                         if (p == client.player) continue;
                         int dist = (int) client.player.distanceTo(p);
                         playerLines.add(p.getName().getString() + "  " + dist + "m");
@@ -301,19 +301,19 @@ public final class HudRenderer {
                 }
                 java.util.List<String> lines = playerLines;
                 // Oben rechts anzeigen.
-                int screenW = client.getWindow().getGuiScaledWidth();
+                int screenW = client.getWindow().getScaledWidth();
                 int y = 2;
                 String header = "Spieler: " + lines.size();
-                int hw = client.font.width(header);
-                context.text(client.font, Component.literal(header),
+                int hw = client.textRenderer.getWidth(header);
+                context.drawTextWithShadow(client.textRenderer, Text.literal(header),
                         screenW - hw - 2, y, plist.getColor());
                 y += 11;
                 for (String line : lines) {
-                    int w = client.font.width(line);
-                    context.text(client.font, Component.literal(line),
+                    int w = client.textRenderer.getWidth(line);
+                    context.drawTextWithShadow(client.textRenderer, Text.literal(line),
                             screenW - w - 2, y, plist.getColor());
                     y += 10;
-                    if (y > client.getWindow().getGuiScaledHeight() - 10) break; // Schutz
+                    if (y > client.getWindow().getScaledHeight() - 10) break; // Schutz
                 }
             } catch (Throwable ignored) {
             }
@@ -326,7 +326,7 @@ public final class HudRenderer {
      * Ankerpunkt fix bleibt (das Element waechst/schrumpft also an seiner
      * Position statt zum Bildschirmrand zu wandern).
      *
-     * Nutzt den 2D-Matrixstack (Matrix3x2fStack) von GuiGraphicsExtractor.getMatrices(),
+     * Nutzt den 2D-Matrixstack (Matrix3x2fStack) von DrawContext.getMatrices(),
      * der in 1.21.11 fuer GUI-Transforms zustaendig ist.
      */
     /**
@@ -343,15 +343,15 @@ public final class HudRenderer {
      * closes, and nothing on screen tells you whether anything is being
      * captured -- or how to stop. The line says both.
      */
-    private static void drawRecordingHint(GuiGraphicsExtractor ctx, Minecraft client) {
+    private static void drawRecordingHint(DrawContext ctx, MinecraftClient client) {
         if (!com.vortex.client.macro.MacroManager.isRecording()) return;
         var macro = com.vortex.client.macro.MacroManager.recordingMacro();
         if (macro == null) return;
 
         String text = "\u25CF REC  " + macro.name + "  \u00B7  "
                 + macro.steps.size() + " steps  \u00B7  Right Shift \u2192 Macros \u2192 Stop";
-        int w = client.font.width(text);
-        int x = (client.getWindow().getGuiScaledWidth() - w) / 2;
+        int w = client.textRenderer.getWidth(text);
+        int x = (client.getWindow().getScaledWidth() - w) / 2;
         int y = 6;
 
         // Slow pulse, so the dot reads as "running" rather than as a stuck
@@ -360,19 +360,19 @@ public final class HudRenderer {
         int alpha = (int) (255 * pulse) << 24;
 
         ctx.fill(x - 6, y - 3, x + w + 6, y + 11, 0x90000000);
-        ctx.text(client.font, Component.literal(text),
+        ctx.drawTextWithShadow(client.textRenderer, Text.literal(text),
                 x, y, alpha | 0xFF5555);
     }
 
     /** Header of the totem popper list -- never changes, built once. */
-    private static final Component TOTEM_POPPER_TITLE = Component.literal("Totems");
+    private static final Text TOTEM_POPPER_TITLE = Text.literal("Totems");
 
-    private static void drawTotemPopper(GuiGraphicsExtractor ctx, Minecraft client) {
+    private static void drawTotemPopper(DrawContext ctx, MinecraftClient client) {
         TotemPopperModule mod = (TotemPopperModule) find(TotemPopperModule.class);
         if (mod == null || !mod.isEnabled()) return;
         // The overhead count and this list switch independently.
         if (!mod.showList.get()) return;
-        if (client.font == null) return;
+        if (client.textRenderer == null) return;
 
         var list = com.vortex.client.hud.TotemPops.top(mod.maxEntries.getInt());
         if (list.isEmpty()) return;
@@ -381,25 +381,25 @@ public final class HudRenderer {
         int by = mod.y.getInt();
         pushScale(ctx, bx, by, mod.scale.getFloat());
 
-        ctx.text(client.font, TOTEM_POPPER_TITLE,
+        ctx.drawTextWithShadow(client.textRenderer, TOTEM_POPPER_TITLE,
                 bx, by, mod.color.get());
         int ly = by + 10;
         for (var e : list) {
             // Frisch verbrauchte Totems fuer zwei Sekunden hervorheben.
             boolean fresh = mod.highlight.get() && e.since < 2000;
             int col = fresh ? mod.highlightColor.get() : mod.color.get();
-            ctx.text(client.font,
-                    Component.literal(e.name + ": " + e.count), bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer,
+                    Text.literal(e.name + ": " + e.count), bx, ly, col);
             ly += 10;
         }
         popScale(ctx);
     }
 
     /** Spielzeit, Tode, eigene Totems, hoechste Klickrate. */
-    private static void drawSessionStats(GuiGraphicsExtractor ctx, Minecraft client) {
+    private static void drawSessionStats(DrawContext ctx, MinecraftClient client) {
         SessionStatsModule mod = (SessionStatsModule) find(SessionStatsModule.class);
         if (mod == null || !mod.isEnabled()) return;
-        if (client.font == null) return;
+        if (client.textRenderer == null) return;
 
         int bx = mod.x.getInt();
         int by = mod.y.getInt();
@@ -410,41 +410,41 @@ public final class HudRenderer {
 
         // Rebuilt twice a second: playtime is the fastest-moving of the four
         // and only changes once a second -- four string concats plus four
-        // Component.literal per frame for that was pure allocation churn.
+        // Text.literal per frame for that was pure allocation churn.
         long nowMs = System.currentTimeMillis();
         if (nowMs - sessionTextsBuilt > 500 || sessionTime == null) {
             sessionTextsBuilt = nowMs;
-            sessionTime   = Component.literal("Time: " + com.vortex.client.hud.SessionStats.playtime());
-            sessionDeaths = Component.literal("Deaths: " + com.vortex.client.hud.SessionStats.getDeaths());
-            sessionTotems = Component.literal("Totems: " + com.vortex.client.hud.SessionStats.getOwnTotems());
-            sessionCps    = Component.literal("Max CPS: " + com.vortex.client.hud.SessionStats.getMaxCps());
+            sessionTime   = Text.literal("Time: " + com.vortex.client.hud.SessionStats.playtime());
+            sessionDeaths = Text.literal("Deaths: " + com.vortex.client.hud.SessionStats.getDeaths());
+            sessionTotems = Text.literal("Totems: " + com.vortex.client.hud.SessionStats.getOwnTotems());
+            sessionCps    = Text.literal("Max CPS: " + com.vortex.client.hud.SessionStats.getMaxCps());
         }
 
         if (mod.showTime.get()) {
-            ctx.text(client.font, sessionTime, bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionTime, bx, ly, col);
             ly += 10;
         }
         if (mod.showDeaths.get()) {
-            ctx.text(client.font, sessionDeaths, bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionDeaths, bx, ly, col);
             ly += 10;
         }
         if (mod.showTotems.get()) {
-            ctx.text(client.font, sessionTotems, bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionTotems, bx, ly, col);
             ly += 10;
         }
         if (mod.showMaxCps.get()) {
-            ctx.text(client.font, sessionCps, bx, ly, col);
+            ctx.drawTextWithShadow(client.textRenderer, sessionCps, bx, ly, col);
         }
         popScale(ctx);
     }
 
     private static long sessionTextsBuilt = 0L;
-    private static Component sessionTime, sessionDeaths, sessionTotems, sessionCps;
+    private static Text sessionTime, sessionDeaths, sessionTotems, sessionCps;
 
-    private static void drawKeystrokes(GuiGraphicsExtractor ctx, Minecraft client) {
+    private static void drawKeystrokes(DrawContext ctx, MinecraftClient client) {
         KeystrokesModule mod = (KeystrokesModule) find(KeystrokesModule.class);
         if (mod == null || !mod.isEnabled()) return;
-        if (client.options == null || client.font == null) return;
+        if (client.options == null || client.textRenderer == null) return;
 
         int baseX = mod.x.getInt();
         int baseY = mod.y.getInt();
@@ -459,16 +459,16 @@ public final class HudRenderer {
 
         // Reihe 1: W mittig ueber ASD.
         drawKey(ctx, client, baseX + KEY + GAP, baseY, KEY, KEY,
-                "W", client.options.keyUp.isDown(), idle, press, textCol);
+                "W", client.options.forwardKey.isPressed(), idle, press, textCol);
 
         // Reihe 2: A S D
         int row2 = baseY + KEY + GAP;
         drawKey(ctx, client, baseX, row2, KEY, KEY,
-                "A", client.options.keyLeft.isDown(), idle, press, textCol);
+                "A", client.options.leftKey.isPressed(), idle, press, textCol);
         drawKey(ctx, client, baseX + KEY + GAP, row2, KEY, KEY,
-                "S", client.options.keyDown.isDown(), idle, press, textCol);
+                "S", client.options.backKey.isPressed(), idle, press, textCol);
         drawKey(ctx, client, baseX + (KEY + GAP) * 2, row2, KEY, KEY,
-                "D", client.options.keyRight.isDown(), idle, press, textCol);
+                "D", client.options.rightKey.isPressed(), idle, press, textCol);
 
         int nextY = row2 + KEY + GAP;
         int fullW = KEY * 3 + GAP * 2;
@@ -477,31 +477,31 @@ public final class HudRenderer {
             int half = (fullW - GAP) / 2;
             drawKey(ctx, client, baseX, nextY, half, KEY,
                     "L " + CpsCounter.LEFT.getCps(),
-                    client.options.keyAttack.isDown(), idle, press, textCol);
+                    client.options.attackKey.isPressed(), idle, press, textCol);
             drawKey(ctx, client, baseX + half + GAP, nextY, half, KEY,
                     "R " + CpsCounter.RIGHT.getCps(),
-                    client.options.keyUse.isDown(), idle, press, textCol);
+                    client.options.useKey.isPressed(), idle, press, textCol);
             nextY += KEY + GAP;
         }
 
         if (mod.showSpace.get()) {
             drawKey(ctx, client, baseX, nextY, fullW, 10,
-                    "", client.options.keyJump.isDown(), idle, press, textCol);
+                    "", client.options.jumpKey.isPressed(), idle, press, textCol);
         }
 
         popScale(ctx);
     }
 
     /** Eine einzelne Taste: Flaeche plus mittige Beschriftung. */
-    private static void drawKey(GuiGraphicsExtractor ctx, Minecraft client,
+    private static void drawKey(DrawContext ctx, MinecraftClient client,
                                 int x, int y, int w, int h, String label,
                                 boolean pressed, int idle, int press, int textCol) {
         ctx.fill(x, y, x + w, y + h, pressed ? press : idle);
         if (label == null || label.isEmpty()) return;
         // Gedrueckte Taste ist hell -> dunkle Schrift, sonst die eingestellte Farbe.
         int col = pressed ? 0xFF101014 : textCol;
-        int tw = client.font.width(label);
-        ctx.text(client.font, Component.literal(label),
+        int tw = client.textRenderer.getWidth(label);
+        ctx.drawTextWithShadow(client.textRenderer, Text.literal(label),
                 x + (w - tw) / 2, y + (h - 8) / 2, col);
     }
 
@@ -513,9 +513,9 @@ public final class HudRenderer {
      * differently in the editor for no reason anyone could see.
      */
     /** The totem icon, built once rather than every frame. */
-    private static net.minecraft.world.item.ItemStack totemIcon = null;
+    private static net.minecraft.item.ItemStack totemIcon = null;
     private static int lastTotemCount = Integer.MIN_VALUE;
-    private static Component totemCountText = null;
+    private static Text totemCountText = null;
 
     /** Cached player list, so it is not rebuilt on every frame. */
     private static final java.util.List<String> playerLines = new java.util.ArrayList<>();
@@ -523,16 +523,16 @@ public final class HudRenderer {
     /** When that list was last rebuilt. */
     private static long playerListBuilt = 0L;
 
-    static void pushScale(GuiGraphicsExtractor context, float anchorX, float anchorY, float scale) {
-        var m = context.pose();
+    static void pushScale(DrawContext context, float anchorX, float anchorY, float scale) {
+        var m = context.getMatrices();
         m.pushMatrix();
         m.translate(anchorX, anchorY);
         m.scale(scale, scale);
         m.translate(-anchorX, -anchorY);
     }
 
-    static void popScale(GuiGraphicsExtractor context) {
-        context.pose().popMatrix();
+    static void popScale(DrawContext context) {
+        context.getMatrices().popMatrix();
     }
 
     /** Macht den ersten Buchstaben jedes Wortes gross ("strength" -> "Strength"). */

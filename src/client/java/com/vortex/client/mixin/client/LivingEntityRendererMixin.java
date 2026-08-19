@@ -1,9 +1,28 @@
 package com.vortex.client.mixin.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.HealthIndicatorModule;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.command.RenderCommandQueue;
+import net.minecraft.client.render.entity.LivingEntityRenderer;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.client.render.state.CameraRenderState;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.Monster;
+import net.minecraft.entity.passive.AnimalEntity;
+import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,31 +32,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.WeakHashMap;
-import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.AgeableMob;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 
 /**
  * Zeigt die Lebenspunkte ueber Entities an.
  *
- * Modi "Zahl" und "Zahl+Herz": Component-Label ueber die Render-Command-Queue
+ * Modi "Zahl" und "Zahl+Herz": Text-Label ueber die Render-Command-Queue
  *   (submitLabel) -- so wie Vanilla-Nametags, inkl. Billboard.
  * Modus "Herzen": ECHTE Herz-Texturen (volle + halbe Herzen) als 3D-Quads.
  *   Die Texturen (assets/pvpclient/textures/heart/full.png + half.png) sind
@@ -56,10 +55,10 @@ public class LivingEntityRendererMixin {
 
     @Unique
     private static final Identifier PVPCLIENT_HEART_FULL =
-        Identifier.fromNamespaceAndPath("vortexclient", "textures/heart/full.png");
+        Identifier.of("vortexclient", "textures/heart/full.png");
     @Unique
     private static final Identifier PVPCLIENT_HEART_HALF =
-        Identifier.fromNamespaceAndPath("vortexclient", "textures/heart/half.png");
+        Identifier.of("vortexclient", "textures/heart/half.png");
 
     @Unique
     private static boolean pvpclient$logged = false;
@@ -68,15 +67,15 @@ public class LivingEntityRendererMixin {
     @Unique
     private static boolean pvpclient$lambdaLogged = false;
 
-    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    @Inject(method = "method_62355", at = @At("TAIL"))
     private void pvpclient$captureEntity(LivingEntity entity, LivingEntityRenderState state,
                                          float tickDelta, CallbackInfo ci) {
         pvpclient$entityMap.put(state, entity);
     }
 
-    @Inject(method = "submit", at = @At("TAIL"))
-    private void pvpclient$renderHealth(LivingEntityRenderState state, PoseStack matrices,
-                                        SubmitNodeCollector queue, CameraRenderState camState,
+    @Inject(method = "method_4054", at = @At("TAIL"))
+    private void pvpclient$renderHealth(LivingEntityRenderState state, MatrixStack matrices,
+                                        OrderedRenderCommandQueue queue, CameraRenderState camState,
                                         CallbackInfo ci) {
         try {
             HealthIndicatorModule mod =
@@ -117,9 +116,9 @@ public class LivingEntityRendererMixin {
      * Bewusst ein eigener Einstiegspunkt und nicht im Health-Block: beide Module
      * sollen unabhaengig voneinander an- und ausschaltbar sein.
      */
-    @Inject(method = "submit", at = @At("TAIL"))
-    private void pvpclient$renderTargetInfo(LivingEntityRenderState state, PoseStack matrices,
-                                            SubmitNodeCollector queue,
+    @Inject(method = "method_4054", at = @At("TAIL"))
+    private void pvpclient$renderTargetInfo(LivingEntityRenderState state, MatrixStack matrices,
+                                            OrderedRenderCommandQueue queue,
                                             CameraRenderState camState, CallbackInfo ci) {
         try {
             com.vortex.client.module.modules.TargetInfoModule mod =
@@ -129,10 +128,10 @@ public class LivingEntityRendererMixin {
 
             LivingEntity entity = pvpclient$entityMap.get(state);
             if (entity == null || !entity.isAlive()) return;
-            if (!(entity instanceof net.minecraft.world.entity.player.Player)) return;
+            if (!(entity instanceof net.minecraft.entity.player.PlayerEntity)) return;
 
-            net.minecraft.client.Minecraft mc =
-                net.minecraft.client.Minecraft.getInstance();
+            net.minecraft.client.MinecraftClient mc =
+                net.minecraft.client.MinecraftClient.getInstance();
             if (mc.player == null || entity == mc.player) return;
 
             double dist = mc.player.distanceTo(entity);
@@ -143,7 +142,7 @@ public class LivingEntityRendererMixin {
             // Reichweite: der Wert, den das Spiel selbst fuer Angriffe nutzt.
             int color = mod.inRangeColor.get();
             if (mod.range.get()) {
-                double reach = mc.player.entityInteractionRange();
+                double reach = mc.player.getEntityInteractionRange();
                 boolean inReach = dist <= reach;
                 color = inReach ? mod.inRangeColor.get() : mod.outRangeColor.get();
                 sb.append(String.format(java.util.Locale.ROOT, "%.1fm", dist));
@@ -159,15 +158,15 @@ public class LivingEntityRendererMixin {
             }
             if (sb.length() == 0) return;
 
-            Component label = Component.literal(sb.toString())
+            Text label = Text.literal(sb.toString())
                 .setStyle(Style.EMPTY.withColor(color & 0xFFFFFF));
             // Etwas hoeher als die Lebensanzeige, damit sich beide nicht ueberlagern.
-            Vec3 labelPos = new Vec3(0.0, entity.getBbHeight() + 0.95, 0.0);
+            Vec3d labelPos = new Vec3d(0.0, entity.getHeight() + 0.95, 0.0);
             int light = 0xF000F0;
-            matrices.pushPose();
-            OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
-            matrices.popPose();
+            matrices.push();
+            RenderCommandQueue rcq = queue.getBatchingQueue(light);
+            rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+            matrices.pop();
         } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("LivingEntityRendererMixin", pvpErr);
             }
@@ -180,29 +179,29 @@ public class LivingEntityRendererMixin {
      */
     @Unique
     private String pvpclient$gearSummary(LivingEntity entity, boolean withDurability) {
-        net.minecraft.world.entity.EquipmentSlot[] slots = {
-            net.minecraft.world.entity.EquipmentSlot.HEAD,
-            net.minecraft.world.entity.EquipmentSlot.CHEST,
-            net.minecraft.world.entity.EquipmentSlot.LEGS,
-            net.minecraft.world.entity.EquipmentSlot.FEET,
-            net.minecraft.world.entity.EquipmentSlot.MAINHAND
+        net.minecraft.entity.EquipmentSlot[] slots = {
+            net.minecraft.entity.EquipmentSlot.HEAD,
+            net.minecraft.entity.EquipmentSlot.CHEST,
+            net.minecraft.entity.EquipmentSlot.LEGS,
+            net.minecraft.entity.EquipmentSlot.FEET,
+            net.minecraft.entity.EquipmentSlot.MAINHAND
         };
         StringBuilder sb = new StringBuilder();
-        for (net.minecraft.world.entity.EquipmentSlot slot : slots) {
-            net.minecraft.world.item.ItemStack stack;
+        for (net.minecraft.entity.EquipmentSlot slot : slots) {
+            net.minecraft.item.ItemStack stack;
             try {
-                stack = entity.getItemBySlot(slot);
+                stack = entity.getEquippedStack(slot);
             } catch (Throwable t) {
                 continue;
             }
             if (stack == null || stack.isEmpty()) continue;
 
-            String name = stack.getHoverName().getString();
+            String name = stack.getName().getString();
             String kurz = name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase(java.util.Locale.ROOT);
             sb.append(kurz);
 
-            if (withDurability && stack.isDamageableItem() && stack.getMaxDamage() > 0) {
-                int left = stack.getMaxDamage() - stack.getDamageValue();
+            if (withDurability && stack.isDamageable() && stack.getMaxDamage() > 0) {
+                int left = stack.getMaxDamage() - stack.getDamage();
                 int pct = (int) Math.round(100.0 * left / stack.getMaxDamage());
                 sb.append(pct);
             }
@@ -218,9 +217,9 @@ public class LivingEntityRendererMixin {
      * this number matters even when you are not aiming at someone, and the two
      * modules switch on independently.
      */
-    @Inject(method = "submit", at = @At("TAIL"), require = 0)
-    private void vortex$renderTotemCount(LivingEntityRenderState state, PoseStack matrices,
-                                         SubmitNodeCollector queue,
+    @Inject(method = "method_4054", at = @At("TAIL"), require = 0)
+    private void vortex$renderTotemCount(LivingEntityRenderState state, MatrixStack matrices,
+                                         OrderedRenderCommandQueue queue,
                                          CameraRenderState camState, CallbackInfo ci) {
         try {
             com.vortex.client.module.modules.TotemPopperModule mod =
@@ -230,10 +229,10 @@ public class LivingEntityRendererMixin {
 
             LivingEntity entity = pvpclient$entityMap.get(state);
             if (entity == null || !entity.isAlive()) return;
-            if (!(entity instanceof net.minecraft.world.entity.player.Player)) return;
+            if (!(entity instanceof net.minecraft.entity.player.PlayerEntity)) return;
 
-            net.minecraft.client.Minecraft mc =
-                net.minecraft.client.Minecraft.getInstance();
+            net.minecraft.client.MinecraftClient mc =
+                net.minecraft.client.MinecraftClient.getInstance();
             if (mc.player == null || entity == mc.player) return;
             if (mc.player.distanceTo(entity) > mod.overheadRange.get()) return;
 
@@ -246,17 +245,17 @@ public class LivingEntityRendererMixin {
             boolean fresh = mod.highlight.get() && since >= 0 && since < 2000;
             int color = fresh ? mod.highlightColor.get() : mod.color.get();
 
-            Component label = Component.literal(pops + " totems")
+            Text label = Text.literal(pops + " totems")
                 .setStyle(Style.EMPTY.withColor(color & 0xFFFFFF));
 
             // Above the health indicator and the target info, so the three do
             // not sit on top of each other.
-            Vec3 labelPos = new Vec3(0.0, entity.getBbHeight() + 1.25, 0.0);
+            Vec3d labelPos = new Vec3d(0.0, entity.getHeight() + 1.25, 0.0);
             int light = 0xF000F0;
-            matrices.pushPose();
-            OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
-            matrices.popPose();
+            matrices.push();
+            RenderCommandQueue rcq = queue.getBatchingQueue(light);
+            rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+            matrices.pop();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("TotemCountOverhead", pvpErr);
         }
@@ -270,9 +269,9 @@ public class LivingEntityRendererMixin {
      * the matrix, transparency from the colour's alpha, and drawing through
      * walls from the light value -- none of which the vanilla tag hands out.
      */
-    @Inject(method = "submit", at = @At("TAIL"), require = 0)
-    private void vortex$renderNametag(LivingEntityRenderState state, PoseStack matrices,
-                                      SubmitNodeCollector queue,
+    @Inject(method = "method_4054", at = @At("TAIL"), require = 0)
+    private void vortex$renderNametag(LivingEntityRenderState state, MatrixStack matrices,
+                                      OrderedRenderCommandQueue queue,
                                       CameraRenderState camState, CallbackInfo ci) {
         try {
             com.vortex.client.module.modules.NametagModule mod =
@@ -282,10 +281,10 @@ public class LivingEntityRendererMixin {
 
             LivingEntity entity = pvpclient$entityMap.get(state);
             if (entity == null || !entity.isAlive()) return;
-            if (!(entity instanceof net.minecraft.world.entity.player.Player)) return;
+            if (!(entity instanceof net.minecraft.entity.player.PlayerEntity)) return;
 
-            net.minecraft.client.Minecraft mc =
-                net.minecraft.client.Minecraft.getInstance();
+            net.minecraft.client.MinecraftClient mc =
+                net.minecraft.client.MinecraftClient.getInstance();
             if (mc.player == null || entity == mc.player) return;
 
             float dist = mc.player.distanceTo(entity);
@@ -297,7 +296,7 @@ public class LivingEntityRendererMixin {
             }
 
             int alpha = (int) (255 * Math.max(0.2, Math.min(1.0, mod.opacity.get())));
-            Component label = Component.literal(name).setStyle(
+            Text label = Text.literal(name).setStyle(
                     Style.EMPTY.withColor(0xFFFFFF));
 
             // Full brightness makes the label readable in the dark; it is also
@@ -311,43 +310,43 @@ public class LivingEntityRendererMixin {
                 scale *= Math.max(1.0, dist / 12.0);
             }
 
-            Vec3 labelPos = new Vec3(0.0, entity.getBbHeight() + 0.6, 0.0);
-            matrices.pushPose();
+            Vec3d labelPos = new Vec3d(0.0, entity.getHeight() + 0.6, 0.0);
+            matrices.push();
             matrices.scale((float) scale, (float) scale, (float) scale);
-            OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
-            matrices.popPose();
+            RenderCommandQueue rcq = queue.getBatchingQueue(light);
+            rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+            matrices.pop();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("Nametags", pvpErr);
         }
     }
 
-    /** Component-Label (Zahl / Zahl+Herz) ueber submitLabel. */
+    /** Text-Label (Zahl / Zahl+Herz) ueber submitLabel. */
     @Unique
-    private void pvpclient$renderTextLabel(LivingEntity entity, PoseStack matrices,
-                                           SubmitNodeCollector queue,
+    private void pvpclient$renderTextLabel(LivingEntity entity, MatrixStack matrices,
+                                           OrderedRenderCommandQueue queue,
                                            CameraRenderState camState,
                                            String mode, int color, float sc) {
         int hp = Math.round(entity.getHealth());
         if (hp < 0) hp = 0;
         String textStr = "Zahl+Herz".equals(mode) ? (hp + " \u2764") : Integer.toString(hp);
 
-        Component label = Component.literal(textStr).setStyle(Style.EMPTY.withColor(color & 0xFFFFFF));
-        double labelY = (entity.getBbHeight() + 0.5) / sc;
-        Vec3 labelPos = new Vec3(0.0, labelY, 0.0);
+        Text label = Text.literal(textStr).setStyle(Style.EMPTY.withColor(color & 0xFFFFFF));
+        double labelY = (entity.getHeight() + 0.5) / sc;
+        Vec3d labelPos = new Vec3d(0.0, labelY, 0.0);
         int light = 0xF000F0;
 
-        matrices.pushPose();
+        matrices.push();
         matrices.scale(sc, sc, sc);
-        OrderedSubmitNodeCollector rcq = queue.order(light);
-        rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
-        matrices.popPose();
+        RenderCommandQueue rcq = queue.getBatchingQueue(light);
+        rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+        matrices.pop();
     }
 
     /** Echte Herz-Texturen (volle + halbe) als 3D-Quads, eingefaerbt. */
     @Unique
-    private void pvpclient$renderHearts(LivingEntity entity, PoseStack matrices,
-                                        SubmitNodeCollector queue,
+    private void pvpclient$renderHearts(LivingEntity entity, MatrixStack matrices,
+                                        OrderedRenderCommandQueue queue,
                                         CameraRenderState camState, int color, float sc) {
         int hp = Math.round(entity.getHealth());
         if (hp < 0) hp = 0;
@@ -356,7 +355,7 @@ public class LivingEntityRendererMixin {
         // Bei sehr vielen Herzen begrenzen, damit die Reihe nicht zu breit wird.
         if (full > 10) { full = 10; half = false; }
 
-        // Herzen als Component-Symbole bauen: volle Herzen + ggf. ein halbes.
+        // Herzen als Text-Symbole bauen: volle Herzen + ggf. ein halbes.
         // Wir nutzen denselben submitLabel-Weg wie die Zahl-Modi (der sicher
         // funktioniert) -- das umgeht die fragilen Textur-Quads komplett.
         // Volles Herz: \u2764 (schwarzes Herz, wird eingefaerbt).
@@ -366,25 +365,25 @@ public class LivingEntityRendererMixin {
         if (half) sb.append('\u2765');
         if (sb.length() == 0) sb.append('\u2764'); // mind. ein Herz zeigen
 
-        Component label = Component.literal(sb.toString())
+        Text label = Text.literal(sb.toString())
                 .setStyle(Style.EMPTY.withColor(color & 0xFFFFFF));
 
-        double labelY = (entity.getBbHeight() + 0.5) / sc;
-        Vec3 labelPos = new Vec3(0.0, labelY, 0.0);
+        double labelY = (entity.getHeight() + 0.5) / sc;
+        Vec3d labelPos = new Vec3d(0.0, labelY, 0.0);
         int light = 0xF000F0;
 
-        matrices.pushPose();
+        matrices.push();
         matrices.scale(sc, sc, sc);
-        OrderedSubmitNodeCollector rcq = queue.order(light);
-        rcq.submitNameTag(matrices, labelPos, 0, label, true, light, 0.0, camState);
-        matrices.popPose();
+        RenderCommandQueue rcq = queue.getBatchingQueue(light);
+        rcq.submitLabel(matrices, labelPos, 0, label, true, light, 0.0, camState);
+        matrices.pop();
     }
 
     @Unique
     private static boolean pvpclient$shouldShow(HealthIndicatorModule mod, LivingEntity living) {
-        if (living instanceof Player) return mod.showPlayers.get();
-        if (living instanceof Enemy) return mod.showMonsters.get();
-        if (living instanceof Animal || living instanceof AgeableMob) {
+        if (living instanceof PlayerEntity) return mod.showPlayers.get();
+        if (living instanceof Monster) return mod.showMonsters.get();
+        if (living instanceof AnimalEntity || living instanceof PassiveEntity) {
             return mod.showAnimals.get();
         }
         return mod.showAnimals.get();

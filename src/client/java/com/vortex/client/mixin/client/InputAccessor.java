@@ -1,21 +1,26 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.player.ClientInput;
-import net.minecraft.world.entity.player.Input;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.client.input.Input;
+import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Vec2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * Zugriff auf die Bewegungsfelder der ClientInput-Basisklasse. Die konkrete
- * Tastatureingabe liegt als Player-Input-Record im ClientInput-Objekt vor.
+ * Zugriff auf die (protected/package) Bewegungsfelder der Input-Basisklasse.
+ * KeyboardInput erbt diese Felder, daher koennen wir ein KeyboardInput-Objekt
+ * zu diesem Accessor casten und die Werte neutralisieren (fuer die Freecam).
+ *
+ * Der Accessor liegt direkt auf Input (class_744), wo die Felder definiert sind
+ * -- so loest Mixin die Feldnamen korrekt auf (das war beim @Shadow auf der
+ * Subklasse das Problem).
  */
-@Mixin(ClientInput.class)
+@Mixin(Input.class)
 public interface InputAccessor {
 
-    @Accessor("moveVector")
-    void pvpclient$setMovementVector(Vec2 vec);
+    @Accessor("field_55868")
+    void pvpclient$setMovementVector(Vec2f vec);
 
-    @Accessor("keyPresses")
-    void pvpclient$setPlayerInput(Input input);
+    @Accessor("field_54155")
+    void pvpclient$setPlayerInput(PlayerInput input);
 }

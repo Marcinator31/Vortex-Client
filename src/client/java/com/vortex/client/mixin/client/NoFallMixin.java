@@ -1,6 +1,6 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.network.ClientPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,23 +22,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * No jump needed, and no minimum height either: step off a cliff of any size
  * and the landing costs nothing.
  */
-@Mixin(LocalPlayer.class)
+@Mixin(ClientPlayerEntity.class)
 public abstract class NoFallMixin {
 
-    @Inject(method = "sendPosition", at = @At("HEAD"), require = 0)
+    @Inject(method = "method_3136", at = @At("HEAD"), require = 0)
     private void vortex$noFall(CallbackInfo ci) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
                     com.vortex.client.module.modules.NoFallModule.class);
             if (mod == null || !mod.isEnabled()) return;
 
-            LocalPlayer self = (LocalPlayer) (Object) this;
+            ClientPlayerEntity self = (ClientPlayerEntity) (Object) this;
             if (self.isSpectator()) return;
             if (self.getAbilities().flying) return;
-            if (self.isFallFlying()) return;
+            if (self.isGliding()) return;
             // Water and lava break a fall by themselves; claiming ground there
             // only makes the movement look odd for no gain.
-            if (self.isInWater() || self.isInLava()) return;
+            if (self.isTouchingWater() || self.isInLava()) return;
 
             if (self.fallDistance <= mod.minHeight.get()) return;
 
@@ -56,12 +56,12 @@ public abstract class NoFallMixin {
             // real packet is built the flag has often been recomputed. Sending
             // one explicitly leaves nothing to timing -- the server is told
             // plainly, and the landing costs nothing.
-            var handler = net.minecraft.client.Minecraft.getInstance()
-                    .getConnection();
+            var handler = net.minecraft.client.MinecraftClient.getInstance()
+                    .getNetworkHandler();
             if (handler != null) {
-                handler.send(
-                        new net.minecraft.network.protocol.game.ServerboundMovePlayerPacket
-                                .StatusOnly(true, self.horizontalCollision));
+                handler.sendPacket(
+                        new net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
+                                .OnGroundOnly(true, self.horizontalCollision));
             }
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("NoFallMixin", pvpErr);
