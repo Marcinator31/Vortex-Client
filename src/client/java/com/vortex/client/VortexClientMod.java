@@ -12,7 +12,6 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
-import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Client-Einstiegspunkt ("onEnable").
@@ -33,6 +32,9 @@ public class VortexClientMod implements ClientModInitializer {
     private static KeyMapping openClickGuiKey;
     private static KeyMapping openHudEditorKey;
 
+    /** Fallback-Flankenerkennung, falls 26.2 die KeyMapping-Queue nicht fuellt. */
+    private static boolean clickGuiKeyWasDown;
+
     // Flankenerkennung fuer die Freecam-Taste (nur beim Druecken umschalten).
 
     @Override
@@ -48,7 +50,9 @@ public class VortexClientMod implements ClientModInitializer {
         ConfigManager.loadActivePreset();
         ConfigManager.load();
 
-        // Im Launcher gewaehltes Cape.
+        // Im Launcher gewaehltes Cape. Laeuft im Hintergrund: der Spielstart
+        // wartet nicht auf das Netz, und ohne Verbindung greift der
+        // Zwischenspeicher.
         com.vortex.client.cosmetics.ActiveCape.init();
 
         // HUD-Rendering anmelden.
@@ -180,11 +184,29 @@ public class VortexClientMod implements ClientModInitializer {
                     }
                 }
             }
+            boolean openClickGui = false;
             while (openClickGuiKey.consumeClick()) {
-                client.setScreen(new ClickGui());
+                openClickGui = true;
             }
+
+            // Minecraft 26.2 verarbeitet registrierte KeyMappings erst nach dem
+            // neuen Eingabe-Extraktionsschritt. Die direkte Abfrage stellt sicher,
+            // dass die Standardtaste rechte Umschalttaste dennoch im ersten
+            // Client-Tick nach dem Druck sicher erkannt wird.
+            boolean rightShiftDown = InputConstants.isKeyDown(
+                    client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+            if (rightShiftDown && !clickGuiKeyWasDown) {
+                openClickGui = true;
+            }
+            clickGuiKeyWasDown = rightShiftDown;
+
+            if (openClickGui && client.gui.screen() == null) {
+                client.gui.setScreen(new ClickGui());
+                System.out.println("[vortexclient] ClickGUI opened via Right Shift.");
+            }
+
             while (openHudEditorKey.consumeClick()) {
-                client.setScreen(new com.vortex.client.gui.HudEditorScreen());
+                client.gui.setScreen(new com.vortex.client.gui.HudEditorScreen());
             }
 
             // --- Module toggle keys ---
@@ -196,7 +218,7 @@ public class VortexClientMod implements ClientModInitializer {
             // Skipped while a screen is open: otherwise typing a name into the
             // waypoint manager would switch modules on and off.
             try {
-                if (client.screen == null) {
+                if (client.gui.screen() == null) {
                     for (var module : ModuleManager.INSTANCE.getModules()) {
                         int code = module.getToggleKey().getKeyCode();
                         if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) continue;

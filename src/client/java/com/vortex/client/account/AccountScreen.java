@@ -170,7 +170,7 @@ public class AccountScreen extends Screen {
             } finally {
                 loggingIn = false;
                 net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                    if (this.minecraft != null && this.minecraft.screen == this) {
+                    if (this.minecraft != null && this.minecraft.gui.screen() == this) {
                         this.rebuildWidgets();
                     }
                 });
@@ -215,7 +215,7 @@ public class AccountScreen extends Screen {
                 loggingIn = false;
                 // GUI im Main-Thread neu aufbauen.
                 net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                    if (this.minecraft != null && this.minecraft.screen == this) {
+                    if (this.minecraft != null && this.minecraft.gui.screen() == this) {
                         this.rebuildWidgets();
                     }
                 });

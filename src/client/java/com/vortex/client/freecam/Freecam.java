@@ -206,7 +206,7 @@ public final class Freecam {
         if (dt > 0.1) dt = 0.1; // bei Hängern nicht springen
 
         // Bei offenem Bildschirm nur ausgleiten, keine neuen Eingaben.
-        boolean inputAllowed = (mc.screen == null);
+        boolean inputAllowed = (mc.gui.screen() == null);
 
         double accel = 0;
         double fx = 0, fy = 0, fz = 0, rx = 0, rz = 0;

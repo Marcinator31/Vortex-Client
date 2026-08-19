@@ -5,6 +5,7 @@ import com.vortex.client.waypoint.WaypointSettings;
 import com.vortex.client.waypoint.WaypointManager;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.world.phys.Vec3;
@@ -146,14 +147,12 @@ public final class WaypointRenderer {
             if (client.player == null || client.level == null) return;
 
             PoseStack matrices = context.poseStack();
-            var consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             try {
                 float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 Vec3 cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
-                org.joml.Matrix4f mat = matrices.last().pose();
 
                 float lw = mod.lineWidth.getFloat();
                 double maxDist = mod.maxDistance.get();
@@ -202,15 +201,22 @@ public final class WaypointRenderer {
                             // bei Farbe 0 die des Markers verwenden.
                             int bc = mod.blockColor.get();
                             if ((bc >>> 24) == 0) bc = color;
-                            EspRender.drawBox(matrices, lines, box, cam, bc,
+                            EspRender.submitBox(collector, matrices, box, cam, bc,
                                     mod.blockLineWidth.getFloat());
                         }
                     }
 
                     // Tracer: global ODER fuer diesen Marker einzeln eingeschaltet.
                     if (tracerStart != null && (mod.tracers.get() || w.tracer)) {
-                        EspRender.drawTracer(mat, lines, tracerStart,
-                                new Vec3(cx, w.y, cz), cam, color, lw);
+                        final Vec3 renderStart = tracerStart;
+                        final Vec3 renderTarget = new Vec3(cx, w.y, cz);
+                        final Vec3 renderCam = cam;
+                        final int renderColor = color;
+                        final float renderWidth = lw;
+                        EspRender.submitLines(collector, matrices,
+                                (matrix, lines) -> EspRender.drawTracer(matrix, lines,
+                                        renderStart, renderTarget, renderCam,
+                                        renderColor, renderWidth));
                     }
                 }
             } catch (Throwable pvpErr) {

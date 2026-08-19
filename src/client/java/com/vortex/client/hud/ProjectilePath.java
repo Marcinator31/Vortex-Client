@@ -1,6 +1,5 @@
 package com.vortex.client.hud;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ProjectilePathModule;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
@@ -12,7 +11,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.phys.AABB;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Berechnet und zeichnet die Flugbahn des Wurfobjekts in der Hand.
@@ -39,6 +41,9 @@ public final class ProjectilePath {
     }
 
     private static final double DRAG = 0.99;
+
+    /** Immutable extraction result used by the deferred 26.2 draw callback. */
+    private record PathResult(List<Vec3> points, Vec3 hit) {}
 
     private ProjectilePath() {}
 
@@ -158,28 +163,38 @@ public final class ProjectilePath {
             if (kind == null) return;
 
             PoseStack matrices = context.poseStack();
-            var consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             try {
                 float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 Vec3 cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
-                org.joml.Matrix4f mat = matrices.last().pose();
 
                 int color = mod.color.get();
                 if ((color >>> 24) == 0) color |= 0xFF000000;
-                float lw = mod.lineWidth.getFloat();
+                float lineWidth = mod.lineWidth.getFloat();
+                PathResult path = simulate(client, self, kind, mod.maxSteps.getInt());
 
-                Vec3 hit = simulate(client, self, kind, mod.maxSteps.getInt(),
-                        mat, lines, cam, color, lw);
+                if (path.points().size() > 1) {
+                    final List<Vec3> points = List.copyOf(path.points());
+                    final Vec3 renderCam = cam;
+                    final int renderColor = color;
+                    final float renderWidth = lineWidth;
+                    EspRender.submitLines(collector, matrices, (matrix, lines) -> {
+                        for (int i = 1; i < points.size(); i++) {
+                            EspRender.drawTracer(matrix, lines, points.get(i - 1), points.get(i),
+                                    renderCam, renderColor, renderWidth);
+                        }
+                    });
+                }
 
                 // Kaestchen am Einschlagpunkt.
+                Vec3 hit = path.hit();
                 if (hit != null && mod.marker.get()) {
                     double s = 0.15;
                     AABB box = new AABB(hit.x - s, hit.y - s, hit.z - s,
                             hit.x + s, hit.y + s, hit.z + s);
-                    EspRender.drawBox(matrices, lines, box, cam, color, lw);
+                    EspRender.submitBox(collector, matrices, box, cam, color, lineWidth);
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("ProjectilePath", pvpErr);
@@ -196,18 +211,13 @@ public final class ProjectilePath {
      * Teilstueck. Rueckgabe ist der Auftreffpunkt (oder null, wenn die
      * Vorausschau vorher endet).
      */
-    private static Vec3 simulate(Minecraft client, LocalPlayer self,
-                                  Kind kind, int maxSteps,
-                                  org.joml.Matrix4f mat, VertexConsumer lines,
-                                  Vec3 cam, int color, float lw) {
+    private static PathResult simulate(Minecraft client, LocalPlayer self,
+                                       Kind kind, int maxSteps) {
         float yawDeg = self.getYRot();
         float pitchDeg = self.getXRot() + (float) kind.pitchOffset;
 
         double yaw = Math.toRadians(yawDeg);
         double pitch = Math.toRadians(pitchDeg);
-
-        // Blickrichtung als Einheitsvektor (selbst gerechnet, unabhaengig von
-        // Hilfsmethoden der Spielklassen).
         double dirX = -Math.sin(yaw) * Math.cos(pitch);
         double dirY = -Math.sin(pitch);
         double dirZ = Math.cos(yaw) * Math.cos(pitch);
@@ -215,8 +225,6 @@ public final class ProjectilePath {
         double vx = dirX * kind.speed;
         double vy = dirY * kind.speed;
         double vz = dirZ * kind.speed;
-
-        // Eigene Bewegung draufrechnen -- das macht Vanilla beim Werfen auch.
         Vec3 own = self.getDeltaMovement();
         vx += own.x;
         vz += own.z;
@@ -225,35 +233,35 @@ public final class ProjectilePath {
         double x = self.getX();
         double y = self.getEyeY() - 0.1;
         double z = self.getZ();
-
-        Vec3 prev = new Vec3(x, y, z);
+        List<Vec3> points = new ArrayList<>();
+        Vec3 previous = new Vec3(x, y, z);
+        points.add(previous);
 
         for (int i = 0; i < maxSteps; i++) {
             x += vx;
             y += vy;
             z += vz;
-
             vx *= DRAG;
             vy *= DRAG;
             vz *= DRAG;
             vy -= kind.gravity;
 
-            Vec3 cur = new Vec3(x, y, z);
-            EspRender.drawTracer(mat, lines, prev, cur, cam, color, lw);
-            prev = cur;
+            Vec3 current = new Vec3(x, y, z);
+            points.add(current);
 
-            // Auf festen Block getroffen?
             try {
-                BlockPos bp = BlockPos.containing(cur);
-                if (!client.level.getBlockState(bp).isAir()) {
-                    return cur;
+                BlockPos blockPos = BlockPos.containing(current);
+                if (!client.level.getBlockState(blockPos).isAir()) {
+                    return new PathResult(points, current);
                 }
-                // Unterhalb der Welt -> abbrechen.
-                if (y < client.level.getMinY() - 8) return cur;
-            } catch (Throwable t) {
-                return cur; // Chunk nicht geladen -> hier aufhoeren
+                if (y < client.level.getMinY() - 8) {
+                    return new PathResult(points, current);
+                }
+            } catch (Throwable ignored) {
+                return new PathResult(points, current);
             }
+            previous = current;
         }
-        return null;
+        return new PathResult(points, null);
     }
 }

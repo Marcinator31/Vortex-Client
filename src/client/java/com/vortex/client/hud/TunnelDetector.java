@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -53,21 +53,20 @@ public final class TunnelDetector {
             ensureWorker();
 
             PoseStack matrices = context.poseStack();
-            MultiBufferSource consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
                 float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 Vec3 cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 int color = mod.getColor();
                 if ((color >>> 24) == 0) color |= 0xFF000000;
 
                 List<AABB> boxes = RESULT.get();
                 for (int i = 0; i < boxes.size(); i++) {
-                    EspRender.drawBox(matrices, lines, boxes.get(i), cam, color, 2.0f);
+                    EspRender.submitBox(collector, matrices, boxes.get(i), cam, color, 2.0f);
                 }
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("TunnelDetector", pvpErr);

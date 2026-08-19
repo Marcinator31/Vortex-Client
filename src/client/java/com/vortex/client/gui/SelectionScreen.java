@@ -406,6 +406,6 @@ public abstract class SelectionScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(parent);
+        this.minecraft.gui.setScreen(parent);
     }
 }

@@ -185,7 +185,7 @@ public class ThemeScreen extends Screen {
         int y = winY + HEADER_H + 4;
         for (ColorSetting c : colors()) {
             if (inRect(mx, my, winX + 8, y, winW - 16, ROW_H)) {
-                Minecraft.getInstance().setScreen(new ColorPickerScreen(this, c));
+                Minecraft.getInstance().gui.setScreen(new ColorPickerScreen(this, c));
                 return true;
             }
             y += ROW_H + 4;
@@ -229,6 +229,6 @@ public class ThemeScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(parent);
+        this.minecraft.gui.setScreen(parent);
     }
 }

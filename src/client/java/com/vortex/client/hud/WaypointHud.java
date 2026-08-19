@@ -202,7 +202,7 @@ public final class WaypointHud {
             yaw = com.vortex.client.freecam.Freecam.getYaw();
             pitch = com.vortex.client.freecam.Freecam.getPitch();
         } else {
-            var camera = client.gameRenderer.getMainCamera();
+            var camera = client.gameRenderer.mainCamera();
             if (camera != null) {
                 yaw = camera.yRot();
                 pitch = camera.xRot();

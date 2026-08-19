@@ -17,11 +17,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # JDK 21 -- Minecraft 1.21.11 requires Java 21.
-      - name: Set up JDK 21
+      # JDK 25 -- Minecraft 26.x requires Java 25.
+      # build.gradle sets sourceCompatibility to VERSION_25; with JDK 21
+      # the compiler aborts with "release version 25 not supported".
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
 
       # Caches Gradle and the downloaded Minecraft files.
