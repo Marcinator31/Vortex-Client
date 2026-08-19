@@ -605,6 +605,6 @@ public class SkinScreen extends Screen {
     @Override
     public void onClose() {
         SkinWardrobe.save();
-        this.minecraft.setScreen(parent);
+        this.minecraft.gui.setScreen(parent);
     }
 }

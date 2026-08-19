@@ -60,12 +60,21 @@ public abstract class CapeOverrideMixin {
                     new ClientAsset.ResourceTexture(capeTexture, capeTexture);
 
             // Reihenfolge: Koerper, Cape, Elytra, Modell.
+            //
+            // Die Elytra bekommt DIESELBE Textur. Grund: Minecraft zeichnet
+            // die Elytra mit der Elytra-Textur des Skins, nicht mit der des
+            // Gegenstands. Blieb sie leer, hatte die Elytra gar keine Textur
+            // und wurde unsichtbar -- samt Cape darunter.
+            //
+            // Eine 64x32-Datei traegt beides: links die Cape-Flaechen, im
+            // Bereich ab x 22 die Fluegel. Deshalb genuegt eine Textur.
+            //
             // Koerper und Modell bleiben leer, damit ein gleichzeitig
             // gewaehlter eigener Skin erhalten bleibt.
             PlayerSkin.Patch patch = PlayerSkin.Patch.create(
                     Optional.empty(),
                     Optional.of(cape),
-                    Optional.empty(),
+                    Optional.of(cape),
                     Optional.empty());
             cir.setReturnValue(original.with(patch));
         } catch (Throwable error) {

@@ -5,11 +5,8 @@ import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.HitboxModule;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShapeRenderer;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.Animal;
@@ -17,8 +14,6 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * Zeichnet die Hitboxen aller Entities in der Welt (wie F3+B), aber
@@ -44,8 +39,8 @@ public final class HitboxRenderer {
             if (client.level == null || client.player == null) return;
 
             PoseStack matrices = context.poseStack();
-            MultiBufferSource consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             long pvpT0 = System.nanoTime();
             try {
@@ -64,9 +59,6 @@ public final class HitboxRenderer {
                 if (com.vortex.client.freecam.Freecam.isActive()) {
                     cam = com.vortex.client.freecam.Freecam.getPos();
                 }
-
-                // Linien-Buffer (1.21.11: RenderTypes.lines()).
-                VertexConsumer lines = consumers.getBuffer(RenderTypes.lines());
 
                 float lineWidth = mod.lineWidth.getFloat();
 
@@ -125,12 +117,9 @@ public final class HitboxRenderer {
                     AABB box = new AABB(
                             pos.x - hw, pos.y, pos.z - hw,
                             pos.x + hw, pos.y + h, pos.z + hw);
-                    VoxelShape shape = Shapes.create(box);
-
-                    // AABB bleibt in Welt-Koords; Kamera-Pos als Offset.
-                    ShapeRenderer.renderShape(matrices, lines, shape,
-                            -cam.x, -cam.y, -cam.z,
-                            color, lineWidth);
+                    // AABB bleibt in Welt-Koordinaten; die zentrale 26.2-Hilfe
+                    // reiht ihre durch Wände sichtbare Outline als Render-Node ein.
+                    EspRender.submitBox(collector, matrices, box, cam, color, lineWidth);
                 }
             } catch (Throwable ignored) {
                 // Falls eine Render-Methode in dieser Version doch abweicht:

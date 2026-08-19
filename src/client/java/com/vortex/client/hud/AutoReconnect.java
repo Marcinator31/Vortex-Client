@@ -158,7 +158,7 @@ public final class AutoReconnect {
     /** Advances the countdown; connects when it runs out. */
     public static void tick(Minecraft client) {
         if (ticksLeft < 0 || cancelled) return;
-        if (!(client.screen instanceof DisconnectedScreen)) {
+        if (!(client.gui.screen() instanceof DisconnectedScreen)) {
             // Screen gone -- someone moved on, so the countdown is void.
             ticksLeft = -1;
             return;

@@ -47,7 +47,7 @@ public final class Zoom {
         Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) return false;
         // A menu swallows input; zooming through one makes no sense.
-        if (client.screen != null) return false;
+        if (client.gui.screen() != null) return false;
 
         try {
             return InputConstants.isKeyDown(client.getWindow(), mod.key.getKeyCode());

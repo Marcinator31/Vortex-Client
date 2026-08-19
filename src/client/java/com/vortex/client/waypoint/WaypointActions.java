@@ -103,7 +103,7 @@ public final class WaypointActions {
         wasAlive = alive;
 
         // Tasten nur ausserhalb von Menues auswerten.
-        if (client.screen != null) {
+        if (client.gui.screen() != null) {
             addDown = markDown = toggleDown = manageDown = false;
             return;
         }
@@ -142,7 +142,7 @@ public final class WaypointActions {
         // --- Verwaltung oeffnen ---
         d = pressed(client, cfg.keyManage.getKeyCode());
         if (d && !manageDown) {
-            client.setScreen(new com.vortex.client.gui.WaypointScreen(null));
+            client.gui.setScreen(new com.vortex.client.gui.WaypointScreen(null));
         }
         manageDown = d;
     }

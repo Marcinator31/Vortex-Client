@@ -5,9 +5,8 @@ import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ItemEspModule;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
@@ -36,19 +35,17 @@ public final class ItemEsp {
             if (client.level == null || client.player == null) return;
 
             PoseStack matrices = context.poseStack();
-            MultiBufferSource consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             try {
                 float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
                 Vec3 cam = EspRender.cameraOffset(client, tickDelta);
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 int color = mod.getColor();
                 if ((color >>> 24) == 0) color |= 0xFF000000;
 
                 Vec3 start = EspRender.tracerStart(client, cam, tickDelta);
-                org.joml.Matrix4f mat = matrices.last().pose();
                 boolean tracer = mod.tracerEnabled();
 
                 // From the shared list, built once per tick.
@@ -67,11 +64,16 @@ public final class ItemEsp {
                     double h = e.getBbHeight();
                     double ex = e.getX(), ey = e.getY(), ez = e.getZ();
                     AABB box = new AABB(ex - w, ey, ez - w, ex + w, ey + h, ez + w);
-                    EspRender.drawBox(matrices, lines, box, cam, color, 1.5f);
+                    EspRender.submitBox(collector, matrices, box, cam, color, 1.5f);
 
                     if (tracer) {
-                        Vec3 center = new Vec3(ex, ey + h / 2.0, ez);
-                        EspRender.drawTracer(mat, lines, start, center, cam, color, 1.5f);
+                        final Vec3 tracerStart = start;
+                        final Vec3 tracerTarget = new Vec3(ex, ey + h / 2.0, ez);
+                        final Vec3 tracerCam = cam;
+                        final int tracerColor = color;
+                        EspRender.submitLines(collector, matrices,
+                                (matrix, lines) -> EspRender.drawTracer(matrix, lines,
+                                        tracerStart, tracerTarget, tracerCam, tracerColor, 1.5f));
                     }
                 }
             } catch (Throwable pvpErr) {

@@ -16,11 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShapeRenderer;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 
 /**
  * Block-ESP mit Outlines um ausgewaehlte Bloecke.
@@ -73,8 +69,8 @@ public final class BlockEspRenderer {
             if (client.level == null || client.player == null) return;
 
             PoseStack matrices = context.poseStack();
-            MultiBufferSource consumers = context.bufferSource();
-            if (matrices == null || consumers == null) return;
+            SubmitNodeCollector collector = context.submitNodeCollector();
+            if (matrices == null || collector == null) return;
 
             // Worker sicherstellen (laeuft dauerhaft, scannt im Hintergrund).
             ensureWorker();
@@ -88,8 +84,6 @@ public final class BlockEspRenderer {
                 if (com.vortex.client.freecam.Freecam.isActive()) {
                     cam = com.vortex.client.freecam.Freecam.getPos();
                 }
-
-                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.espLines());
 
                 int color = mod.getEspColor();
                 if ((color >>> 24) == 0) color = 0xFF000000 | color;
@@ -110,10 +104,7 @@ public final class BlockEspRenderer {
                     double ddz = box.minZ + 0.5 - cam.z;
                     if (ddx*ddx + ddy*ddy + ddz*ddz > maxDistSq) continue;
                     drawn++;
-                    VoxelShape shape = Shapes.create(box);
-                    ShapeRenderer.renderShape(matrices, lines, shape,
-                            -cam.x, -cam.y, -cam.z,
-                            color, lineWidth);
+                    EspRender.submitBox(collector, matrices, box, cam, color, lineWidth);
                 }
 
                 // Optional: Tracer-Linien von der Sicht zu den Bloecken.
@@ -126,42 +117,20 @@ public final class BlockEspRenderer {
                     // Blickrichtung aus yaw/pitch der echten Kamera.
                     Vec3 start = pvpclient$tracerStart(client, cam, tickDelta);
 
-                    org.joml.Matrix4f mat = matrices.last().pose();
-                    float sr = ((tColor >> 16) & 0xFF) / 255.0f;
-                    float sg = ((tColor >> 8) & 0xFF) / 255.0f;
-                    float sb = (tColor & 0xFF) / 255.0f;
-                    float sa = ((tColor >>> 24) & 0xFF) / 255.0f;
-                    float tw = mod.lineWidth.getFloat();
-
-                    int tDrawn = 0;
+                    final Vec3 tracerCam = cam;
+                    final Vec3 tracerStart = start;
+                    final int tracerColor = tColor;
+                    final float tracerWidth = mod.lineWidth.getFloat();
+                    int tracerDrawn = 0;
                     for (int i = 0; i < boxes.size(); i++) {
-                        if (tDrawn >= MAX_DRAW_PER_FRAME) break;
+                        if (tracerDrawn >= MAX_DRAW_PER_FRAME) break;
                         AABB box = boxes.get(i);
-                        // Block-Mittelpunkt, relativ zur Kamera.
-                        double ex = box.minX + 0.5 - cam.x;
-                        double ey = box.minY + 0.5 - cam.y;
-                        double ez = box.minZ + 0.5 - cam.z;
-                        double sx = start.x - cam.x;
-                        double sy = start.y - cam.y;
-                        double sz = start.z - cam.z;
-
-                        // Normal = normierte Richtung der Linie (vom Format verlangt).
-                        double dx = ex - sx, dy = ey - sy, dz = ez - sz;
-                        double len = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                        if (len < 1.0e-4) continue;
-                        if (dx*dx + dy*dy + dz*dz > maxDistSq) continue;
-                        tDrawn++;
-                        float nx = (float) (dx / len);
-                        float ny = (float) (dy / len);
-                        float nz = (float) (dz / len);
-
-                        // WICHTIG: Das Lines-Format verlangt pro Vertex auch
-                        // lineWidth -- fehlt es, crasht das Rendering
-                        // ("Missing elements in vertex: LineWidth").
-                        lines.addVertex(mat, (float) sx, (float) sy, (float) sz)
-                                .setColor(sr, sg, sb, sa).setNormal(nx, ny, nz).setLineWidth(tw);
-                        lines.addVertex(mat, (float) ex, (float) ey, (float) ez)
-                                .setColor(sr, sg, sb, sa).setNormal(nx, ny, nz).setLineWidth(tw);
+                        Vec3 target = new Vec3(box.minX + 0.5, box.minY + 0.5, box.minZ + 0.5);
+                        if (target.distanceToSqr(tracerCam) > maxDistSq) continue;
+                        tracerDrawn++;
+                        EspRender.submitLines(collector, matrices,
+                                (matrix, lines) -> EspRender.drawTracer(matrix, lines,
+                                        tracerStart, target, tracerCam, tracerColor, tracerWidth));
                     }
                 }
             } catch (Throwable pvpErr) {

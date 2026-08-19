@@ -26,13 +26,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer {
 
+    private static boolean pvpclient$gemeldet = false;
+
     @Inject(method = "setupFog", at = @At("RETURN"))
     private void pvpclient$removeFog(Camera camera, int renderDistance,
                                      DeltaTracker tickCounter, float skyDarkness,
                                      ClientLevel world,
                                      CallbackInfoReturnable<FogData> cir) {
         FogData data = cir.getReturnValue();
-        if (data == null) return;
+        if (data == null) {
+            // Einmalige Meldung: liefert setupFog ueberhaupt ein Objekt?
+            // Ohne das laesst sich nicht unterscheiden, ob der Hook nicht
+            // greift oder ob die Werte nichts bewirken.
+            if (!pvpclient$gemeldet) {
+                pvpclient$gemeldet = true;
+                com.vortex.client.core.Errors.note("MixinFogRenderer",
+                        "setupFog lieferte null -- Nebel kann nicht geaendert werden");
+            }
+            return;
+        }
 
         FogType fogType = camera.getFluidInCamera();
         boolean remove;
@@ -45,12 +57,33 @@ public class MixinFogRenderer {
         }
         if (!remove) return;
 
+        // Einmal pro Sitzung melden, dass der Hook wirklich greift. Damit
+        // ist im Fehlerfall sofort klar, ob es am Mixin oder an den Werten
+        // liegt -- statt beides gleichzeitig zu vermuten.
+        if (!pvpclient$gemeldet) {
+            pvpclient$gemeldet = true;
+            com.vortex.client.core.Errors.note("MixinFogRenderer",
+                    "Nebel wird entfernt (Typ " + fogType + ", vorher "
+                            + data.environmentalStart + " bis " + data.environmentalEnd + ")");
+        }
+
         try {
-            float far = Float.MAX_VALUE;
-            data.environmentalStart = far;
-            data.environmentalEnd = far;
-            data.renderDistanceStart = far;
-            data.renderDistanceEnd = far;
+            // Start und Ende MUESSEN sich unterscheiden.
+            //
+            // Vorher stand hier zweimal Float.MAX_VALUE. Die Nebelstaerke
+            // ergibt sich aus (Entfernung - Start) / (Ende - Start) -- bei
+            // gleichen Werten wird durch null geteilt, und das Ergebnis ist
+            // keine Zahl. Je nach Grafikkarte bleibt der Nebel dann stehen
+            // oder das Bild wird milchig. Genau das war der Fehler.
+            //
+            // Ausserdem endliche Werte statt MAX_VALUE: damit bleibt Platz
+            // fuer die Rechnung, ohne ins Unendliche zu laufen.
+            float start = 1.0e7f;
+            float ende = 2.0e7f;
+            data.environmentalStart = start;
+            data.environmentalEnd = ende;
+            data.renderDistanceStart = start;
+            data.renderDistanceEnd = ende;
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("MixinFogRenderer", pvpErr);
         }
