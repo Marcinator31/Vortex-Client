@@ -7,21 +7,24 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Wendet den Zoom auf das von der 26.2-Kamera ermittelte Sichtfeld an.
+ * Verändert den FOV-Wert, aus dem Minecraft 26.x die sichtbare
+ * Welt-Projektionsmatrix erzeugt. Die öffentliche getFov()-Methode liefert
+ * lediglich den später gespeicherten Wert und beeinflusst die Perspektive
+ * selbst nicht mehr.
  */
 @Mixin(Camera.class)
 public abstract class ZoomFovMixin {
 
-    @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    private void vortex$applyZoom(CallbackInfoReturnable<Float> cir) {
+    @Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
+    private void vortex$applyZoom(float partialTick, CallbackInfoReturnable<Float> cir) {
         try {
             com.vortex.client.hud.Zoom.update();
             double factor = com.vortex.client.hud.Zoom.factor();
             if (factor <= 1.001) return;
 
             cir.setReturnValue((float) (cir.getReturnValueF() / factor));
-        } catch (Throwable pvpErr) {
-            com.vortex.client.core.Errors.report("ZoomFovMixin", pvpErr);
+        } catch (Throwable error) {
+            com.vortex.client.core.Errors.report("ZoomFovMixin", error);
         }
     }
 }
