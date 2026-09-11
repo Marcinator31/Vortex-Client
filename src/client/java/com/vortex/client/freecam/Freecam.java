@@ -1,9 +1,10 @@
 package com.vortex.client.freecam;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.vortex.client.module.ModuleManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.phys.Vec3;
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Verwaltet den Freecam-Zustand: ob aktiv, die freie Kamera-Position und die
@@ -51,8 +52,8 @@ public final class Freecam {
         return active;
     }
 
-    public static Vec3d getPos() {
-        return new Vec3d(x, y, z);
+    public static Vec3 getPos() {
+        return new Vec3(x, y, z);
     }
 
     public static float getYaw() {
@@ -80,15 +81,15 @@ public final class Freecam {
 
     /** Schaltet die Freecam an/aus. Beim Anschalten startet sie an der Spielerposition. */
     public static void toggle() {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         active = !active;
         if (active) {
-            Vec3d eye = mc.player.getEyePos();
+            Vec3 eye = mc.player.getEyePosition();
             x = eye.x; y = eye.y; z = eye.z;
             velX = velY = velZ = 0;
-            yaw = mc.player.getYaw();
-            pitch = mc.player.getPitch();
+            yaw = mc.player.getYRot();
+            pitch = mc.player.getXRot();
             lockX = mc.player.getX();
             lockZ = mc.player.getZ();
             lastFrameNano = System.nanoTime();
@@ -101,7 +102,7 @@ public final class Freecam {
     }
 
     /** Erstellt die stumme Kamera-Entity und macht sie zur aktiven Kamera. */
-    private static void spawnCameraEntity(MinecraftClient mc) {
+    private static void spawnCameraEntity(Minecraft mc) {
         // Nur wenn der Render-Anker ausdruecklich eingeschaltet ist. Sonst bleibt
         // der Spieler die Kamera -- das ist der sichere Weg (siehe FreecamModule).
         if (!schalter("Render Anchor", false)) {
@@ -109,9 +110,9 @@ public final class Freecam {
             return;
         }
         try {
-            if (mc.world == null || mc.getNetworkHandler() == null) return;
+            if (mc.level == null || mc.getConnection() == null) return;
             cameraEntity = new FreeCamera();
-            cameraEntity.refreshPositionAndAngles(x, y, z, yaw, pitch);
+            cameraEntity.snapTo(x, y, z, yaw, pitch);
             cameraEntity.spawn();
             mc.setCameraEntity(cameraEntity);
         } catch (Throwable t) {
@@ -122,7 +123,7 @@ public final class Freecam {
     }
 
     /** Entfernt die Kamera-Entity und setzt die Kamera zurueck auf den Spieler. */
-    private static void removeCameraEntity(MinecraftClient mc) {
+    private static void removeCameraEntity(Minecraft mc) {
         try {
             mc.setCameraEntity(mc.player);
             if (cameraEntity != null) {
@@ -138,7 +139,7 @@ public final class Freecam {
     public static void disable() {
         if (!active) return;
         active = false;
-        removeCameraEntity(MinecraftClient.getInstance());
+        removeCameraEntity(Minecraft.getInstance());
     }
 
     /**
@@ -161,9 +162,9 @@ public final class Freecam {
                 // neutralisiert. Hier kommt die dritte, als Sicherheitsnetz.
 
                 // Waagerechten Restschwung abbauen.
-                net.minecraft.util.math.Vec3d v = mc.player.getVelocity();
+                net.minecraft.world.phys.Vec3 v = mc.player.getDeltaMovement();
                 if (v.x != 0.0 || v.z != 0.0) {
-                    mc.player.setVelocity(0.0, v.y, 0.0);
+                    mc.player.setDeltaMovement(0.0, v.y, 0.0);
                 }
 
                 // Ist der Spieler trotzdem abgedriftet, zurueckholen -- aber NUR
@@ -174,7 +175,7 @@ public final class Freecam {
                 double dx = mc.player.getX() - lockX;
                 double dz = mc.player.getZ() - lockZ;
                 if ((dx * dx + dz * dz) > 0.02) {
-                    mc.player.setPosition(lockX, mc.player.getY(), lockZ);
+                    mc.player.setPos(lockX, mc.player.getY(), lockZ);
                 }
                 return;
             }
@@ -192,7 +193,7 @@ public final class Freecam {
      */
     public static void updateFrame() {
         if (!active) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) { active = false; return; }
 
         // Delta-Zeit seit dem letzten Frame (in Sekunden), begrenzt gegen Spruenge.
@@ -203,7 +204,7 @@ public final class Freecam {
         if (dt > 0.1) dt = 0.1; // bei Hängern nicht springen
 
         // Bei offenem Bildschirm nur ausgleiten, keine neuen Eingaben.
-        boolean inputAllowed = (mc.currentScreen == null);
+        boolean inputAllowed = (mc.gui.screen() == null);
 
         double accel = 0;
         double fx = 0, fy = 0, fz = 0, rx = 0, rz = 0;
@@ -235,7 +236,7 @@ public final class Freecam {
             // Geschwindigkeit aus den Modul-Einstellungen (in der GUI regelbar).
             double speed = zahl("Speed", SPEED);
             double sprintFactor = zahl("Sprint Multiplier", SPRINT_MULT);
-            if (mc.options.sprintKey.isPressed()) speed *= sprintFactor;
+            if (mc.options.keySprint.isDown()) speed *= sprintFactor;
             accel = speed;
 
             // Zielgeschwindigkeit aus den gedrueckten Tasten bauen.
@@ -272,28 +273,27 @@ public final class Freecam {
         // Kamera-Entity der Freecam-Position/-Blickrichtung folgen lassen, damit
         // das Chunk-Rendering (Cave-Culling) korrekt der Kamera folgt.
         if (cameraEntity != null) {
-            cameraEntity.refreshPositionAndAngles(x, y, z, yaw, pitch);
+            cameraEntity.snapTo(x, y, z, yaw, pitch);
             // lastRender* fuer ruckelfreies Interpolieren auf die neue Position
             // setzen (verifizierte Yarn-Feldnamen).
-            cameraEntity.lastRenderX = x;
-            cameraEntity.lastRenderY = y;
-            cameraEntity.lastRenderZ = z;
+            cameraEntity.xOld = x;
+            cameraEntity.yOld = y;
+            cameraEntity.zOld = z;
         }
     }
 
-    private static boolean isDown(MinecraftClient mc, int key) {
-        return InputUtil.isKeyPressed(mc.getWindow(), key);
+    private static boolean isDown(Minecraft mc, int key) {
+        return InputConstants.isKeyDown(mc.getWindow(), key);
     }
 
     /** Liefert das Freecam-Modul (oder null). */
-        /**
-     * Das Freecam-Modul, falls es geladen ist.
+    /**
+     * Das Freecam-Modul, falls geladen.
      *
-     * Gesucht wird ueber den NAMEN, nicht ueber die Klasse: das Modul liegt
-     * seit dem Umzug im Addon. Waere der Klassenname hier fest verdrahtet,
-     * liesse sich der Client ohne Addon nicht mehr uebersetzen.
-     *
-     * Ohne Addon gibt es kein Modul -- dann bleibt die Kamera einfach aus.
+     * Gesucht wird ueber den NAMEN, nicht die Klasse: das Modul liegt seit
+     * dem Umzug im Addon. Waere der Klassenname hier fest verdrahtet, liesse
+     * sich der Client ohne Addon nicht mehr uebersetzen. Ohne Addon bleibt
+     * die Kamera einfach aus.
      */
     public static com.vortex.client.module.Module module() {
         try {
@@ -306,13 +306,8 @@ public final class Freecam {
     }
 
     // --- Einstellungen ueber den Namen lesen ------------------------------
-    //
-    // Das Freecam-Modul liegt im Addon. Die Kamera hier darf seine Klasse
-    // nicht kennen, sonst laesst sich der Client ohne Addon nicht
-    // uebersetzen. Also werden die Werte ueber den Einstellungsnamen
-    // gesucht -- genau die Namen, die im Modul stehen.
-    //
-    // Fehlt das Addon, greift jeweils der Standardwert.
+    // Die Kamera darf die Modulklasse nicht kennen. Fehlt das Addon, greift
+    // jeweils der Standardwert.
 
     private static boolean schalter(String name, boolean standard) {
         try {
@@ -341,5 +336,4 @@ public final class Freecam {
         } catch (Throwable ignored) { }
         return standard;
     }
-
 }

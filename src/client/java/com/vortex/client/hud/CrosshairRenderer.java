@@ -1,8 +1,8 @@
 package com.vortex.client.hud;
 
 import com.vortex.client.module.modules.CrosshairModule;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * Draws the crosshair.
@@ -14,9 +14,9 @@ public final class CrosshairRenderer {
 
     private CrosshairRenderer() {}
 
-    public static void draw(DrawContext ctx, MinecraftClient client, CrosshairModule mod) {
-        int cx = client.getWindow().getScaledWidth() / 2;
-        int cy = client.getWindow().getScaledHeight() / 2;
+    public static void draw(GuiGraphicsExtractor ctx, Minecraft client, CrosshairModule mod) {
+        int cx = client.getWindow().getGuiScaledWidth() / 2;
+        int cy = client.getWindow().getGuiScaledHeight() / 2;
 
         int len = mod.size.getInt();
         int th = mod.thickness.getInt();
@@ -64,7 +64,7 @@ public final class CrosshairRenderer {
      * Only shown while the weapon is still charging. A full bar sitting there
      * permanently is noise; what matters is the moment it fills.
      */
-    private static void drawAttackIndicator(DrawContext ctx, MinecraftClient client,
+    private static void drawAttackIndicator(GuiGraphicsExtractor ctx, Minecraft client,
                                             int cx, int cy) {
         try {
             if (client.player == null) return;
@@ -74,12 +74,12 @@ public final class CrosshairRenderer {
             // Anyone who moved the indicator to the hotbar, or switched it off,
             // meant it -- putting it back under the crosshair would override a
             // decision they already made.
-            Object mode = client.options.getAttackIndicator().getValue();
+            Object mode = client.options.attackIndicator().get();
             if (mode != null && !"CROSSHAIR".equals(mode.toString().toUpperCase())) {
                 return;
             }
 
-            float progress = client.player.getAttackCooldownProgress(0.0f);
+            float progress = client.player.getAttackStrengthScale(0.0f);
             if (progress >= 1.0f) return;
 
             int x = cx - 8;
@@ -100,13 +100,13 @@ public final class CrosshairRenderer {
         }
     }
 
-    private static void arm(DrawContext ctx, int x, int y, int w, int h,
+    private static void arm(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
                             int color, boolean outline) {
         fill(ctx, x, y, w, h, color, outline);
     }
 
     /** Rectangle, with a dark border around it when asked for. */
-    private static void fill(DrawContext ctx, int x, int y, int w, int h,
+    private static void fill(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
                              int color, boolean outline) {
         if (outline) {
             // One pixel of dark all round, so the crosshair stays visible
@@ -122,7 +122,7 @@ public final class CrosshairRenderer {
      * Enough segments that it reads as round at any size, few enough that it
      * costs nothing worth measuring.
      */
-    private static void circle(DrawContext ctx, int cx, int cy, int radius, int th,
+    private static void circle(GuiGraphicsExtractor ctx, int cx, int cy, int radius, int th,
                                int color, boolean outline) {
         int steps = Math.max(16, radius * 4);
         for (int i = 0; i < steps; i++) {

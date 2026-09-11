@@ -44,6 +44,16 @@ public class RadarModule extends Module implements HudElement {
     // Bei Spielern Kopf + Name + Entfernung anzeigen.
     public final BooleanSetting playerDetails = new BooleanSetting("Player Details", true);
 
+    // --- Warnung bei neuen Spielern ---------------------------------------
+    // Beides standardmaessig AUS: ein Radar, der ungefragt Toene macht, ist
+    // beim ersten Einschalten eine unangenehme Ueberraschung.
+    public final BooleanSetting alertChat = new BooleanSetting("Alert in Chat", false);
+    public final BooleanSetting alertSound = new BooleanSetting("Alert Sound", false);
+    // Sperrzeit: wer am Rand der Reichweite pendelt, wuerde sonst im
+    // Sekundentakt gemeldet.
+    public final NumberSetting alertCooldown =
+            new NumberSetting("Alert Cooldown (s)", 30, 5, 300, 5);
+
     public RadarModule() {
         super("Radar", Category.HUD);
         addSetting(x);
@@ -56,6 +66,9 @@ public class RadarModule extends Module implements HudElement {
         addSetting(showAnimals);
         addSetting(showItems);
         addSetting(playerDetails);
+        addSetting(alertChat);
+        addSetting(alertSound);
+        addSetting(alertCooldown);
     }
 
     /** Basis-Durchmesser des Radars in Pixeln (vor Skalierung). */

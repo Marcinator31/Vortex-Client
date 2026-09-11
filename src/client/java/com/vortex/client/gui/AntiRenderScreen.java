@@ -2,13 +2,13 @@ package com.vortex.client.gui;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.AntiRenderModule;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SpawnEggItem;
 
 /**
  * Auswahl der Entity-Typen, die nicht gezeichnet werden sollen (Anti Render).
@@ -26,13 +26,13 @@ public class AntiRenderScreen extends SelectionScreen {
     @Override
     protected void buildEntries() {
         entries.add(new Entry(Items.PLAYER_HEAD, "minecraft:player", "Players"));
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            Identifier id = Registries.ENTITY_TYPE.getId(type);
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
             if (id == null) continue;
             if ("minecraft:player".equals(id.toString())) continue;
-            SpawnEggItem egg = SpawnEggItem.forEntity(type);
-            Item icon = (egg != null) ? egg : Items.BARRIER;
-            entries.add(new Entry(icon, id.toString(), type.getName().getString()));
+            var egg = SpawnEggItem.byId(type);
+            Item icon = egg.map(holder -> holder.value()).orElse(Items.BARRIER);
+            entries.add(new Entry(icon, id.toString(), type.getDescription().getString()));
         }
     }
 

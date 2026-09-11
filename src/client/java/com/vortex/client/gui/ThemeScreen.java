@@ -1,12 +1,11 @@
 package com.vortex.client.gui;
 
 import com.vortex.client.core.setting.ColorSetting;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
-
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Menue zum Anpassen der Oberflaechenfarben.
@@ -54,7 +53,7 @@ public class ThemeScreen extends Screen {
     private int moodX, moodY, moodCell;
 
     public ThemeScreen(Screen parent) {
-        super(Text.literal("Theme"));
+        super(Component.literal("Theme"));
         this.parent = parent;
     }
 
@@ -63,7 +62,7 @@ public class ThemeScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
 
@@ -98,13 +97,13 @@ public class ThemeScreen extends Screen {
                 fade(C_LINE, openAnim));
 
         boolean backHov = inRect(mx, my, winX + 8, winY + 8, 16, 16);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
+        ctx.text(this.font, Component.literal("<"),
                 winX + 12, winY + 12, fade(backHov ? accent : 0xFF9A9AA6, openAnim));
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Theme"),
+        ctx.text(this.font, Component.literal("Theme"),
                 winX + 30, winY + 11, fade(0xFFFFFFFF, openAnim));
 
         // Farbstimmungen
-        ctx.drawText(this.textRenderer, Text.literal("Accent"),
+        ctx.text(this.font, Component.literal("Accent"),
                 winX + 10, winY + 32, fade(0xFF74747F, openAnim), false);
         moodCell = 16;
         moodX = winX + 52;
@@ -126,13 +125,13 @@ public class ThemeScreen extends Screen {
         for (ColorSetting c : list) {
             boolean hov = inRect(mx, my, winX + 8, y, winW - 16, ROW_H);
             roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
-            ctx.drawText(this.textRenderer, Text.literal(c.getName()),
+            ctx.text(this.font, Component.literal(c.getName()),
                     winX + 18, y + 8, 0xFFD0D0DA, false);
 
             // Farbfeld + Hex-Wert
             String hx = String.format(java.util.Locale.ROOT, "#%08X", c.get());
-            int hw = this.textRenderer.getWidth(hx);
-            ctx.drawText(this.textRenderer, Text.literal(hx),
+            int hw = this.font.width(hx);
+            ctx.text(this.font, Component.literal(hx),
                     winX + winW - 34 - hw - 8, y + 8, 0xFF74747F, false);
             roundRect(ctx, winX + winW - 34, y + 5, 26, 14, 0xFF000000);
             roundRect(ctx, winX + winW - 33, y + 6, 24, 12, c.get() | 0xFF000000);
@@ -145,25 +144,25 @@ public class ThemeScreen extends Screen {
         ctx.fill(winX, fy, winX + winW, winY + winH, fade(C_BAR, openAnim));
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
         String reset = "Reset";
-        int rw = this.textRenderer.getWidth(reset) + 16;
+        int rw = this.font.width(reset) + 16;
         boolean rHov = inRect(mx, my, winX + 10, fy + 4, rw, 17);
         roundRect(ctx, winX + 10, fy + 4, rw, 17, rHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
-        ctx.drawText(this.textRenderer, Text.literal(reset),
+        ctx.text(this.font, Component.literal(reset),
                 winX + 18, fy + 9, 0xFFD0D0DA, false);
 
-        ctx.drawText(this.textRenderer, Text.literal("Click a row to open the colour picker"),
+        ctx.text(this.font, Component.literal("Click a row to open the colour picker"),
                 winX + 20 + rw, fy + 9, 0xFF5A5A66, false);
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
 
         // Zurueck
         if (inRect(mx, my, winX + 8, winY + 8, 16, 16)) {
-            this.close();
+            this.onClose();
             return true;
         }
         // Farbstimmung
@@ -177,7 +176,7 @@ public class ThemeScreen extends Screen {
         // Zuruecksetzen
         int fy = winY + winH - FOOTER_H;
         String reset = "Reset";
-        int rw = this.textRenderer.getWidth(reset) + 16;
+        int rw = this.font.width(reset) + 16;
         if (inRect(mx, my, winX + 10, fy + 4, rw, 17)) {
             Theme.INSTANCE.resetDefaults();
             return true;
@@ -186,7 +185,7 @@ public class ThemeScreen extends Screen {
         int y = winY + HEADER_H + 4;
         for (ColorSetting c : colors()) {
             if (inRect(mx, my, winX + 8, y, winW - 16, ROW_H)) {
-                MinecraftClient.getInstance().setScreen(new ColorPickerScreen(this, c));
+                Minecraft.getInstance().gui.setScreen(new ColorPickerScreen(this, c));
                 return true;
             }
             y += ROW_H + 4;
@@ -198,7 +197,7 @@ public class ThemeScreen extends Screen {
         return px >= x && px < x + w && py >= y && py < y + h;
     }
 
-    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -224,12 +223,12 @@ public class ThemeScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
-        this.client.setScreen(parent);
+    public void onClose() {
+        this.minecraft.gui.setScreen(parent);
     }
 }

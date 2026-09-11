@@ -1,14 +1,14 @@
 package com.vortex.client.skin;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
+import com.mojang.blaze3d.platform.NativeImage;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
+import com.mojang.blaze3d.platform.NativeImage;
 
 /**
  * Laedt Skin-PNGs als Texturen, damit sie in der Oberflaeche angezeigt werden
@@ -59,9 +59,9 @@ public final class SkinTextureCache {
                 return null;
             }
 
-            Identifier id = Identifier.of("vortexclient", "skins/" + safeKey(key));
-            MinecraftClient.getInstance().getTextureManager().registerTexture(
-                    id, new NativeImageBackedTexture(() -> "vortexclient-skin", image));
+            Identifier id = Identifier.fromNamespaceAndPath("vortexclient", "skins/" + safeKey(key));
+            Minecraft.getInstance().getTextureManager().register(
+                    id, new DynamicTexture(() -> "vortexclient-skin", image));
             CACHE.put(key, id);
             return id;
         } catch (Throwable pvpErr) {

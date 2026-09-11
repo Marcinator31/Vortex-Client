@@ -1,5 +1,6 @@
 package com.vortex.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.vortex.client.core.ConfigManager;
 import com.vortex.client.gui.ClickGui;
 import com.vortex.client.hud.HudRenderer;
@@ -7,10 +8,9 @@ import com.vortex.client.module.ModuleManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.Identifier;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -22,16 +22,20 @@ public class VortexClientMod implements ClientModInitializer {
 
     // Ab 1.21.9 ist die Keybind-Kategorie ein Category-Objekt, kein String.
     // Wir erstellen eine eigene Kategorie fuer alle unsere Keybinds.
-    private static final KeyBinding.Category CATEGORY =
-        KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
+    private static final KeyMapping.Category CATEGORY =
+        KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
 
     /** Which toggle keys were held last tick, for edge detection. */
     private static final java.util.Map<String, Boolean> toggleKeyDown =
             new java.util.HashMap<>();
 
-    private static KeyBinding openClickGuiKey;
-    private static KeyBinding openHudEditorKey;
+    private static KeyMapping openClickGuiKey;
+    private static KeyMapping openHudEditorKey;
 
+    /** Fallback-Flankenerkennung, falls 26.2 die KeyMapping-Queue nicht fuellt. */
+    private static boolean clickGuiKeyWasDown;
+
+    // Flankenerkennung fuer die Freecam-Taste (nur beim Druecken umschalten).
 
     @Override
     public void onInitializeClient() {
@@ -86,13 +90,16 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.WaypointRenderer.register();
         com.vortex.client.waypoint.WaypointActions.register();
         com.vortex.client.gui.RestartButton.register();
+        com.vortex.client.freecam.Freecam.registerSafety();
         com.vortex.client.command.ClientCommands.register();
 
         // Beim Beenden des Spiels alle Einstellungen speichern.
         // Sicherheit: Wenn der Spieler die Welt verlaesst / disconnected, die
+        // Freecam (und damit die Kamera-Entity) sauber beenden. Sonst haengt die
         // Entity an der alten Welt und kann beim Wechsel crashen.
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT
             .register((handler, client) -> {
+                com.vortex.client.freecam.Freecam.disable();
                 // Beim Serverwechsel die Totem-Zaehlung leeren -- die Werte
                 // gelten nur fuer die Spieler der aktuellen Welt.
                 com.vortex.client.hud.TotemPops.reset();
@@ -121,8 +128,8 @@ public class VortexClientMod implements ClientModInitializer {
         });
 
         // Keybind: Rechte Umschalttaste oeffnet das ClickGUI (wie viele Clients).
-        openClickGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.vortexclient.clickgui", InputUtil.Type.KEYSYM,
+        openClickGuiKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.vortexclient.clickgui", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_SHIFT, CATEGORY));
 
         // HINWEIS: Der Account-Switcher ist vorerst deaktiviert.
@@ -138,8 +145,8 @@ public class VortexClientMod implements ClientModInitializer {
         // Stellen weiter unten wieder einzusetzen.
 
         // Keybind: Rechte Strg-Taste oeffnet den HUD-Editor (Drag & Drop).
-        openHudEditorKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.vortexclient.hudeditor", InputUtil.Type.KEYSYM,
+        openHudEditorKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.vortexclient.hudeditor", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_CONTROL, CATEGORY));
 
         // (deaktiviert) Accounts-Knopf im Hauptmenue -- siehe Hinweis oben.
@@ -162,11 +169,29 @@ public class VortexClientMod implements ClientModInitializer {
                     }
                 }
             }
-            while (openClickGuiKey.wasPressed()) {
-                client.setScreen(new ClickGui());
+            boolean openClickGui = false;
+            while (openClickGuiKey.consumeClick()) {
+                openClickGui = true;
             }
-            while (openHudEditorKey.wasPressed()) {
-                client.setScreen(new com.vortex.client.gui.HudEditorScreen());
+
+            // Minecraft 26.2 verarbeitet registrierte KeyMappings erst nach dem
+            // neuen Eingabe-Extraktionsschritt. Die direkte Abfrage stellt sicher,
+            // dass die Standardtaste rechte Umschalttaste dennoch im ersten
+            // Client-Tick nach dem Druck sicher erkannt wird.
+            boolean rightShiftDown = InputConstants.isKeyDown(
+                    client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+            if (rightShiftDown && !clickGuiKeyWasDown) {
+                openClickGui = true;
+            }
+            clickGuiKeyWasDown = rightShiftDown;
+
+            if (openClickGui && client.gui.screen() == null) {
+                client.gui.setScreen(new ClickGui());
+                System.out.println("[vortexclient] ClickGUI opened via Right Shift.");
+            }
+
+            while (openHudEditorKey.consumeClick()) {
+                client.gui.setScreen(new com.vortex.client.gui.HudEditorScreen());
             }
 
             // --- Module toggle keys ---
@@ -178,11 +203,11 @@ public class VortexClientMod implements ClientModInitializer {
             // Skipped while a screen is open: otherwise typing a name into the
             // waypoint manager would switch modules on and off.
             try {
-                if (client.currentScreen == null) {
+                if (client.gui.screen() == null) {
                     for (var module : ModuleManager.INSTANCE.getModules()) {
                         int code = module.getToggleKey().getKeyCode();
                         if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) continue;
-                        boolean down = net.minecraft.client.util.InputUtil.isKeyPressed(
+                        boolean down = com.mojang.blaze3d.platform.InputConstants.isKeyDown(
                                 client.getWindow(), code);
                         boolean was = Boolean.TRUE.equals(toggleKeyDown.get(module.getName()));
                         if (down && !was) {
@@ -197,8 +222,7 @@ public class VortexClientMod implements ClientModInitializer {
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("ModuleToggleKeys", pvpErr);
             }
-
-        });
+});
 
         System.out.println("[" + MOD_ID + "] Client gestartet.");
     }

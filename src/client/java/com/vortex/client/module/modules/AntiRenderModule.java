@@ -3,10 +3,9 @@ package com.vortex.client.module.modules;
 import com.vortex.client.core.setting.BooleanSetting;
 import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.module.Module;
-import net.minecraft.util.Identifier;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.resources.Identifier;
 
 /**
  * Anti Render: blendet ausgewaehlte Entity-Typen komplett aus dem Rendering aus
@@ -94,24 +93,17 @@ public class AntiRenderModule extends Module implements com.vortex.client.module
         }
     }
 
-    // --- ExtraData: Zusatzliste ausserhalb der normalen Einstellungen ------
-    // Schluessel und Methodennamen sind unveraendert uebernommen, damit
-    // bestehende Presets weiterhin gelesen werden.
+    // --- ExtraData: Zusatzliste ausserhalb der Einstellungen ---------------
+    // Schluessel unveraendert, damit bestehende Presets weiter gelesen werden.
 
     @Override
-    public String extraKey() {
-        return "__antirender__";
-    }
+    public String extraKey() { return "__antirender__"; }
 
     @Override
-    public String serializeExtra() {
-        return serialize();
-    }
+    public String serializeExtra() { return serialize(); }
 
     @Override
-    public void deserializeExtra(String value) {
-        deserialize(value);
-    }
+    public void deserializeExtra(String value) { deserialize(value); }
 
     @Override
     public void clearExtra() {
@@ -119,15 +111,13 @@ public class AntiRenderModule extends Module implements com.vortex.client.module
     }
 
 
-    // --- HasOwnScreen: eigener Auswahlbildschirm --------------------------
+    // --- HasOwnScreen ------------------------------------------------------
     @Override
-    public String screenButtonLabel() {
-        return "Select entities";
-    }
+    public String screenButtonLabel() { return "Select entities"; }
 
     @Override
-    public net.minecraft.client.gui.screen.Screen createScreen(
-            net.minecraft.client.gui.screen.Screen parent) {
+    public net.minecraft.client.gui.screens.Screen createScreen(
+            net.minecraft.client.gui.screens.Screen parent) {
         return new com.vortex.client.gui.AntiRenderScreen(parent);
     }
 

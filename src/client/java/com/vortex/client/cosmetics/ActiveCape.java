@@ -1,10 +1,10 @@
 package com.vortex.client.cosmetics;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -21,24 +21,14 @@ import java.util.regex.Pattern;
 /**
  * Das im Launcher gewaehlte Cape.
  *
- * ABLAUF
- *  1. Der Launcher schreibt die Auswahl nach
- *     config/vortex-client/cosmetics.json
- *  2. Von dort wird die Kennung gelesen
- *  3. Die Textur kommt aus dem Cosmetics-Verzeichnis im Netz und wird
- *     lokal zwischengespeichert
- *  4. CapeOverrideMixin setzt sie beim eigenen Spieler ein
+ * Der Launcher schreibt die Auswahl nach config/vortex-client/cosmetics.json.
+ * Die Textur kommt aus dem Cosmetics-Verzeichnis im Netz; CapeOverrideMixin
+ * setzt sie beim eigenen Spieler ein.
  *
- * Diese Fassung ist fuer 1.21.11: dort heisst die Textur-Klasse
- * NativeImageBackedTexture und angemeldet wird mit registerTexture --
- * in 26.x sind es DynamicTexture und register. Deshalb ist die Datei
- * NICHT identisch mit der der neueren Versionen.
- *
- * WICHTIG: Rein clientseitig. Nur du selbst siehst das Cape.
+ * Rein clientseitig: nur du selbst siehst das Cape.
  */
 public final class ActiveCape {
 
-    /** Verzeichnis der verfuegbaren Capes. Muss oeffentlich erreichbar sein. */
     private static final String CATALOGUE =
             "https://raw.githubusercontent.com/Marcinator31/Vortex-Client-Cosmetics/refs/heads/main/cosmetics.json";
 
@@ -54,13 +44,11 @@ public final class ActiveCape {
 
     private ActiveCape() {}
 
-    /** Kennung der angemeldeten Cape-Textur, oder null. */
     public static synchronized Identifier textureId() {
         ensureLoaded();
         return textureId;
     }
 
-    /** Beim Start aufrufen. Holt die Textur im Hintergrund nach. */
     public static synchronized void init() {
         ensureLoaded();
     }
@@ -75,11 +63,7 @@ public final class ActiveCape {
         t.start();
     }
 
-    /**
-     * Liest die Auswahl aus der Launcher-Datei.
-     *
-     * Bewusst ohne JSON-Bibliothek: die Datei hat genau ein Feld.
-     */
+    /** Liest die Auswahl aus der Launcher-Datei. Die hat genau ein Feld. */
     private static String leseAuswahl() {
         try {
             Path datei = FabricLoader.getInstance().getConfigDir()
@@ -108,27 +92,18 @@ public final class ActiveCape {
 
             // NETZ ZUERST, Zwischenspeicher nur als Rueckfall.
             //
-            // Vorher war es umgekehrt: lag die Datei einmal lokal, wurde sie
-            // nie wieder geholt. Aenderst du das Bild im Cosmetics-Verzeichnis,
-            // sah niemand die Aenderung -- genau der Fall mit den nachtraeglich
-            // ergaenzten Elytra-Fluegeln.
-            //
-            // Eine Cape-Textur ist wenige Kilobyte gross. Sie bei jedem Start
-            // zu holen kostet nichts und spart die ganze Frage, wann ein
-            // Zwischenspeicher veraltet ist.
+            // Umgekehrt wurde eine einmal geholte Datei nie wieder erneuert --
+            // Aenderungen am Cape im Verzeichnis sah dann niemand. Eine
+            // Cape-Textur ist wenige Kilobyte gross; sie bei jedem Start zu
+            // holen kostet nichts.
             String url = sucheTexturAdresse(capeId);
-            if (url != null) {
-                daten = lade(url);
-            }
+            if (url != null) daten = lade(url);
             if (daten != null) {
                 try {
                     Files.createDirectories(cache.getParent());
                     Files.write(cache, daten);
-                } catch (Throwable ignored) {
-                    // Ohne Zwischenspeicher laedt es beim naechsten Start neu.
-                }
+                } catch (Throwable ignored) { }
             } else if (Files.exists(cache)) {
-                // Kein Netz: die zuletzt geholte Fassung tut es auch.
                 daten = Files.readAllBytes(cache);
                 com.vortex.client.core.Errors.note("ActiveCape",
                         "Verzeichnis nicht erreichbar -- benutze gespeicherte Textur");
@@ -139,8 +114,7 @@ public final class ActiveCape {
             }
 
             final byte[] fertig = daten;
-            // Texturen duerfen nur im Render-Thread angemeldet werden.
-            MinecraftClient.getInstance().execute(() -> melde(fertig));
+            Minecraft.getInstance().execute(() -> melde(fertig));
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("ActiveCape.holeUndMelde", pvpErr);
         } finally {
@@ -148,7 +122,6 @@ public final class ActiveCape {
         }
     }
 
-    /** Sucht im Verzeichnis die Texturadresse zur gewaehlten Kennung. */
     private static String sucheTexturAdresse(String id) {
         byte[] roh = lade(CATALOGUE);
         if (roh == null) return null;
@@ -186,8 +159,7 @@ public final class ActiveCape {
             try (InputStream in = new java.io.ByteArrayInputStream(daten)) {
                 image = NativeImage.read(in);
             }
-            // Cape-Texturen sind 64x32. Eine falsche Groesse wuerde zu
-            // verschobenen Flaechen fuehren -- lieber gar kein Cape.
+            // 64x32 ist Pflicht: bei anderer Groesse sitzen die Flaechen falsch.
             if (image.getWidth() != 64 || image.getHeight() != 32) {
                 image.close();
                 com.vortex.client.core.Errors.note("ActiveCape",
@@ -195,12 +167,10 @@ public final class ActiveCape {
                                 + image.getWidth() + "x" + image.getHeight() + ")");
                 return;
             }
-
-            Identifier id = Identifier.of("vortexclient", "cape/" + safe(capeId));
-            var tm = MinecraftClient.getInstance().getTextureManager();
-            // Wie in ActiveSkin dieser Version: NativeImageBackedTexture und
-            // registerTexture (in 26.x heisst es DynamicTexture/register).
-            tm.registerTexture(id, new NativeImageBackedTexture(() -> "vortexclient-cape", image));
+            Identifier id = Identifier.fromNamespaceAndPath(
+                    "vortexclient", "cape/" + safe(capeId));
+            var tm = Minecraft.getInstance().getTextureManager();
+            tm.register(id, new DynamicTexture(() -> "vortexclient-cape", image));
             textureId = id;
             com.vortex.client.core.Errors.note("ActiveCape", "Cape angemeldet als " + id);
         } catch (Throwable pvpErr) {
@@ -208,7 +178,6 @@ public final class ActiveCape {
         }
     }
 
-    /** Nur Zeichen, die in einer Identifier-Kennung erlaubt sind. */
     private static String safe(String s) {
         StringBuilder b = new StringBuilder();
         for (char c : s.toLowerCase().toCharArray()) {

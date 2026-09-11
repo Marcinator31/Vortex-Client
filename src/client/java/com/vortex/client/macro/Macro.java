@@ -68,8 +68,8 @@ public final class Macro {
                 return "Mouse " + (code - MacroManager.MOUSE_BASE + 1);
             }
             try {
-                return net.minecraft.client.util.InputUtil.Type.KEYSYM
-                        .createFromCode(code).getLocalizedText().getString().toUpperCase();
+                return com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                        .getOrCreate(code).getDisplayName().getString().toUpperCase();
             } catch (Throwable pvpErr) {
                 return "key " + code;
             }

@@ -1,14 +1,13 @@
 package com.vortex.client.account;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.session.Session;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
 
 /**
  * Verwaltet die gespeicherten Accounts und fuehrt den eigentlichen
- * "Switch" aus -- also das Umsetzen der aktiven Minecraft-Session.
+ * "Switch" aus -- also das Umsetzen der aktiven Minecraft-User.
  *
  * Das WIE des Login (Microsoft-OAuth) steckt in MicrosoftAuth.
  * Diese Klasse kuemmert sich nur darum, was man mit einem bereits
@@ -39,16 +38,16 @@ public final class AccountManager {
     /**
      * DER KERN DES SWITCHERS.
      *
-     * Minecraft haelt die aktive Anmeldung in einem Session-Objekt.
-     * "Account wechseln" heisst: ein neues Session-Objekt mit den Daten
+     * Minecraft haelt die aktive Anmeldung in einem User-Objekt.
+     * "Account wechseln" heisst: ein neues User-Objekt mit den Daten
      * des Ziel-Accounts bauen und in den Client setzen.
      *
      * ACHTUNG -- zwei reale Stolpersteine:
      *
-     * 1) MinecraftClient.session ist final. Man kommt da nur per
+     * 1) Minecraft.session ist final. Man kommt da nur per
      *    Reflection oder (sauberer) per Mixin/Accessor ran, der das
      *    Feld beschreibbar macht. Du brauchst also einen kleinen
-     *    @Accessor-Mixin auf MinecraftClient, der das Sitzungsfeld freilegt.
+     *    @Accessor-Mixin auf Minecraft, der das Sitzungsfeld freilegt.
      *    (Suchbegriff fuer dich: "fabric accessor mixin private field".)
      *
      * 2) Der accessToken im Account muss GUELTIG sein. Tokens laufen ab.
@@ -56,11 +55,11 @@ public final class AccountManager {
      *    Mit einem abgelaufenen Token kannst du keine Online-Server
      *    joinen (Authentifizierung schlaegt fehl).
      *
-     * Der genaue Konstruktor von Session aendert sich zwischen MC-Versionen.
+     * Der genaue Konstruktor von User aendert sich zwischen MC-Versionen.
      * Beim Build zeigt dir die IDE die erwarteten Parameter -- nimm die.
      */
     public void switchTo(Account account) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         try {
             java.util.UUID uuid;
@@ -71,15 +70,15 @@ public final class AccountManager {
                 token = account.accessToken;
                 uuid = (account.uuid != null && !account.uuid.isEmpty())
                         ? java.util.UUID.fromString(account.uuid)
-                        : net.minecraft.util.Uuids.getOfflinePlayerUuid(account.username);
+                        : net.minecraft.core.UUIDUtil.createOfflinePlayerUUID(account.username);
             } else {
                 // Offline-Fallback: deterministische UUID + Platzhalter-Token.
-                uuid = net.minecraft.util.Uuids.getOfflinePlayerUuid(account.username);
+                uuid = net.minecraft.core.UUIDUtil.createOfflinePlayerUUID(account.username);
                 token = "0";
             }
 
-            net.minecraft.client.session.Session session =
-                new net.minecraft.client.session.Session(
+            net.minecraft.client.User session =
+                new net.minecraft.client.User(
                     account.username,
                     uuid,
                     token,

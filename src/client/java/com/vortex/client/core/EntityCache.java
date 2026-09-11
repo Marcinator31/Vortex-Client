@@ -1,9 +1,8 @@
 package com.vortex.client.core;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,8 +25,8 @@ import java.util.List;
 public final class EntityCache {
 
     private static volatile List<Entity> all = List.of();
-    private static volatile List<net.minecraft.entity.ItemEntity> items = List.of();
-    private static volatile List<net.minecraft.entity.LivingEntity> living = List.of();
+    private static volatile List<net.minecraft.world.entity.item.ItemEntity> items = List.of();
+    private static volatile List<net.minecraft.world.entity.LivingEntity> living = List.of();
 
     /** Ticks since the last rebuild, so a slow frame cannot starve it. */
     private static long tick = 0;
@@ -47,9 +46,9 @@ public final class EntityCache {
         });
     }
 
-    private static void rebuild(MinecraftClient client) {
+    private static void rebuild(Minecraft client) {
         tick++;
-        if (client.world == null) {
+        if (client.level == null) {
             all = List.of();
             items = List.of();
             living = List.of();
@@ -57,17 +56,17 @@ public final class EntityCache {
         }
 
         List<Entity> newAll = new ArrayList<>();
-        List<net.minecraft.entity.ItemEntity> newItems = new ArrayList<>();
-        List<net.minecraft.entity.LivingEntity> newLiving = new ArrayList<>();
+        List<net.minecraft.world.entity.item.ItemEntity> newItems = new ArrayList<>();
+        List<net.minecraft.world.entity.LivingEntity> newLiving = new ArrayList<>();
 
-        for (Entity e : client.world.getEntities()) {
+        for (Entity e : client.level.entitiesForRendering()) {
             if (e == null) continue;
             newAll.add(e);
             // Sorted here, once, rather than by every renderer separately --
             // the instanceof checks were being repeated in half a dozen loops.
-            if (e instanceof net.minecraft.entity.ItemEntity item) {
+            if (e instanceof net.minecraft.world.entity.item.ItemEntity item) {
                 newItems.add(item);
-            } else if (e instanceof net.minecraft.entity.LivingEntity le) {
+            } else if (e instanceof net.minecraft.world.entity.LivingEntity le) {
                 newLiving.add(le);
             }
         }
@@ -83,12 +82,12 @@ public final class EntityCache {
     }
 
     /** Dropped items only. */
-    public static List<net.minecraft.entity.ItemEntity> items() {
+    public static List<net.minecraft.world.entity.item.ItemEntity> items() {
         return items;
     }
 
     /** Living entities only -- players and mobs. */
-    public static List<net.minecraft.entity.LivingEntity> living() {
+    public static List<net.minecraft.world.entity.LivingEntity> living() {
         return living;
     }
 

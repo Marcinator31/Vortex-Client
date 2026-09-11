@@ -1,11 +1,11 @@
 package com.vortex.client.mixin.client;
 
 import com.vortex.client.hud.TotemPops;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityStatuses;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityEvent;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,20 +27,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Nothing is requested and nothing is sent — this event reaches every client
  * nearby anyway, so the totem animation can play.
  */
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public abstract class EntityStatusMixin {
 
-    @Inject(method = "method_11148", at = @At("TAIL"), require = 0)
-    private void vortex$countTotemPop(EntityStatusS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleEntityEvent", at = @At("TAIL"), require = 0)
+    private void vortex$countTotemPop(ClientboundEntityEventPacket packet, CallbackInfo ci) {
         try {
-            if (packet.getStatus() != EntityStatuses.USE_TOTEM_OF_UNDYING) return;
+            if (packet.getEventId() != EntityEvent.PROTECTED_FROM_DEATH) return;
 
-            net.minecraft.client.MinecraftClient client =
-                    net.minecraft.client.MinecraftClient.getInstance();
-            if (client == null || client.world == null) return;
+            net.minecraft.client.Minecraft client =
+                    net.minecraft.client.Minecraft.getInstance();
+            if (client == null || client.level == null) return;
 
-            Entity entity = packet.getEntity(client.world);
-            if (entity instanceof PlayerEntity player) {
+            Entity entity = packet.getEntity(client.level);
+            if (entity instanceof Player player) {
                 TotemPops.add(player.getName().getString());
             }
         } catch (Throwable pvpErr) {

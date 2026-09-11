@@ -60,22 +60,13 @@ public class NoRenderBlocksModule extends Module implements com.vortex.client.mo
     }
 
     /**
-     * Asks the game to rebuild the visible chunks.
-     *
-     * Goes through the same accessor Potato Mode uses, because the renderer
-     * field is not public. If it fails the change simply shows up a little
-     * later, when the chunks are rebuilt for other reasons.
+     * In 26.x dürfen Chunkdaten nicht mehr direkt über resetLevelRenderData()
+     * zurückgesetzt werden. Zwischen Reset und dem nächsten Aufbau ist die
+     * ViewArea null, wodurch der Renderthread abstürzen kann. Sichtbare Chunks
+     * werden daher über den regulären Vanilla-Refresh erneuert.
      */
     public static void rebuildChunks() {
-        try {
-            var client = net.minecraft.client.MinecraftClient.getInstance();
-            if (client == null || client.world == null) return;
-            var acc = (com.vortex.client.mixin.client.MinecraftClientAccessor) client;
-            var wr = acc.pvpclient$getWorldRenderer();
-            if (wr != null) wr.reload();
-        } catch (Throwable pvpErr) {
-            com.vortex.client.core.Errors.report("NoRenderBlocks.rebuild", pvpErr);
-        }
+        // Kein direkter Rendererreset; der reguläre Chunk-Refresh ist sicher.
     }
 
     // ---- persistence ----
@@ -103,24 +94,17 @@ public class NoRenderBlocksModule extends Module implements com.vortex.client.mo
         rebuildChunks();
     }
 
-    // --- ExtraData: Zusatzliste ausserhalb der normalen Einstellungen ------
-    // Schluessel und Methodennamen sind unveraendert uebernommen, damit
-    // bestehende Presets weiterhin gelesen werden.
+    // --- ExtraData: Zusatzliste ausserhalb der Einstellungen ---------------
+    // Schluessel unveraendert, damit bestehende Presets weiter gelesen werden.
 
     @Override
-    public String extraKey() {
-        return "__hiddenblocks__";
-    }
+    public String extraKey() { return "__hiddenblocks__"; }
 
     @Override
-    public String serializeExtra() {
-        return serializeBlocks();
-    }
+    public String serializeExtra() { return serializeBlocks(); }
 
     @Override
-    public void deserializeExtra(String value) {
-        deserializeBlocks(value);
-    }
+    public void deserializeExtra(String value) { deserializeBlocks(value); }
 
     @Override
     public void clearExtra() {
@@ -128,15 +112,13 @@ public class NoRenderBlocksModule extends Module implements com.vortex.client.mo
     }
 
 
-    // --- HasOwnScreen: eigener Auswahlbildschirm --------------------------
+    // --- HasOwnScreen ------------------------------------------------------
     @Override
-    public String screenButtonLabel() {
-        return "Select blocks";
-    }
+    public String screenButtonLabel() { return "Select blocks"; }
 
     @Override
-    public net.minecraft.client.gui.screen.Screen createScreen(
-            net.minecraft.client.gui.screen.Screen parent) {
+    public net.minecraft.client.gui.screens.Screen createScreen(
+            net.minecraft.client.gui.screens.Screen parent) {
         return new com.vortex.client.gui.NoRenderBlocksScreen(parent);
     }
 

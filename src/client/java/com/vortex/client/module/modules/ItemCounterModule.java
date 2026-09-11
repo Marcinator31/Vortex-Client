@@ -61,24 +61,17 @@ public class ItemCounterModule extends Module implements com.vortex.client.modul
         }
     }
 
-    // --- ExtraData: Zusatzliste ausserhalb der normalen Einstellungen ------
-    // Schluessel und Methodennamen sind unveraendert uebernommen, damit
-    // bestehende Presets weiterhin gelesen werden.
+    // --- ExtraData: Zusatzliste ausserhalb der Einstellungen ---------------
+    // Schluessel unveraendert, damit bestehende Presets weiter gelesen werden.
 
     @Override
-    public String extraKey() {
-        return "__counters__";
-    }
+    public String extraKey() { return "__counters__"; }
 
     @Override
-    public String serializeExtra() {
-        return serializeCounters();
-    }
+    public String serializeExtra() { return serializeCounters(); }
 
     @Override
-    public void deserializeExtra(String value) {
-        deserializeCounters(value);
-    }
+    public void deserializeExtra(String value) { deserializeCounters(value); }
 
     @Override
     public void clearExtra() {
@@ -86,15 +79,13 @@ public class ItemCounterModule extends Module implements com.vortex.client.modul
     }
 
 
-    // --- HasOwnScreen: eigener Auswahlbildschirm --------------------------
+    // --- HasOwnScreen ------------------------------------------------------
     @Override
-    public String screenButtonLabel() {
-        return "Manage counters";
-    }
+    public String screenButtonLabel() { return "Manage counters"; }
 
     @Override
-    public net.minecraft.client.gui.screen.Screen createScreen(
-            net.minecraft.client.gui.screen.Screen parent) {
+    public net.minecraft.client.gui.screens.Screen createScreen(
+            net.minecraft.client.gui.screens.Screen parent) {
         return new com.vortex.client.gui.ItemCounterScreen(parent);
     }
 

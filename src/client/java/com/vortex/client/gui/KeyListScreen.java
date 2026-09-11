@@ -5,14 +5,13 @@ import com.vortex.client.macro.MacroManager;
 import com.vortex.client.module.Module;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.waypoint.WaypointSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Every key in one place.
@@ -40,7 +39,7 @@ public class KeyListScreen extends Screen {
     private static final int C_LINE   = 0xFF31313A;
 
     private final Screen parent;
-    private TextFieldWidget search;
+    private EditBox search;
 
     private float openAnim = 0f;
     private long lastNano = 0L;
@@ -54,7 +53,7 @@ public class KeyListScreen extends Screen {
     private final List<Entry> entries = new ArrayList<>();
 
     public KeyListScreen(Screen parent) {
-        super(Text.literal("Keys"));
+        super(Component.literal("Keys"));
         this.parent = parent;
     }
 
@@ -66,11 +65,11 @@ public class KeyListScreen extends Screen {
         winY = (this.height - winH) / 2;
         listH = winH - HEADER_H - FOOTER_H;
 
-        search = new TextFieldWidget(this.textRenderer,
-                winX + 12, winY + 32, winW - 24, 16, Text.literal(""));
-        search.setDrawsBackground(false);
+        search = new EditBox(this.font,
+                winX + 12, winY + 32, winW - 24, 16, Component.literal(""));
+        search.setBordered(false);
         search.setMaxLength(32);
-        this.addDrawableChild(search);
+        this.addRenderableWidget(search);
         this.setFocused(search);
 
         collect();
@@ -122,8 +121,8 @@ public class KeyListScreen extends Screen {
             return "Mouse " + (code - MacroManager.MOUSE_BASE + 1);
         }
         try {
-            return net.minecraft.client.util.InputUtil.Type.KEYSYM
-                    .createFromCode(code).getLocalizedText().getString().toUpperCase();
+            return com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                    .getOrCreate(code).getDisplayName().getString().toUpperCase();
         } catch (Throwable pvpErr) {
             return "?";
         }
@@ -140,7 +139,7 @@ public class KeyListScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
 
@@ -162,29 +161,29 @@ public class KeyListScreen extends Screen {
         ctx.fill(winX, winY + HEADER_H - 1, winX + winW, winY + HEADER_H, fade(C_LINE, openAnim));
 
         boolean backHov = in(winX + 8, winY + 8, 16, 16);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
+        ctx.text(this.font, Component.literal("<"),
                 winX + 12, winY + 12, backHov ? accent : 0xFF9A9AA6);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("Keys"),
+        ctx.text(this.font, Component.literal("Keys"),
                 winX + 30, winY + 11, 0xFFFFFFFF);
 
         int conflicts = countConflicts();
         String note = (conflicts == 0)
                 ? entries.size() + " assigned"
                 : entries.size() + " assigned, " + conflicts + " share a key";
-        int nw = this.textRenderer.getWidth(note);
-        ctx.drawText(this.textRenderer, Text.literal(note),
+        int nw = this.font.width(note);
+        ctx.text(this.font, Component.literal(note),
                 winX + winW - nw - 12, winY + 12,
                 conflicts == 0 ? 0xFF74747F : 0xFFFF7A7A, false);
 
         roundRect(ctx, winX + 8, winY + 29, winW - 16, 20, C_INNER);
-        if (search != null && search.getText().isEmpty()) {
-            ctx.drawText(this.textRenderer, Text.literal("Search..."),
+        if (search != null && search.getValue().isEmpty()) {
+            ctx.text(this.font, Component.literal("Search..."),
                     winX + 14, winY + 34, 0xFF5A5A66, false);
         }
 
         // List
         ctx.enableScissor(winX, winY + HEADER_H, winX + winW, winY + HEADER_H + listH);
-        String q = (search == null) ? "" : search.getText().toLowerCase();
+        String q = (search == null) ? "" : search.getValue().toLowerCase();
         int y = winY + HEADER_H + 4 - (int) scroll;
         int shown = 0;
 
@@ -200,17 +199,17 @@ public class KeyListScreen extends Screen {
                 boolean hov = in(winX + 8, y, winW - 16, ROW_H);
                 roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
 
-                ctx.drawText(this.textRenderer, Text.literal(e.where()),
+                ctx.text(this.font, Component.literal(e.where()),
                         winX + 16, y + 6, 0xFF74747F, false);
-                ctx.drawText(this.textRenderer, Text.literal(e.what()),
+                ctx.text(this.font, Component.literal(e.what()),
                         winX + 90, y + 6, 0xFFE6E6EC, false);
 
                 boolean clash = sharing(e.keyCode()) > 1;
                 String kn = e.keyName();
-                int kw = this.textRenderer.getWidth(kn);
+                int kw = this.font.width(kn);
                 roundRect(ctx, winX + winW - kw - 28, y + 3, kw + 12, 14,
                         clash ? 0x40FF5555 : C_INNER);
-                ctx.drawText(this.textRenderer, Text.literal(kn),
+                ctx.text(this.font, Component.literal(kn),
                         winX + winW - kw - 22, y + 6,
                         clash ? 0xFFFF7A7A : 0xFFD0D0DA, false);
             }
@@ -219,8 +218,8 @@ public class KeyListScreen extends Screen {
         ctx.disableScissor();
 
         if (shown == 0) {
-            ctx.drawText(this.textRenderer,
-                    Text.literal(entries.isEmpty() ? "No keys assigned yet" : "Nothing found"),
+            ctx.text(this.font,
+                    Component.literal(entries.isEmpty() ? "No keys assigned yet" : "Nothing found"),
                     winX + 16, winY + HEADER_H + 10, 0xFF6A6A76, false);
         }
 
@@ -228,11 +227,11 @@ public class KeyListScreen extends Screen {
         int fy = winY + winH - FOOTER_H;
         ctx.fill(winX, fy, winX + winW, winY + winH, fade(C_BAR, openAnim));
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
-        ctx.drawText(this.textRenderer,
-                Text.literal("Red means two things share that key"),
+        ctx.text(this.font,
+                Component.literal("Red means two things share that key"),
                 winX + 12, fy + 7, 0xFF74747F, false);
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
     /** How many entries share a key with something else. */
@@ -245,10 +244,10 @@ public class KeyListScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
         if (in(winX + 8, winY + 8, 16, 16)) {
-            this.close();
+            this.onClose();
             return true;
         }
         return false;
@@ -269,7 +268,7 @@ public class KeyListScreen extends Screen {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
-    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -283,12 +282,12 @@ public class KeyListScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
-        MinecraftClient.getInstance().setScreen(parent);
+    public void onClose() {
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 }

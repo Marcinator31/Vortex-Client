@@ -294,10 +294,16 @@ public final class ConfigManager {
 
             List<String> lines = new ArrayList<>();
             for (Module m : ModuleManager.INSTANCE.getModules()) {
-                // Zusatzlisten generisch: jedes Modul, das ExtraData
-                // umsetzt, liefert Schluessel und Inhalt selbst. Vorher stand
-                // hier je Modul ein eigener Zweig -- damit war der Kern an
-                // konkrete Module gebunden.
+                for (Setting s : m.getSettings()) {
+                    // ModulName \t SettingName \t serialisierterWert
+                    String line = m.getName() + "\t" + s.getName() + "\t" + s.serialize();
+                    lines.add(line);
+                }
+            }
+            // Zusatzlisten generisch: jedes Modul mit ExtraData liefert
+            // Schluessel und Inhalt selbst. Vorher stand hier je Modul ein
+            // eigener Zweig -- damit war der Kern an konkrete Module gebunden.
+            for (Module m : ModuleManager.INSTANCE.getModules()) {
                 if (m instanceof com.vortex.client.module.ExtraData ed) {
                     lines.add(m.getName() + "\t" + ed.extraKey() + "\t" + ed.serializeExtra());
                 }
@@ -335,10 +341,7 @@ public final class ConfigManager {
             lines.add("__theme__\t" + com.vortex.client.gui.Theme.INSTANCE.opacity.getName()
                     + "\t" + com.vortex.client.gui.Theme.INSTANCE.opacity.serialize());
 
-            // Fremde Zeilen unveraendert zurueckschreiben. MUSS nach den
-            // eigenen stehen: waere ein Modul zwischenzeitlich dazugekommen,
-            // gewinnt dessen eigene Zeile, weil das Laden von oben nach unten
-            // geht und der spaetere Wert den frueheren ueberschreibt.
+            // Fremde Zeilen unveraendert zurueckschreiben.
             for (String fremd : FREMDE_ZEILEN) {
                 lines.add(fremd);
             }
@@ -354,13 +357,9 @@ public final class ConfigManager {
     /**
      * Zeilen, zu denen es gerade kein Modul gibt.
      *
-     * Beispiel: die Cheat-Module liegen im Addon. Spielt jemand ohne Addon,
-     * kennt der Client deren Einstellungen nicht -- wuerde er sie beim
-     * Speichern weglassen, waeren sie beim naechsten Start mit Addon
-     * unwiderruflich weg.
-     *
-     * Deshalb werden sie hier aufbewahrt und unveraendert zurueckgeschrieben.
-     * Der Client versteht sie nicht, aber er zerstoert sie auch nicht.
+     * Die Cheat-Module liegen im Addon. Ohne Addon kennt der Client deren
+     * Einstellungen nicht -- wuerde er sie beim Speichern weglassen, waeren
+     * sie beim naechsten Start mit Addon unwiderruflich weg.
      */
     private static final List<String> FREMDE_ZEILEN = new ArrayList<>();
 
@@ -372,8 +371,8 @@ public final class ConfigManager {
             }
 
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-            // Vor jedem Laden leeren: sonst wandern beim Preset-Wechsel die
-            // fremden Zeilen des einen Presets in das andere.
+            // Vor jedem Laden leeren, sonst wandern fremde Zeilen beim
+            // Preset-Wechsel von einem Preset ins andere.
             FREMDE_ZEILEN.clear();
             int unknown = 0;   // Zeilen ohne passendes Modul/Setting
             for (String line : lines) {
@@ -387,9 +386,8 @@ public final class ConfigManager {
                 String settingName = parts[1];
                 String value = parts[2];
 
-                // Zusatzlisten: an den Schluessel des Moduls gebunden, nicht
-                // an dessen Klasse. Dadurch funktioniert es auch fuer Module
-                // aus einem Addon, die der Client gar nicht kennt.
+                // Zusatzlisten generisch: an den Schluessel gebunden, nicht an
+                // die Klasse. Funktioniert damit auch fuer Addon-Module.
                 if (settingName.startsWith("__") && settingName.endsWith("__")
                         && !modName.startsWith("__")) {
                     boolean behandelt = false;
@@ -403,11 +401,11 @@ public final class ConfigManager {
                         }
                     }
                     if (behandelt) continue;
-                    // Kein passendes Modul geladen -> aufbewahren statt verwerfen.
                     FREMDE_ZEILEN.add(line);
                     unknown++;
                     continue;
                 }
+
                 // Sonderfall: Waypoint-Einstellungen.
                 if (modName.equals("__wpsettings__")) {
                     for (Setting ws : com.vortex.client.waypoint.WaypointSettings
@@ -472,9 +470,9 @@ public final class ConfigManager {
                 if (target != null) {
                     target.deserialize(value);
                 } else {
-                    // Zeile gehoert zu einem Modul, das es hier nicht gibt --
-                    // typischerweise ein Cheat-Modul aus dem Addon. Wortwoertlich
-                    // aufbewahren und beim Speichern wieder mitschreiben.
+                    // Gehoert zu einem Modul, das hier nicht geladen ist --
+                    // typischerweise ein Cheat aus dem Addon. Wortwoertlich
+                    // aufbewahren statt verwerfen.
                     FREMDE_ZEILEN.add(line);
                     unknown++;
                 }

@@ -2,10 +2,10 @@ package com.vortex.client.hud;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.waypoint.WaypointSettings;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 import com.vortex.client.waypoint.WaypointManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 
 /**
  * Beschriftung der Waypoints am Bildschirm plus Pfeile am Rand fuer Marker, die
@@ -76,7 +76,7 @@ public final class WaypointHud {
     /**
      * Weiche Ein- und Ausblendung der Beschriftung je Marker.
      *
-     * Ohne das springt der Text hart an und aus, sobald das Fadenkreuz den
+     * Ohne das springt der Component hart an und aus, sobald das Fadenkreuz den
      * Punkt streift -- das wirkt unruhig. Hier waechst der Wert von 0 auf 1,
      * solange man drauf zielt, und faellt danach wieder ab.
      */
@@ -94,7 +94,7 @@ public final class WaypointHud {
      * Per-waypoint text memo.
      *
      * Every marker rebuilt its letter (a trim + substring + toUpperCase) and
-     * two to four Text objects on EVERY FRAME. With fifty markers at 150 fps
+     * two to four Component objects on EVERY FRAME. With fifty markers at 150 fps
      * that is tens of thousands of allocations a second for strings that
      * change when you walk a whole metre.
      *
@@ -104,10 +104,10 @@ public final class WaypointHud {
      */
     private static final class Memo {
         String name;
-        Text letter;
+        Component letter;
         int dist = Integer.MIN_VALUE;
-        Text label;   // "name  123m"  (two spaces, as before)
-        Text edge;    // "name 123m"   (one space, as before)
+        Component label;   // "name  123m"  (two spaces, as before)
+        Component edge;    // "name 123m"   (one space, as before)
         int labelW;   // pixel width of label, see updateDist
         int edgeW;
     }
@@ -117,17 +117,17 @@ public final class WaypointHud {
 
     /** The pending-area hint: constant text, width measured on first use. */
     private static final String AREA_HINT_STR = "Area: pick the second corner";
-    private static final Text AREA_HINT = Text.literal(AREA_HINT_STR);
+    private static final Component AREA_HINT = Component.literal(AREA_HINT_STR);
     private static int areaHintW = -1;
 
     /** The active block-group hint, rebuilt only when the group changes. */
     private static String groupHintFor = null;
-    private static Text groupHint = null;
+    private static Component groupHint = null;
     private static int groupHintW = 0;
 
     /** The nearest-marker line, rebuilt only when its text would change. */
     private static String nearestFor = null;
-    private static Text nearestText = null;
+    private static Component nearestText = null;
     private static int nearestW = 0;
 
     /** The memo for a waypoint, rebuilding the name-derived parts on rename. */
@@ -139,7 +139,7 @@ public final class WaypointHud {
         }
         if (!java.util.Objects.equals(m.name, wp.name)) {
             m.name = wp.name;
-            m.letter = Text.literal(initial(wp.name));
+            m.letter = Component.literal(initial(wp.name));
             m.dist = Integer.MIN_VALUE; // force the distance texts to rebuild
         }
         return m;
@@ -150,26 +150,26 @@ public final class WaypointHud {
      *
      * The widths are cached alongside: they were measured per marker per frame,
      * and they only change when the string does. Measured with the String
-     * overload (getWidth(String), method_1727) rather than passing the Text --
+     * overload (getWidth(String), method_1727) rather than passing the Component --
      * getWidth(StringVisitable) exists too, but the String one is the version
      * this codebase already uses everywhere, so no inheritance assumption.
      * Scaling happens via the matrix in pushScale, so a cached pixel width
      * stays correct at any marker scale.
      */
-    private static void updateDist(net.minecraft.client.font.TextRenderer tr,
+    private static void updateDist(net.minecraft.client.gui.Font tr,
                                    Memo m, WaypointManager.Waypoint wp, int d) {
         if (m.dist == d && m.label != null) return;
         m.dist = d;
         String labelStr = wp.name + "  " + d + "m";
         String edgeStr = wp.name + " " + d + "m";
-        m.label = Text.literal(labelStr);
-        m.edge = Text.literal(edgeStr);
-        m.labelW = tr.getWidth(labelStr);
-        m.edgeW = tr.getWidth(edgeStr);
+        m.label = Component.literal(labelStr);
+        m.edge = Component.literal(edgeStr);
+        m.labelW = tr.width(labelStr);
+        m.edgeW = tr.width(edgeStr);
     }
     private static long lastNano = 0L;
 
-    public static void draw(DrawContext ctx, MinecraftClient client) {
+    public static void draw(GuiGraphicsExtractor ctx, Minecraft client) {
         // Zeitschritt fuer die Animationen (bildratenunabhaengig).
         long now = System.nanoTime();
         float dt = (lastNano == 0L) ? 0.016f : (now - lastNano) / 1_000_000_000.0f;
@@ -184,8 +184,8 @@ public final class WaypointHud {
         }
         WaypointSettings mod = WaypointSettings.INSTANCE;
         if (!mod.isEnabled()) return;
-        if (client.player == null || client.world == null) return;
-        if (client.textRenderer == null) return;
+        if (client.player == null || client.level == null) return;
+        if (client.font == null) return;
         if (!mod.labels.get() && !mod.edgeArrows.get()) return;
 
         // Position AND direction come from the render camera.
@@ -194,27 +194,27 @@ public final class WaypointHud {
         // third person the camera sits behind the player, and in the front view
         // it even looks the opposite way — markers ended up shifted, or moved
         // the wrong way entirely when the view changed.
-        float tickDelta = client.getRenderTickCounter().getTickProgress(false);
-        net.minecraft.util.math.Vec3d camPos = EspRender.cameraOffset(client, tickDelta);
+        float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        net.minecraft.world.phys.Vec3 camPos = EspRender.cameraOffset(client, tickDelta);
 
         float yaw, pitch;
         if (com.vortex.client.freecam.Freecam.isActive()) {
             yaw = com.vortex.client.freecam.Freecam.getYaw();
             pitch = com.vortex.client.freecam.Freecam.getPitch();
         } else {
-            var camera = client.gameRenderer.getCamera();
+            var camera = client.gameRenderer.mainCamera();
             if (camera != null) {
-                yaw = camera.getYaw();
-                pitch = camera.getPitch();
+                yaw = camera.yRot();
+                pitch = camera.xRot();
             } else {
-                yaw = client.player.getYaw();
-                pitch = client.player.getPitch();
+                yaw = client.player.getYRot();
+                pitch = client.player.getXRot();
             }
         }
 
         double fov = 70.0;
         try {
-            Object v = client.options.getFov().getValue();
+            Object v = client.options.fov().get();
             if (v instanceof Number n) fov = n.doubleValue();
         } catch (Throwable t) {
             // Standardwert behalten.
@@ -231,8 +231,8 @@ public final class WaypointHud {
             fov = fov / zoom;
         }
 
-        int w = ctx.getScaledWindowWidth();
-        int h = ctx.getScaledWindowHeight();
+        int w = ctx.guiWidth();
+        int h = ctx.guiHeight();
         double maxDist = mod.maxDistance.get();
 
         String dim = WaypointRenderer.currentWorldKey(client);
@@ -243,9 +243,9 @@ public final class WaypointHud {
             // Constant string. Width measured on first use, not at class init:
             // there is no TextRenderer yet when the class loads.
             if (areaHintW < 0) {
-                areaHintW = client.textRenderer.getWidth(AREA_HINT_STR);
+                areaHintW = client.font.width(AREA_HINT_STR);
             }
-            ctx.drawTextWithShadow(client.textRenderer, AREA_HINT,
+            ctx.text(client.font, AREA_HINT,
                     (w - areaHintW) / 2, h - 70, 0xFFFFD070);
         } else {
             String grp = com.vortex.client.waypoint.WaypointActions.activeGroupName();
@@ -254,10 +254,10 @@ public final class WaypointHud {
                 if (!grp.equals(groupHintFor)) {
                     groupHintFor = grp;
                     String hint = "Block group: " + grp;
-                    groupHint = Text.literal(hint);
-                    groupHintW = client.textRenderer.getWidth(hint);
+                    groupHint = Component.literal(hint);
+                    groupHintW = client.font.width(hint);
                 }
-                ctx.drawText(client.textRenderer, groupHint,
+                ctx.text(client.font, groupHint,
                         (w - groupHintW) / 2, h - 70, 0x90FFFFFF, false);
             }
         }
@@ -277,10 +277,10 @@ public final class WaypointHud {
                 // movement invalidates it and nothing else does.
                 if (!line.equals(nearestFor)) {
                     nearestFor = line;
-                    nearestText = Text.literal(line);
-                    nearestW = client.textRenderer.getWidth(line);
+                    nearestText = Component.literal(line);
+                    nearestW = client.font.width(line);
                 }
-                ctx.drawTextWithShadow(client.textRenderer, nearestText,
+                ctx.text(client.font, nearestText,
                         (w - nearestW) / 2, h - 58, near.color | 0xFF000000);
             }
         }
@@ -365,29 +365,29 @@ public final class WaypointHud {
                     int ly = cyI - 3;
                     pushScale(ctx, lx, ly, 0.8f);
                     // Zarter Schatten fuer Lesbarkeit auf hellem Untergrund.
-                    // One Text from the memo, used for both draws -- it was
+                    // One Component from the memo, used for both draws -- it was
                     // built twice per marker per frame for the same string.
-                    ctx.drawText(client.textRenderer, memo.letter,
+                    ctx.text(client.font, memo.letter,
                             lx + 1, ly + 1, fadeA(0xFF000000, alpha * 0.75f), false);
-                    ctx.drawText(client.textRenderer, memo.letter,
+                    ctx.text(client.font, memo.letter,
                             lx, ly, lc, false);
                     popScale(ctx);
                 }
 
                 // --- Beim Anvisieren: voller Name und Entfernung darunter ---
                 if (a > 0.02f && mod.labels.get()) {
-                    updateDist(client.textRenderer, memo, wp, (int) dist);
+                    updateDist(client.font, memo, wp, (int) dist);
                     int ty = cyI + r + 5 + Math.round((1f - a) * 3f);
                     pushScale(ctx, cxI, ty, 0.8f);
                     int tx = cxI - memo.labelW / 2;
-                    ctx.drawText(client.textRenderer, memo.label,
+                    ctx.text(client.font, memo.label,
                             tx + 1, ty + 1, fadeA(0xFF000000, a * 0.7f), false);
-                    ctx.drawText(client.textRenderer, memo.label,
+                    ctx.text(client.font, memo.label,
                             tx, ty, fadeA(0xFFFFFFFF, a), false);
                     popScale(ctx);
                 }
             } else if (mod.edgeArrows.get()) {
-                updateDist(client.textRenderer, memo, wp, (int) dist);
+                updateDist(client.font, memo, wp, (int) dist);
                 drawEdgeArrow(ctx, client, s, w, h, color, memo.edge, memo.edgeW);
             }
         }
@@ -412,7 +412,7 @@ public final class WaypointHud {
      * beiden Randstuecke gesetzt, deren Breite sich aus dem Kreisradius ergibt.
      * Innen wird nichts gezeichnet.
      */
-    private static void drawRing(DrawContext ctx, int cx, int cy, int r,
+    private static void drawRing(GuiGraphicsExtractor ctx, int cx, int cy, int r,
                                  int color, com.vortex.client.waypoint.WaypointSettings mod,
                                  float aim) {
         int thickness = Math.max(1, mod.borderWidth.getInt());
@@ -457,16 +457,16 @@ public final class WaypointHud {
     }
 
     /** Zeichnen um einen Punkt herum verkleinern. */
-    private static void pushScale(DrawContext ctx, float ax, float ay, float scale) {
-        var m = ctx.getMatrices();
+    private static void pushScale(GuiGraphicsExtractor ctx, float ax, float ay, float scale) {
+        var m = ctx.pose();
         m.pushMatrix();
         m.translate(ax, ay);
         m.scale(scale, scale);
         m.translate(-ax, -ay);
     }
 
-    private static void popScale(DrawContext ctx) {
-        ctx.getMatrices().popMatrix();
+    private static void popScale(GuiGraphicsExtractor ctx) {
+        ctx.pose().popMatrix();
     }
 
     /** Farbe mit Deckkraft skalieren (fuer weiches Ein- und Ausblenden). */
@@ -501,9 +501,9 @@ public final class WaypointHud {
      * Liegt der Punkt hinter der Kamera, wird die Richtung gespiegelt -- sonst
      * zeigte der Pfeil genau falsch herum.
      */
-    private static void drawEdgeArrow(DrawContext ctx, MinecraftClient client,
+    private static void drawEdgeArrow(GuiGraphicsExtractor ctx, Minecraft client,
                                       Screen s, int w, int h, int color,
-                                      Text txt, int tw) {
+                                      Component txt, int tw) {
         double cx = w / 2.0, cy = h / 2.0;
         double dx = s.x - cx;
         double dy = s.y - cy;
@@ -536,6 +536,6 @@ public final class WaypointHud {
         // Width comes from the memo, measured when the text last changed.
         int tx = Math.max(2, Math.min(w - tw - 2, px - tw / 2));
         int ty = Math.max(2, Math.min(h - 12, py + 8));
-        ctx.drawTextWithShadow(client.textRenderer, txt, tx, ty, color);
+        ctx.text(client.font, txt, tx, ty, color);
     }
 }

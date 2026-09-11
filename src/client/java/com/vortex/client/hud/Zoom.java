@@ -1,9 +1,10 @@
 package com.vortex.client.hud;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.ZoomModule;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * The state behind the zoom.
@@ -43,13 +44,13 @@ public final class Zoom {
         if (mod == null || !mod.isEnabled()) return false;
         if (!mod.key.isBound()) return false;
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) return false;
         // A menu swallows input; zooming through one makes no sense.
-        if (client.currentScreen != null) return false;
+        if (client.gui.screen() != null) return false;
 
         try {
-            return InputUtil.isKeyPressed(client.getWindow(), mod.key.getKeyCode());
+            return InputConstants.isKeyDown(client.getWindow(), mod.key.getKeyCode());
         } catch (Throwable pvpErr) {
             return false;
         }

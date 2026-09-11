@@ -3,7 +3,7 @@ package com.vortex.client.hud;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.SessionStatsModule;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 
 /**
  * Sammelt die Werte fuer die Session-Statistik.
@@ -59,7 +59,7 @@ public final class SessionStats {
                 return;
             }
 
-            ClientPlayerEntity self = client.player;
+            LocalPlayer self = client.player;
 
             // Tod erkennen: Uebergang lebendig -> tot (nicht jeden Tick zaehlen).
             boolean alive = self.isAlive();
@@ -80,20 +80,20 @@ public final class SessionStats {
     }
 
     /** Zaehlt Totems in Inventar und Nebenhand. */
-    private static int countTotems(ClientPlayerEntity self) {
+    private static int countTotems(LocalPlayer self) {
         int n = 0;
         try {
             var inv = self.getInventory();
-            for (int i = 0; i < inv.size(); i++) {
-                var stack = inv.getStack(i);
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                var stack = inv.getItem(i);
                 if (stack != null && !stack.isEmpty()
-                        && stack.isOf(net.minecraft.item.Items.TOTEM_OF_UNDYING)) {
+                        && stack.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {
                     n += stack.getCount();
                 }
             }
-            var off = self.getOffHandStack();
+            var off = self.getOffhandItem();
             if (off != null && !off.isEmpty()
-                    && off.isOf(net.minecraft.item.Items.TOTEM_OF_UNDYING)) {
+                    && off.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {
                 n += off.getCount();
             }
         } catch (Throwable ignored) {

@@ -1,17 +1,16 @@
 package com.vortex.client.gui;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Gemeinsame Grundlage der Auswahl-Menues (Mobs, Bloecke, Entities).
@@ -66,7 +65,7 @@ public abstract class SelectionScreen extends Screen {
     private final Map<String, Float> hoverAnim = new HashMap<>();
     private final Map<String, Float> selAnim = new HashMap<>();
 
-    private TextFieldWidget search;
+    private EditBox search;
     private float openAnim = 0f;
     private float scroll = 0f;
     private float scrollTarget = 0f;
@@ -89,7 +88,7 @@ public abstract class SelectionScreen extends Screen {
     private Hit clearButton = null;
 
     protected SelectionScreen(Screen parent, String title) {
-        super(Text.literal(title));
+        super(Component.literal(title));
         this.parent = parent;
         this.title = title;
     }
@@ -124,11 +123,11 @@ public abstract class SelectionScreen extends Screen {
         int winY = (this.height - windowHeight()) / 2;
 
         int sw = 150;
-        this.search = new TextFieldWidget(this.textRenderer,
-                winX + winW - sw - PAD, winY + 26, sw, 14, Text.literal(""));
-        this.search.setDrawsBackground(false);
+        this.search = new EditBox(this.font,
+                winX + winW - sw - PAD, winY + 26, sw, 14, Component.literal(""));
+        this.search.setBordered(false);
         this.search.setMaxLength(48);
-        this.addDrawableChild(this.search);
+        this.addRenderableWidget(this.search);
     }
 
     private int windowHeight() {
@@ -138,7 +137,7 @@ public abstract class SelectionScreen extends Screen {
     // -------------------------------------------------------------- Zeichnen
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
         hits.clear();
@@ -171,36 +170,36 @@ public abstract class SelectionScreen extends Screen {
             search.setX(winX + winW - search.getWidth() - PAD);
             search.setY(winY + 26);
         }
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawHeader(DrawContext ctx, int x, int y, int w, int accent, Theme t) {
+    private void drawHeader(GuiGraphicsExtractor ctx, int x, int y, int w, int accent, Theme t) {
         ctx.fill(x, y, x + w, y + HEADER_H, fade(C_BAR, openAnim));
         ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
 
         // Zurueck-Pfeil + Titel.
         boolean backHov = inRect(mx, my, x + PAD, y + 8, 16, 16);
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("<"),
+        ctx.text(this.font, Component.literal("<"),
                 x + PAD + 4, y + 12, fade(backHov ? accent : 0xFF9A9AA6, openAnim));
         hits.add(new Hit(x + PAD, y + 8, 16, 16, "\0back"));
 
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal(title),
+        ctx.text(this.font, Component.literal(title),
                 x + PAD + 22, y + 11, fade(t.text.get(), openAnim));
 
         int on = countSelected();
-        ctx.drawText(this.textRenderer,
-                Text.literal(on + " ausgewaehlt  \u00B7  " + hint()),
+        ctx.text(this.font,
+                Component.literal(on + " ausgewaehlt  \u00B7  " + hint()),
                 x + PAD + 22, y + 28, fade(t.textDim.get(), openAnim), false);
 
         // "Clear selection" -- nur wenn es etwas zu leeren gibt.
         if (on > 0) {
             String lbl = "Clear selection";
-            int lw = this.textRenderer.getWidth(lbl) + 12;
+            int lw = this.font.width(lbl) + 12;
             int bx = x + w - lw - PAD;
             int by = y + 7;
             boolean hov = inRect(mx, my, bx, by, lw, 14);
             roundRect(ctx, bx, by, lw, 14, fade(hov ? mix(C_INNER, accent, 0.3f) : C_INNER, openAnim));
-            ctx.drawText(this.textRenderer, Text.literal(lbl),
+            ctx.text(this.font, Component.literal(lbl),
                     bx + 6, by + 3, fade(t.text.get(), openAnim), false);
             clearButton = new Hit(bx, by, lw, 14, "\0clear");
         }
@@ -209,16 +208,16 @@ public abstract class SelectionScreen extends Screen {
         if (search != null) {
             int sx = search.getX() - 16, sy = y + 23, sw = search.getWidth() + 20;
             roundRect(ctx, sx, sy, sw, 20, fade(C_INNER, openAnim));
-            ctx.drawText(this.textRenderer, Text.literal("Q"),
+            ctx.text(this.font, Component.literal("Q"),
                     sx + 6, sy + 6, fade(0xFF6A6A76, openAnim), false);
-            if (search.getText().isEmpty()) {
-                ctx.drawText(this.textRenderer, Text.literal("Search..."),
+            if (search.getValue().isEmpty()) {
+                ctx.text(this.font, Component.literal("Search..."),
                         sx + 18, sy + 6, fade(0xFF6A6A76, openAnim), false);
             }
         }
     }
 
-    private void drawGrid(DrawContext ctx, int x, int y, int w, int h,
+    private void drawGrid(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
                           int accent, Theme t, float dt) {
         scroll = anim(scroll, scrollTarget, 18f, dt);
         ctx.enableScissor(x, y, x + w, y + h);
@@ -257,7 +256,7 @@ public abstract class SelectionScreen extends Screen {
             }
 
             try {
-                ctx.drawItem(e.icon, cx + 8, cy + 7);
+                ctx.item(e.icon, cx + 8, cy + 7);
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("SelectionScreen", pvpErr);
             }
@@ -265,13 +264,13 @@ public abstract class SelectionScreen extends Screen {
             // Namen kuerzen, wenn er nicht passt.
             String name = e.name;
             int maxW = cellW - 34;
-            if (this.textRenderer.getWidth(name) > maxW) {
-                while (name.length() > 1 && this.textRenderer.getWidth(name + "..") > maxW) {
+            if (this.font.width(name) > maxW) {
+                while (name.length() > 1 && this.font.width(name + "..") > maxW) {
                     name = name.substring(0, name.length() - 1);
                 }
                 name = name + "..";
             }
-            ctx.drawText(this.textRenderer, Text.literal(name),
+            ctx.text(this.font, Component.literal(name),
                     cx + 30, cy + 11, on ? t.text.get() : 0xFFB4B4C0, false);
 
             hits.add(new Hit(cx, cy, cellW, CELL_H, e.id));
@@ -294,24 +293,24 @@ public abstract class SelectionScreen extends Screen {
 
         if (list.isEmpty()) {
             String msg = "No results";
-            ctx.drawText(this.textRenderer, Text.literal(msg),
-                    x + (w - this.textRenderer.getWidth(msg)) / 2, y + h / 2 - 4,
+            ctx.text(this.font, Component.literal(msg),
+                    x + (w - this.font.width(msg)) / 2, y + h / 2 - 4,
                     0xFF6A6A76, false);
         }
     }
 
-    private void drawFooter(DrawContext ctx, int x, int y, int w) {
+    private void drawFooter(GuiGraphicsExtractor ctx, int x, int y, int w) {
         ctx.fill(x, y, x + w, y + FOOTER_H, fade(C_BAR, openAnim));
         ctx.fill(x, y, x + w, y + 1, fade(C_LINE, openAnim));
-        ctx.drawText(this.textRenderer,
-                Text.literal("Click to toggle   ·   Type to search   ·   ESC to go back"),
+        ctx.text(this.font,
+                Component.literal("Click to toggle   ·   Type to search   ·   ESC to go back"),
                 x + PAD, y + 6, fade(0xFF74747F, openAnim), false);
     }
 
     // ---------------------------------------------------------------- Eingabe
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean doubled) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
         if (super.mouseClicked(click, doubled)) return true;
 
         if (clearButton != null && clearButton.contains(mx, my)) {
@@ -323,7 +322,7 @@ public abstract class SelectionScreen extends Screen {
             Hit hit = hits.get(i);
             if (!hit.contains(mx, my)) continue;
             if ("\0back".equals(hit.id)) {
-                this.close();
+                this.onClose();
             } else {
                 toggle(hit.id);
             }
@@ -347,7 +346,7 @@ public abstract class SelectionScreen extends Screen {
     // ----------------------------------------------------------- Hilfsmittel
 
     private List<Entry> filtered() {
-        String q = (search == null) ? "" : search.getText().trim().toLowerCase(Locale.ROOT);
+        String q = (search == null) ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
         if (q.isEmpty()) return entries;
         List<Entry> out = new ArrayList<>();
         for (Entry e : entries) {
@@ -374,7 +373,7 @@ public abstract class SelectionScreen extends Screen {
         return cur + (target - cur) * f;
     }
 
-    private void roundRect(DrawContext ctx, int x, int y, int w, int h, int color) {
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
         ctx.fill(x + 1, y, x + w - 1, y + h, color);
         ctx.fill(x, y + 1, x + 1, y + h - 1, color);
@@ -401,12 +400,12 @@ public abstract class SelectionScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
-        this.client.setScreen(parent);
+    public void onClose() {
+        this.minecraft.gui.setScreen(parent);
     }
 }
