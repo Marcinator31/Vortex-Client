@@ -203,6 +203,25 @@ public final class Freecam {
         if (dt <= 0) return;
         if (dt > 0.1) dt = 0.1; // bei Hängern nicht springen
 
+        // Spieler mitdrehen, falls eingestellt.
+        //
+        // Standard ist AUS: der Koerper bleibt stehen, wie er stand, und nur
+        // die Kamera dreht sich. Das ist der Sinn einer Freecam -- und auf
+        // einem Server sieht niemand eine Drehung, die es nicht gibt.
+        //
+        // Nur die BLICKRICHTUNG wird uebertragen, nie die Position: bewegt
+        // wird der Spieler in der Freecam grundsaetzlich nicht.
+        if (schalter("Rotate Player", false) && mc.player != null) {
+            mc.player.setYRot(yaw);
+            mc.player.setXRot(pitch);
+            // yRotO/xRotO mitziehen, sonst interpoliert der Renderer zwischen
+            // altem und neuem Winkel und der Kopf zappelt.
+            mc.player.yRotO = yaw;
+            mc.player.xRotO = pitch;
+            mc.player.setYHeadRot(yaw);
+            mc.player.yHeadRotO = yaw;
+        }
+
         // Bei offenem Bildschirm nur ausgleiten, keine neuen Eingaben.
         boolean inputAllowed = (mc.gui.screen() == null);
 
@@ -336,4 +355,16 @@ public final class Freecam {
         } catch (Throwable ignored) { }
         return standard;
     }
+
+    /**
+     * Soll der eigene Spieler in der Freecam gezeichnet werden?
+     *
+     * Wird vom EntityRenderShouldRenderMixin abgefragt. Standard AN: sonst
+     * weiss man nicht, wo der eigene Koerper steht, und fliegt beim Beenden
+     * ueberraschend dorthin zurueck.
+     */
+    public static boolean zeigeSpieler() {
+        return schalter("Show Player", true);
+    }
+
 }

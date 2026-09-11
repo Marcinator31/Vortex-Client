@@ -33,6 +33,17 @@ public abstract class EntityRenderShouldRenderMixin {
             cir.setReturnValue(false);
             return;
         }
+        // 1b) Eigener Spieler in der Freecam: nur zeichnen, wenn eingestellt.
+        //
+        // Die Abfrage steht bewusst HINTER der FreeCamera-Pruefung und vor
+        // allem anderen -- sie betrifft genau eine Entity und kostet damit
+        // nichts, obwohl die Methode pro Entity pro Bild laeuft.
+        if (com.vortex.client.freecam.Freecam.isActive()
+                && net.minecraft.client.Minecraft.getInstance().player == entity
+                && !com.vortex.client.freecam.Freecam.zeigeSpieler()) {
+            cir.setReturnValue(false);
+            return;
+        }
         // 2) Anti Render: ausgewaehlte Entity-Typen komplett ueberspringen.
         //
         // WICHTIG: Diese Methode laeuft PRO ENTITY PRO FRAME. Alles hier muss
