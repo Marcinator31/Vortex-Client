@@ -1023,7 +1023,7 @@ public class ClickGui extends Screen {
                 case SUB_SCREEN:
                     // Das Modul erzeugt seinen Bildschirm selbst.
                     if (hit.module instanceof com.vortex.client.module.HasOwnScreen hos2) {
-                        Minecraft.getInstance().setScreen(hos2.createScreen(this));
+                        Minecraft.getInstance().gui.setScreen(hos2.createScreen(this));
                     }
                     break;
                 case SUB_WAYPOINT:
