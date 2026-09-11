@@ -80,7 +80,7 @@ public class ClickGui extends Screen {
     private enum Section { MODULE, WAYPOINTS, MACROS, COMMUNITY, KEYS, SKINS, DESIGN }
 
     private Section section = Section.MODULE;
-    private Module.Category selected = Module.Category.values()[0];
+    private Module.Category selected = ersteBelegteKategorie();
     private float indicatorY = -1f;
     private float openAnim = 0f;
 
@@ -122,8 +122,8 @@ public class ClickGui extends Screen {
     private int dragX = 0, dragW = 0;
 
     // ---- Klickflaechen (beim Zeichnen gefuellt) ----
-    private enum Act { THEME, PRESET, CATEGORY, FAVCAT, STAR, SUB_WAYPOINT, SUB_NORENDER, SUB_COUNTER,
-                       SECTION, WP_SETTING, WP_MANAGE, TOGGLE, EXPAND, SUB_ESP, SUB_BLOCK, SUB_ANTI,
+    private enum Act { THEME, PRESET, CATEGORY, FAVCAT, STAR, SUB_WAYPOINT, SUB_SCREEN,
+                       SECTION, WP_SETTING, WP_MANAGE, TOGGLE, EXPAND,
                        S_BOOL, S_NUM, S_MODE_PREV, S_MODE_NEXT, S_COLOR, S_KEY }
 
     private static final class Hit {
@@ -371,6 +371,15 @@ public class ClickGui extends Screen {
         }
 
         for (Module.Category cat : Module.Category.values()) {
+            // Leere Kategorien gar nicht anzeigen.
+            //
+            // Die Cheat-Module liegen im Addon. Ohne Addon ist die Kategorie
+            // leer -- ein Reiter, der auf eine leere Liste fuehrt, sieht nach
+            // einem Fehler aus. Die Kategorie bleibt im Code bestehen, damit
+            // das Addon sie benutzen kann, ist aber unsichtbar, solange
+            // niemand ein Modul dafuer anmeldet.
+            if (!hatModule(cat)) continue;
+
             boolean isSel = !searching && !favView
                     && section == Section.MODULE && cat == selected;
             boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, 22);
@@ -754,22 +763,12 @@ public class ClickGui extends Screen {
     /** Knopf, der ein Auswahl-Menue oeffnet (Mobs / Bloecke / Entities). */
     private int drawSubButton(DrawContext ctx, Module m, int cx, int sy, int cw,
                               int accent, Theme t) {
-        String label;
-        Act act;
-        if (m instanceof com.vortex.client.module.modules.EspModule) {
-            label = "Select mobs"; act = Act.SUB_ESP;
-        } else if (m instanceof com.vortex.client.module.modules.BlockEspModule) {
-            label = "Select blocks"; act = Act.SUB_BLOCK;
-        } else if (m instanceof com.vortex.client.module.modules.AntiRenderModule) {
-            label = "Select entities"; act = Act.SUB_ANTI;
-        } else if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule) {
-            label = "Select blocks"; act = Act.SUB_NORENDER;
-        } else if (m instanceof com.vortex.client.module.modules.ItemCounterModule) {
-            label = "Manage counters"; act = Act.SUB_COUNTER;
-
-        } else {
+        // Beschriftung und Bildschirm kommen vom Modul selbst.
+        if (!(m instanceof com.vortex.client.module.HasOwnScreen hos)) {
             return sy;
         }
+        String label = hos.screenButtonLabel();
+        Act act = Act.SUB_SCREEN;
 
         int bx = cx + 8;
         int bw = cw - 16;
@@ -1028,20 +1027,13 @@ public class ClickGui extends Screen {
                         expanded.remove(hit.module);
                     }
                     break;
-                case SUB_ESP:
-                    MinecraftClient.getInstance().setScreen(new EspScreen(this));
-                    break;
-                case SUB_BLOCK:
-                    MinecraftClient.getInstance().setScreen(new BlockEspScreen(this));
-                    break;
-                case SUB_ANTI:
-                    MinecraftClient.getInstance().setScreen(new AntiRenderScreen(this));
-                    break;
-                case SUB_NORENDER:
-                    MinecraftClient.getInstance().setScreen(new NoRenderBlocksScreen(this));
-                    break;
-                case SUB_COUNTER:
-                    MinecraftClient.getInstance().setScreen(new ItemCounterScreen(this));
+                case SUB_SCREEN:
+                    // Das Modul erzeugt seinen Bildschirm selbst. Vorher stand
+                    // hier je Modul ein eigener Fall -- und der Client musste
+                    // jede Bildschirmklasse kennen.
+                    if (hit.module instanceof com.vortex.client.module.HasOwnScreen hos2) {
+                        MinecraftClient.getInstance().setScreen(hos2.createScreen(this));
+                    }
                     break;
                 case SUB_WAYPOINT:
                     MinecraftClient.getInstance().setScreen(new WaypointScreen(this));
@@ -1224,12 +1216,10 @@ public class ClickGui extends Screen {
     /** Hoehe des aufgeklappten Bereichs. */
     private int extraHeight(Module m) {
         int h = 6;
-        if (m instanceof com.vortex.client.module.modules.EspModule
-                || m instanceof com.vortex.client.module.modules.BlockEspModule
-                || m instanceof com.vortex.client.module.modules.AntiRenderModule
-                || m instanceof com.vortex.client.module.modules.NoRenderBlocksModule
-                || m instanceof com.vortex.client.module.modules.ItemCounterModule
-                ) {
+        // Generisch statt Modul fuer Modul: jedes Modul, das einen eigenen
+        // Bildschirm mitbringt, bekommt den Knopf. Damit funktioniert das
+        // auch fuer Module aus einem Addon, die der Client nicht kennt.
+        if (m instanceof com.vortex.client.module.HasOwnScreen) {
             h += SUB_H;
         }
         for (Setting s : m.getSettings()) {
@@ -1241,12 +1231,7 @@ public class ClickGui extends Screen {
 
     /** Hoehe des Auswahl-Knopfes (0, wenn das Modul keinen hat). */
     private int subHeight(Module m) {
-        if (m instanceof com.vortex.client.module.modules.EspModule
-                || m instanceof com.vortex.client.module.modules.BlockEspModule
-                || m instanceof com.vortex.client.module.modules.AntiRenderModule
-                || m instanceof com.vortex.client.module.modules.NoRenderBlocksModule
-                || m instanceof com.vortex.client.module.modules.ItemCounterModule
-                ) {
+        if (m instanceof com.vortex.client.module.HasOwnScreen) {
             return SUB_H;
         }
         return 0;
@@ -1434,4 +1419,28 @@ public class ClickGui extends Screen {
         com.vortex.client.core.ConfigManager.save();
         super.removed();
     }
+
+    /** Gibt es ueberhaupt ein Modul in dieser Kategorie? */
+    private boolean hatModule(Module.Category cat) {
+        for (Module m : com.vortex.client.module.ModuleManager.INSTANCE.getModules()) {
+            if (m.getCategory() == cat) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Erste Kategorie, die tatsaechlich Module hat.
+     *
+     * Ohne das koennte die Vorauswahl auf einer leeren Kategorie stehen --
+     * das ClickGUI waere beim Oeffnen leer, obwohl Module da sind.
+     */
+    private static Module.Category ersteBelegteKategorie() {
+        for (Module.Category cat : Module.Category.values()) {
+            for (Module m : com.vortex.client.module.ModuleManager.INSTANCE.getModules()) {
+                if (m.getCategory() == cat) return cat;
+            }
+        }
+        return Module.Category.values()[0];
+    }
+
 }

@@ -5,7 +5,6 @@ import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.HitboxModule;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexRendering;
@@ -26,7 +25,8 @@ import net.minecraft.util.shape.VoxelShapes;
  *
  * Verifiziert gegen die ECHTEN 1.21.11-Yarn-Mappings (build.4):
  *   - WorldRenderEvents liegt jetzt im Paket ...rendering.v1.world
- *   - Lines-RenderLayer: RenderLayers.lines() (frueher RenderLayer.getLines())
+ *   - Lines-RenderLayer: EspRenderLayer.depthLines() -- mit Tiefentest,
+ *     damit die Box wie die Vanilla-Hitbox hinter Bloecken verschwindet
  *   - VertexRendering.drawOutline(MatrixStack, VertexConsumer, VoxelShape,
  *       double offsetX, offsetY, offsetZ, int color, float lineWidth)
  *     (frueher drawBox mit r,g,b,a -- in 1.21.11 ein gepackter int + lineWidth)
@@ -65,8 +65,9 @@ public final class HitboxRenderer {
                     cam = com.vortex.client.freecam.Freecam.getPos();
                 }
 
-                // Linien-Buffer (1.21.11: RenderLayers.lines()).
-                VertexConsumer lines = consumers.getBuffer(RenderLayers.lines());
+                // Eigene Ebene MIT Tiefentest: die Box verschwindet hinter Bloecken,
+                // genau wie die Vanilla-Hitbox. Vorher schien sie durch Waende.
+                VertexConsumer lines = consumers.getBuffer(EspRenderLayer.depthLines());
 
                 float lineWidth = mod.lineWidth.getFloat();
 

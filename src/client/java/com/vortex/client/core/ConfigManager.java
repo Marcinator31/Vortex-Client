@@ -167,19 +167,8 @@ public final class ConfigManager {
                     st.resetToDefault();
                 }
                 // Auswahllisten leeren -- die haben keinen "Wert" im obigen Sinn.
-                if (m instanceof com.vortex.client.module.modules.EspModule esp) {
-                    esp.getEnabledMobs().clear();
-                }
-                if (m instanceof com.vortex.client.module.modules.BlockEspModule besp) {
-                    besp.getEnabledBlocks().clear();
-                }
-                if (m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
-                    for (String id : new ArrayList<>(ar.getHiddenTypes())) {
-                        ar.set(id, false);
-                    }
-                }
-                if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb2) {
-                    nrb2.clearAll();
+                if (m instanceof com.vortex.client.module.ExtraData ed) {
+                    ed.clearExtra();
                 }
                 m.syncState();
             } catch (Throwable pvpErr) {
@@ -305,28 +294,12 @@ public final class ConfigManager {
 
             List<String> lines = new ArrayList<>();
             for (Module m : ModuleManager.INSTANCE.getModules()) {
-                for (Setting s : m.getSettings()) {
-                    // ModulName \t SettingName \t serialisierterWert
-                    String line = m.getName() + "\t" + s.getName() + "\t" + s.serialize();
-                    lines.add(line);
-                }
-            }
-            // ESP-Modul: aktive Mobs als Sonder-Zeile (Setting-Name __mobs__).
-            for (Module m : ModuleManager.INSTANCE.getModules()) {
-                if (m instanceof com.vortex.client.module.modules.EspModule esp) {
-                    lines.add(m.getName() + "\t__mobs__\t" + esp.serializeMobs());
-                }
-                if (m instanceof com.vortex.client.module.modules.BlockEspModule besp) {
-                    lines.add(m.getName() + "\t__blocks__\t" + besp.serializeBlocks());
-                }
-                if (m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
-                    lines.add(m.getName() + "\t__hiddenblocks__\t" + nrb.serializeBlocks());
-                }
-                if (m instanceof com.vortex.client.module.modules.ItemCounterModule icm) {
-                    lines.add(m.getName() + "\t__counters__\t" + icm.serializeCounters());
-                }
-                if (m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
-                    lines.add(m.getName() + "\t__antirender__\t" + ar.serialize());
+                // Zusatzlisten generisch: jedes Modul, das ExtraData
+                // umsetzt, liefert Schluessel und Inhalt selbst. Vorher stand
+                // hier je Modul ein eigener Zweig -- damit war der Kern an
+                // konkrete Module gebunden.
+                if (m instanceof com.vortex.client.module.ExtraData ed) {
+                    lines.add(m.getName() + "\t" + ed.extraKey() + "\t" + ed.serializeExtra());
                 }
             }
 
@@ -362,6 +335,14 @@ public final class ConfigManager {
             lines.add("__theme__\t" + com.vortex.client.gui.Theme.INSTANCE.opacity.getName()
                     + "\t" + com.vortex.client.gui.Theme.INSTANCE.opacity.serialize());
 
+            // Fremde Zeilen unveraendert zurueckschreiben. MUSS nach den
+            // eigenen stehen: waere ein Modul zwischenzeitlich dazugekommen,
+            // gewinnt dessen eigene Zeile, weil das Laden von oben nach unten
+            // geht und der spaetere Wert den frueheren ueberschreibt.
+            for (String fremd : FREMDE_ZEILEN) {
+                lines.add(fremd);
+            }
+
             Files.write(file, lines, StandardCharsets.UTF_8);
         } catch (IOException | RuntimeException e) {
             // Speichern soll das Spiel nie crashen lassen.
@@ -370,6 +351,19 @@ public final class ConfigManager {
     }
 
     /** Einstellungen aus der Datei laden und auf die Module anwenden. */
+    /**
+     * Zeilen, zu denen es gerade kein Modul gibt.
+     *
+     * Beispiel: die Cheat-Module liegen im Addon. Spielt jemand ohne Addon,
+     * kennt der Client deren Einstellungen nicht -- wuerde er sie beim
+     * Speichern weglassen, waeren sie beim naechsten Start mit Addon
+     * unwiderruflich weg.
+     *
+     * Deshalb werden sie hier aufbewahrt und unveraendert zurueckgeschrieben.
+     * Der Client versteht sie nicht, aber er zerstoert sie auch nicht.
+     */
+    private static final List<String> FREMDE_ZEILEN = new ArrayList<>();
+
     public static void load() {
         try {
             Path file = configFile();
@@ -378,6 +372,9 @@ public final class ConfigManager {
             }
 
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+            // Vor jedem Laden leeren: sonst wandern beim Preset-Wechsel die
+            // fremden Zeilen des einen Presets in das andere.
+            FREMDE_ZEILEN.clear();
             int unknown = 0;   // Zeilen ohne passendes Modul/Setting
             for (String line : lines) {
                 if (line.isBlank()) continue;
@@ -390,14 +387,25 @@ public final class ConfigManager {
                 String settingName = parts[1];
                 String value = parts[2];
 
-                // Sonderfall: ESP-Mob-Liste.
-                if (settingName.equals("__mobs__")) {
+                // Zusatzlisten: an den Schluessel des Moduls gebunden, nicht
+                // an dessen Klasse. Dadurch funktioniert es auch fuer Module
+                // aus einem Addon, die der Client gar nicht kennt.
+                if (settingName.startsWith("__") && settingName.endsWith("__")
+                        && !modName.startsWith("__")) {
+                    boolean behandelt = false;
                     for (Module m : ModuleManager.INSTANCE.getModules()) {
                         if (m.getName().equals(modName)
-                                && m instanceof com.vortex.client.module.modules.EspModule esp) {
-                            esp.deserializeMobs(value);
+                                && m instanceof com.vortex.client.module.ExtraData ed
+                                && ed.extraKey().equals(settingName)) {
+                            ed.deserializeExtra(value);
+                            behandelt = true;
+                            break;
                         }
                     }
+                    if (behandelt) continue;
+                    // Kein passendes Modul geladen -> aufbewahren statt verwerfen.
+                    FREMDE_ZEILEN.add(line);
+                    unknown++;
                     continue;
                 }
                 // Sonderfall: Waypoint-Einstellungen.
@@ -457,55 +465,17 @@ public final class ConfigManager {
                     continue;
                 }
 
-                // Sonderfall: Block-ESP-Liste.
-                if (settingName.equals("__blocks__")) {
-                    for (Module m : ModuleManager.INSTANCE.getModules()) {
-                        if (m.getName().equals(modName)
-                                && m instanceof com.vortex.client.module.modules.BlockEspModule besp) {
-                            besp.deserializeBlocks(value);
-                        }
-                    }
-                    continue;
-                }
-                // Sonderfall: Item-Zaehler.
-                if (settingName.equals("__counters__")) {
-                    for (Module m : ModuleManager.INSTANCE.getModules()) {
-                        if (m.getName().equals(modName)
-                                && m instanceof com.vortex.client.module.modules.ItemCounterModule icm) {
-                            icm.deserializeCounters(value);
-                        }
-                    }
-                    continue;
-                }
 
-                // Sonderfall: Liste der ausgeblendeten Bloecke.
-                if (settingName.equals("__hiddenblocks__")) {
-                    for (Module m : ModuleManager.INSTANCE.getModules()) {
-                        if (m.getName().equals(modName)
-                                && m instanceof com.vortex.client.module.modules.NoRenderBlocksModule nrb) {
-                            nrb.deserializeBlocks(value);
-                        }
-                    }
-                    continue;
-                }
 
-                // Sonderfall: Anti-Render-Liste.
-                if (settingName.equals("__antirender__")) {
-                    for (Module m : ModuleManager.INSTANCE.getModules()) {
-                        if (m.getName().equals(modName)
-                                && m instanceof com.vortex.client.module.modules.AntiRenderModule ar) {
-                            ar.deserialize(value);
-                        }
-                    }
-                    continue;
-                }
 
                 Setting target = findSetting(modName, settingName);
                 if (target != null) {
                     target.deserialize(value);
                 } else {
-                    // Zeile gehoert zu einem Modul/Setting, das es nicht (mehr)
-                    // gibt. Kein Fehler, aber gut zu wissen.
+                    // Zeile gehoert zu einem Modul, das es hier nicht gibt --
+                    // typischerweise ein Cheat-Modul aus dem Addon. Wortwoertlich
+                    // aufbewahren und beim Speichern wieder mitschreiben.
+                    FREMDE_ZEILEN.add(line);
                     unknown++;
                 }
             }

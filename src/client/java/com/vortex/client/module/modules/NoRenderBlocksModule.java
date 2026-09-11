@@ -17,7 +17,7 @@ import java.util.Set;
  * ores through it is x-ray, and calling that a performance option would be
  * dressing it up as something it is not.
  */
-public class NoRenderBlocksModule extends Module {
+public class NoRenderBlocksModule extends Module implements com.vortex.client.module.ExtraData, com.vortex.client.module.HasOwnScreen {
 
     /**
      * Block ids that are hidden, e.g. {@code minecraft:stone}.
@@ -102,4 +102,42 @@ public class NoRenderBlocksModule extends Module {
     protected void onDisable() {
         rebuildChunks();
     }
+
+    // --- ExtraData: Zusatzliste ausserhalb der normalen Einstellungen ------
+    // Schluessel und Methodennamen sind unveraendert uebernommen, damit
+    // bestehende Presets weiterhin gelesen werden.
+
+    @Override
+    public String extraKey() {
+        return "__hiddenblocks__";
+    }
+
+    @Override
+    public String serializeExtra() {
+        return serializeBlocks();
+    }
+
+    @Override
+    public void deserializeExtra(String value) {
+        deserializeBlocks(value);
+    }
+
+    @Override
+    public void clearExtra() {
+        clearAll();
+    }
+
+
+    // --- HasOwnScreen: eigener Auswahlbildschirm --------------------------
+    @Override
+    public String screenButtonLabel() {
+        return "Select blocks";
+    }
+
+    @Override
+    public net.minecraft.client.gui.screen.Screen createScreen(
+            net.minecraft.client.gui.screen.Screen parent) {
+        return new com.vortex.client.gui.NoRenderBlocksScreen(parent);
+    }
+
 }

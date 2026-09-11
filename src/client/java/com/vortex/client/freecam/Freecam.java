@@ -1,7 +1,6 @@
 package com.vortex.client.freecam;
 
 import com.vortex.client.module.ModuleManager;
-import com.vortex.client.module.modules.FreecamModule;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.math.Vec3d;
@@ -105,8 +104,7 @@ public final class Freecam {
     private static void spawnCameraEntity(MinecraftClient mc) {
         // Nur wenn der Render-Anker ausdruecklich eingeschaltet ist. Sonst bleibt
         // der Spieler die Kamera -- das ist der sichere Weg (siehe FreecamModule).
-        FreecamModule fm = module();
-        if (fm == null || !fm.renderAnchor.get()) {
+        if (!schalter("Render Anchor", false)) {
             cameraEntity = null;
             return;
         }
@@ -235,9 +233,8 @@ public final class Freecam {
             rz = -Math.sin(yawRad);
 
             // Geschwindigkeit aus den Modul-Einstellungen (in der GUI regelbar).
-            FreecamModule fm = module();
-            double speed = (fm != null) ? fm.speed.get() : SPEED;
-            double sprintFactor = (fm != null) ? fm.sprintMult.get() : SPRINT_MULT;
+            double speed = zahl("Speed", SPEED);
+            double sprintFactor = zahl("Sprint Multiplier", SPRINT_MULT);
             if (mc.options.sprintKey.isPressed()) speed *= sprintFactor;
             accel = speed;
 
@@ -289,10 +286,60 @@ public final class Freecam {
     }
 
     /** Liefert das Freecam-Modul (oder null). */
-    public static FreecamModule module() {
-        for (var m : ModuleManager.INSTANCE.getModules()) {
-            if (m instanceof FreecamModule f) return f;
-        }
+        /**
+     * Das Freecam-Modul, falls es geladen ist.
+     *
+     * Gesucht wird ueber den NAMEN, nicht ueber die Klasse: das Modul liegt
+     * seit dem Umzug im Addon. Waere der Klassenname hier fest verdrahtet,
+     * liesse sich der Client ohne Addon nicht mehr uebersetzen.
+     *
+     * Ohne Addon gibt es kein Modul -- dann bleibt die Kamera einfach aus.
+     */
+    public static com.vortex.client.module.Module module() {
+        try {
+            for (com.vortex.client.module.Module m
+                    : com.vortex.client.module.ModuleManager.INSTANCE.getModules()) {
+                if ("Freecam".equals(m.getName())) return m;
+            }
+        } catch (Throwable ignored) { }
         return null;
     }
+
+    // --- Einstellungen ueber den Namen lesen ------------------------------
+    //
+    // Das Freecam-Modul liegt im Addon. Die Kamera hier darf seine Klasse
+    // nicht kennen, sonst laesst sich der Client ohne Addon nicht
+    // uebersetzen. Also werden die Werte ueber den Einstellungsnamen
+    // gesucht -- genau die Namen, die im Modul stehen.
+    //
+    // Fehlt das Addon, greift jeweils der Standardwert.
+
+    private static boolean schalter(String name, boolean standard) {
+        try {
+            com.vortex.client.module.Module m = module();
+            if (m == null) return standard;
+            for (com.vortex.client.core.setting.Setting st : m.getSettings()) {
+                if (st.getName().equals(name)
+                        && st instanceof com.vortex.client.core.setting.BooleanSetting b) {
+                    return b.get();
+                }
+            }
+        } catch (Throwable ignored) { }
+        return standard;
+    }
+
+    private static double zahl(String name, double standard) {
+        try {
+            com.vortex.client.module.Module m = module();
+            if (m == null) return standard;
+            for (com.vortex.client.core.setting.Setting st : m.getSettings()) {
+                if (st.getName().equals(name)
+                        && st instanceof com.vortex.client.core.setting.NumberSetting n) {
+                    return n.get();
+                }
+            }
+        } catch (Throwable ignored) { }
+        return standard;
+    }
+
 }

@@ -13,7 +13,7 @@ import java.util.List;
  * screen -- pearls in one corner, totems in another. The counters themselves
  * live in ItemCounter; this module only keeps them and saves them.
  */
-public class ItemCounterModule extends Module {
+public class ItemCounterModule extends Module implements com.vortex.client.module.ExtraData, com.vortex.client.module.HasOwnScreen {
 
     private final List<ItemCounter> counters = new ArrayList<>();
 
@@ -60,4 +60,42 @@ public class ItemCounterModule extends Module {
             if (c != null) counters.add(c);
         }
     }
+
+    // --- ExtraData: Zusatzliste ausserhalb der normalen Einstellungen ------
+    // Schluessel und Methodennamen sind unveraendert uebernommen, damit
+    // bestehende Presets weiterhin gelesen werden.
+
+    @Override
+    public String extraKey() {
+        return "__counters__";
+    }
+
+    @Override
+    public String serializeExtra() {
+        return serializeCounters();
+    }
+
+    @Override
+    public void deserializeExtra(String value) {
+        deserializeCounters(value);
+    }
+
+    @Override
+    public void clearExtra() {
+        // Diese Liste wird beim Zuruecksetzen nicht geleert.
+    }
+
+
+    // --- HasOwnScreen: eigener Auswahlbildschirm --------------------------
+    @Override
+    public String screenButtonLabel() {
+        return "Manage counters";
+    }
+
+    @Override
+    public net.minecraft.client.gui.screen.Screen createScreen(
+            net.minecraft.client.gui.screen.Screen parent) {
+        return new com.vortex.client.gui.ItemCounterScreen(parent);
+    }
+
 }

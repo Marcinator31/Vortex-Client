@@ -32,7 +32,6 @@ public class VortexClientMod implements ClientModInitializer {
     private static KeyBinding openClickGuiKey;
     private static KeyBinding openHudEditorKey;
 
-    // Flankenerkennung fuer die Freecam-Taste (nur beim Druecken umschalten).
 
     @Override
     public void onInitializeClient() {
@@ -55,18 +54,7 @@ public class VortexClientMod implements ClientModInitializer {
 
         // 3D-Welt-Rendering (Hitboxen) anmelden.
         com.vortex.client.hud.HitboxRenderer.register();
-        com.vortex.client.hud.BlockEspRenderer.register();
-        com.vortex.client.hud.StashFinder.register();
-        com.vortex.client.hud.BlockEntityEsp.register();
-        com.vortex.client.hud.ItemEsp.register();
-        com.vortex.client.hud.SusChunks.register();
-        com.vortex.client.hud.TunnelDetector.register();
-        com.vortex.client.hud.AutoTotem.register();
-        com.vortex.client.hud.Aimbot.register();
-        com.vortex.client.hud.AutoHit.register();
-        com.vortex.client.hud.Fly.register();
         com.vortex.client.hud.NoFall.register();
-        com.vortex.client.hud.WorldScan.register();
         com.vortex.client.hud.ChunkBorders.register();
         com.vortex.client.hud.ProjectilePath.register();
         com.vortex.client.hud.SessionStats.register();
@@ -97,19 +85,14 @@ public class VortexClientMod implements ClientModInitializer {
                 });
         com.vortex.client.hud.WaypointRenderer.register();
         com.vortex.client.waypoint.WaypointActions.register();
-        com.vortex.client.hud.CrystalMacro.register();
         com.vortex.client.gui.RestartButton.register();
-        com.vortex.client.freecam.Freecam.registerSafety();
         com.vortex.client.command.ClientCommands.register();
 
         // Beim Beenden des Spiels alle Einstellungen speichern.
         // Sicherheit: Wenn der Spieler die Welt verlaesst / disconnected, die
-        // Freecam (und damit die Kamera-Entity) sauber beenden. Sonst haengt die
         // Entity an der alten Welt und kann beim Wechsel crashen.
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT
             .register((handler, client) -> {
-                com.vortex.client.freecam.Freecam.disable();
-                com.vortex.client.hud.StashFinder.reset();
                 // Beim Serverwechsel die Totem-Zaehlung leeren -- die Werte
                 // gelten nur fuer die Spieler der aktuellen Welt.
                 com.vortex.client.hud.TotemPops.reset();
@@ -215,24 +198,6 @@ public class VortexClientMod implements ClientModInitializer {
                 com.vortex.client.core.Errors.report("ModuleToggleKeys", pvpErr);
             }
 
-            // --- Freecam follows its module ---
-            //
-            // The camera used to have a key of its own, on top of the module
-            // switch. Now that every module has a key, that second layer only
-            // caused confusion: module on, camera still off, and no obvious
-            // reason why. Module enabled means camera active, nothing else.
-            try {
-                com.vortex.client.module.modules.FreecamModule fc =
-                    com.vortex.client.freecam.Freecam.module();
-                if (fc != null && fc.isEnabled()) {
-                    if (!com.vortex.client.freecam.Freecam.isActive()) {
-                        com.vortex.client.freecam.Freecam.toggle();
-                    }
-                } else {
-                    com.vortex.client.freecam.Freecam.disable();
-                }
-            } catch (Throwable ignored) {
-            }
         });
 
         System.out.println("[" + MOD_ID + "] Client gestartet.");

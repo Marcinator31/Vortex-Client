@@ -23,7 +23,7 @@ import java.util.Set;
  * Entity-Typen). Die Auswahl wird als Menge von Entity-Type-IDs gehalten und
  * kommasepariert persistiert.
  */
-public class AntiRenderModule extends Module {
+public class AntiRenderModule extends Module implements com.vortex.client.module.ExtraData, com.vortex.client.module.HasOwnScreen {
 
     /**
      * Distanz-Culling: Entities, die weiter als dieser Wert (in Bloecken) von der
@@ -93,4 +93,42 @@ public class AntiRenderModule extends Module {
             if (!t.isEmpty()) hiddenTypes.add(t);
         }
     }
+
+    // --- ExtraData: Zusatzliste ausserhalb der normalen Einstellungen ------
+    // Schluessel und Methodennamen sind unveraendert uebernommen, damit
+    // bestehende Presets weiterhin gelesen werden.
+
+    @Override
+    public String extraKey() {
+        return "__antirender__";
+    }
+
+    @Override
+    public String serializeExtra() {
+        return serialize();
+    }
+
+    @Override
+    public void deserializeExtra(String value) {
+        deserialize(value);
+    }
+
+    @Override
+    public void clearExtra() {
+        // Diese Liste wird beim Zuruecksetzen nicht geleert.
+    }
+
+
+    // --- HasOwnScreen: eigener Auswahlbildschirm --------------------------
+    @Override
+    public String screenButtonLabel() {
+        return "Select entities";
+    }
+
+    @Override
+    public net.minecraft.client.gui.screen.Screen createScreen(
+            net.minecraft.client.gui.screen.Screen parent) {
+        return new com.vortex.client.gui.AntiRenderScreen(parent);
+    }
+
 }

@@ -103,27 +103,39 @@ public final class ActiveCape {
         if (laeuft) return;
         laeuft = true;
         try {
-            byte[] daten;
+            byte[] daten = null;
             Path cache = cacheDatei(capeId);
 
-            // Zwischenspeicher zuerst: ohne Netz soll das Cape trotzdem da sein.
-            if (Files.exists(cache)) {
-                daten = Files.readAllBytes(cache);
-            } else {
-                String url = sucheTexturAdresse(capeId);
-                if (url == null) {
-                    com.vortex.client.core.Errors.note("ActiveCape",
-                            "Kein Eintrag fuer " + capeId + " im Verzeichnis");
-                    return;
-                }
+            // NETZ ZUERST, Zwischenspeicher nur als Rueckfall.
+            //
+            // Vorher war es umgekehrt: lag die Datei einmal lokal, wurde sie
+            // nie wieder geholt. Aenderst du das Bild im Cosmetics-Verzeichnis,
+            // sah niemand die Aenderung -- genau der Fall mit den nachtraeglich
+            // ergaenzten Elytra-Fluegeln.
+            //
+            // Eine Cape-Textur ist wenige Kilobyte gross. Sie bei jedem Start
+            // zu holen kostet nichts und spart die ganze Frage, wann ein
+            // Zwischenspeicher veraltet ist.
+            String url = sucheTexturAdresse(capeId);
+            if (url != null) {
                 daten = lade(url);
-                if (daten == null) return;
+            }
+            if (daten != null) {
                 try {
                     Files.createDirectories(cache.getParent());
                     Files.write(cache, daten);
                 } catch (Throwable ignored) {
                     // Ohne Zwischenspeicher laedt es beim naechsten Start neu.
                 }
+            } else if (Files.exists(cache)) {
+                // Kein Netz: die zuletzt geholte Fassung tut es auch.
+                daten = Files.readAllBytes(cache);
+                com.vortex.client.core.Errors.note("ActiveCape",
+                        "Verzeichnis nicht erreichbar -- benutze gespeicherte Textur");
+            } else {
+                com.vortex.client.core.Errors.note("ActiveCape",
+                        "Cape " + capeId + " konnte nicht geladen werden");
+                return;
             }
 
             final byte[] fertig = daten;
