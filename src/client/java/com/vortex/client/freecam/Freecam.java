@@ -103,9 +103,22 @@ public final class Freecam {
 
     /** Erstellt die stumme Kamera-Entity und macht sie zur aktiven Kamera. */
     private static void spawnCameraEntity(Minecraft mc) {
-        // Nur wenn der Render-Anker ausdruecklich eingeschaltet ist. Sonst bleibt
-        // der Spieler die Kamera -- das ist der sichere Weg (siehe FreecamModule).
-        if (!schalter("Render Anchor", false)) {
+        // Eine eigene Kamera-Entity wird aus ZWEI Gruenden gebraucht:
+        //
+        //  - "Render Anchor": besseres Rendern unter der Erde
+        //  - "Show Player":   Minecraft zeichnet die Kamera-Entity in der
+        //                     Ich-Perspektive NIE. Bleibt der Spieler die
+        //                     Kamera, sieht man sich selbst nicht -- egal was
+        //                     eingestellt ist. Erst mit eigener Kamera-Entity
+        //                     ist der Spieler eine gewoehnliche Entity und
+        //                     wird gezeichnet.
+        //
+        // Genau daran scheiterte "Show Player" vorher: die Einstellung wurde
+        // ausgewertet, aber der Spieler war die Kamera und damit ohnehin
+        // unsichtbar.
+        boolean brauchtKamera = schalter("Render Anchor", false)
+                || schalter("Show Player", true);
+        if (!brauchtKamera) {
             cameraEntity = null;
             return;
         }
@@ -202,6 +215,23 @@ public final class Freecam {
         lastFrameNano = now;
         if (dt <= 0) return;
         if (dt > 0.1) dt = 0.1; // bei Hängern nicht springen
+
+        // Kamera-Entity nachziehen, wenn sich eine Einstellung waehrend der
+        // Freecam aendert.
+        //
+        // spawnCameraEntity laeuft sonst nur beim Einschalten -- wer "Show
+        // Player" mitten im Flug umlegt, saehe bis zum naechsten Ein- und
+        // Ausschalten keine Wirkung.
+        //
+        // Nur bei ECHTER Aenderung handeln: sonst wuerde die Entity in jedem
+        // Bild neu erzeugt.
+        boolean brauchtJetzt = schalter("Render Anchor", false)
+                || schalter("Show Player", true);
+        if (brauchtJetzt && cameraEntity == null) {
+            spawnCameraEntity(mc);
+        } else if (!brauchtJetzt && cameraEntity != null) {
+            removeCameraEntity(mc);
+        }
 
         // Spieler mitdrehen, falls eingestellt.
         //

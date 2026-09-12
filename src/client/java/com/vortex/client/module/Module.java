@@ -29,7 +29,9 @@ public abstract class Module {
      * a difference worth seeing at a glance before switching one on.
      */
     public enum Category {
-        HUD, PVP, CHEATS, PERFORMANCE, MISC
+        HUD, PVP, CHEATS, PERFORMANCE, MISC,
+        /** Automatisierte Ablaeufe. Leer, solange kein Addon Module anmeldet. */
+        BOTS
     }
 
     private final String name;
