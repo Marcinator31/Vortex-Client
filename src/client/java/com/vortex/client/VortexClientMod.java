@@ -222,6 +222,31 @@ public class VortexClientMod implements ClientModInitializer {
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("ModuleToggleKeys", pvpErr);
             }
+
+            // --- Freecam folgt seinem Modul ---------------------------------
+            //
+            // Die Kamera hat keine eigene Taste. Modul an heisst Kamera an,
+            // Modul aus heisst Kamera aus -- eine zweite Ebene daneben hat
+            // frueher nur verwirrt.
+            //
+            // WICHTIG: Ohne diesen Block passiert beim Druecken der
+            // Freecam-Taste gar nichts. Das Modul schaltet um, aber niemand
+            // sagt der Kamera Bescheid. Genau das war nach dem Umzug der
+            // Module ins Addon der Fall.
+            //
+            // Das Modul wird ueber den NAMEN gesucht, nicht ueber die Klasse:
+            // es liegt im Addon, und der Client darf dessen Klasse nicht
+            // kennen. Ohne Addon gibt es kein Modul -- dann bleibt alles aus.
+            try {
+                com.vortex.client.module.Module fc =
+                        com.vortex.client.freecam.Freecam.module();
+                boolean sollAn = (fc != null && fc.isEnabled());
+                if (sollAn != com.vortex.client.freecam.Freecam.isActive()) {
+                    com.vortex.client.freecam.Freecam.toggle();
+                }
+            } catch (Throwable pvpErr) {
+                com.vortex.client.core.Errors.report("FreecamFollowsModule", pvpErr);
+            }
 });
 
         System.out.println("[" + MOD_ID + "] Client gestartet.");
