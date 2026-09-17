@@ -55,7 +55,7 @@ public class RadarModule extends Module implements HudElement {
             new NumberSetting("Alert Cooldown (s)", 30, 5, 300, 5);
 
     public RadarModule() {
-        super("Radar", Category.HUD);
+        super("Radar", Category.CHEATS);
         addSetting(x);
         addSetting(y);
         addSetting(color);

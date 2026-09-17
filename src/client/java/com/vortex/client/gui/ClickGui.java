@@ -43,25 +43,46 @@ import net.minecraft.network.chat.Component;
 public class ClickGui extends Screen {
 
     // ---- Masse ----
-    private static final int WIN_MAX_W = 620;
-    private static final int WIN_MAX_H = 400;
-    private static final int HEADER_H = 34;
-    private static final int FOOTER_H = 18;
-    private static final int SIDEBAR_W = 108;
-    private static final int CARD_H = 26;
-    private static final int SET_H = 20;
-    private static final int SUB_H = 22;
-    private static final int PAD = 8;
+    // --- Masse ------------------------------------------------------------
+    //
+    // Deutlich groesser und luftiger als vorher. Das alte Fenster war
+    // 620x400 mit 8 Pixel Rand und 26 Pixel hohen Karten -- alles klebte
+    // aneinander, und bei vielen Modulen sah man nur noch Text auf Text.
+    //
+    // Mehr Luft ist die wirksamste Massnahme gegen den "pixeligen" Eindruck:
+    // Minecrafts Schrift hat eine feste Groesse, also muss der Raum
+    // drumherum wachsen, nicht die Schrift schrumpfen.
+    private static final int WIN_MAX_W = 780;
+    private static final int WIN_MAX_H = 470;
+    private static final int HEADER_H = 46;
+    private static final int FOOTER_H = 24;
+    private static final int SIDEBAR_W = 148;
+    private static final int CARD_H = 34;
+    private static final int SET_H = 28;
+    private static final int SUB_H = 28;
+    private static final int PAD = 14;
+
+    /** Eckenradius. Zwei Pixel reichen -- mehr wirkt bei dieser Schrift weich. */
+    private static final int RADIUS = 3;
 
     // ---- Farben ----
-    private static final int C_DIM      = 0xB4000000;
-    private static final int C_WINDOW   = 0xF21B1B21;
-    private static final int C_SIDEBAR  = 0xFF16161B;
-    private static final int C_CARD     = 0xFF24242B;
-    private static final int C_CARD_HOV = 0xFF2E2E38;
-    private static final int C_INNER    = 0xFF1C1C22;
-    private static final int C_LINE     = 0xFF31313A;
-    private static final int C_TRACK    = 0xFF3A3A45;
+    // --- Farben -----------------------------------------------------------
+    //
+    // Die alte Palette war fast schwarz mit harten Kanten -- daher der
+    // "pixelige" Eindruck. Die neue arbeitet mit einem leichten Blaustich
+    // und kleineren Helligkeitsspruengen zwischen den Ebenen. Dadurch wirken
+    // die Flaechen als Schichten uebereinander statt als Kaesten
+    // nebeneinander.
+    private static final int C_DIM      = 0xC8070910;  // Hintergrund abdunkeln
+    private static final int C_WINDOW   = 0xFA151821;  // Fensterflaeche
+    private static final int C_SIDEBAR  = 0xFF11141C;  // eine Stufe tiefer
+    private static final int C_CARD     = 0xFF1E2230;  // Karte
+    private static final int C_CARD_HOV = 0xFF272C3C;  // Karte unter dem Zeiger
+    private static final int C_INNER    = 0xFF181C27;  // eingelassene Flaeche
+    private static final int C_LINE     = 0xFF2A3040;  // Trennlinie, weicher
+    private static final int C_TRACK    = 0xFF323949;  // Schieber-Schiene
+    private static final int C_TEXT     = 0xFFE8ECF5;  // Haupttext
+    private static final int C_TEXT_DIM = 0xFF8A93A8;  // Nebentext
 
     // ---- Zustand ----
     private final Set<Module> expanded = new HashSet<>();
@@ -230,8 +251,14 @@ public class ClickGui extends Screen {
         int accent = t.accent.get() | 0xFF000000;
 
         // openAnim blendet ein, opacity() ist die eingestellte Durchsichtigkeit.
+        // Schatten zuerst: er liegt unter dem Fenster und hebt es vom
+        // Spielgeschehen ab. Das ersetzt den harten Rahmen von frueher.
+        schatten(ctx, winX, winY, winX + winW, winY + winH, openAnim);
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim * opacity()));
-        ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim * 0.9f));
+        // Akzentlinie oben, in der Breite verlaufend -- sie gibt dem Fenster
+        // einen Anfang, ohne einen harten Rahmen zu ziehen.
+        verlauf(ctx, winX + RADIUS, winY, winX + winW - RADIUS, winY + 2,
+                fade(accent, openAnim * 0.9f), fade(accent, openAnim * 0.25f));
 
         drawHeader(ctx, winX, winY, winW, accent, t);
         drawSidebar(ctx, winX, winY + HEADER_H, winH - HEADER_H - FOOTER_H, accent, t, dt);
@@ -299,7 +326,7 @@ public class ClickGui extends Screen {
             int lw = this.font.width(lbl);
             ctx.text(this.font, Component.literal(lbl),
                     px + (bw - lw) / 2, y + 20,
-                    fade(isCur ? 0xFFFFFFFF : 0xFF8A8A96, openAnim), false);
+                    fade(isCur ? C_TEXT : 0xFF8A8A96, openAnim), false);
             hits.add(new Hit(px, y + 17, bw, 13, Act.PRESET, null, null, Integer.valueOf(i)));
             px += bw + 4;
         }
@@ -313,7 +340,7 @@ public class ClickGui extends Screen {
         boolean dHov = inRect(mx, my, dx, y + 17, dw, 13);
         roundRect(ctx, dx, y + 17, dw, 13, fade(dHov ? mix(C_INNER, accent, 0.4f) : C_INNER, openAnim));
         ctx.text(this.font, Component.literal(design),
-                dx + 7, y + 20, fade(dHov ? 0xFFFFFFFF : 0xFF9A9AA6, openAnim), false);
+                dx + 7, y + 20, fade(dHov ? C_TEXT : 0xFF9A9AA6, openAnim), false);
         hits.add(new Hit(dx, y + 17, dw, 13, Act.THEME, null, null, null));
 
         if (search != null) {
@@ -347,10 +374,10 @@ public class ClickGui extends Screen {
         // Favoriten ganz oben -- nur wenn welche angepinnt sind.
         if (GuiState.hasFavorites()) {
             boolean isSel = !searching && favView;
-            boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, 22);
+            boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, NAV_H);
             int bg = isSel ? mix(C_CARD, accent, 0.18f) : (hov ? C_CARD : 0);
             if ((bg >>> 24) != 0) {
-                roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
+                roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, NAV_H, fade(bg, openAnim));
             }
             ctx.text(this.font, Component.literal("* Favourites"),
                     x + 16, cy + 7,
@@ -359,12 +386,12 @@ public class ClickGui extends Screen {
             int bw0 = this.font.width(badge);
             ctx.text(this.font, Component.literal(badge),
                     x + SIDEBAR_W - 12 - bw0, cy + 7, fade(accent, openAnim), false);
-            hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, 22, Act.FAVCAT, null, null, null));
+            hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, NAV_H, Act.FAVCAT, null, null, null));
             if (isSel) {
                 if (indicatorY < 0) indicatorY = cy;
                 indicatorY = anim(indicatorY, cy, 16f, dt);
             }
-            cy += 26;
+            cy += NAV_H + 4;
         }
 
         for (Module.Category cat : Module.Category.values()) {
@@ -375,7 +402,7 @@ public class ClickGui extends Screen {
 
             boolean isSel = !searching && !favView
                     && section == Section.MODULE && cat == selected;
-            boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, 22);
+            boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, NAV_H);
 
             if (isSel) {
                 if (indicatorY < 0) indicatorY = cy;
@@ -384,7 +411,7 @@ public class ClickGui extends Screen {
 
             int bg = isSel ? mix(C_CARD, accent, 0.18f) : (hov ? C_CARD : 0);
             if ((bg >>> 24) != 0) {
-                roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
+                roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, NAV_H, fade(bg, openAnim));
             }
 
             ctx.text(this.font, Component.literal(pretty(cat.name())),
@@ -401,8 +428,8 @@ public class ClickGui extends Screen {
                     x + SIDEBAR_W - 12 - bw, cy + 7,
                     fade(on > 0 ? accent : 0xFF5A5A66, openAnim), false);
 
-            hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, 22, Act.CATEGORY, null, null, cat));
-            cy += 26;
+            hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, NAV_H, Act.CATEGORY, null, null, cat));
+            cy += NAV_H + 4;
         }
 
         // Trennlinie: darunter stehen Bereiche, die keine Module sind.
@@ -441,7 +468,7 @@ public class ClickGui extends Screen {
             if (p > 1f) p = 1f;
             int barY = y + 4 + (int) ((h - 8 - barH) * p);
             ctx.fill(x + SIDEBAR_W - 3, barY, x + SIDEBAR_W - 1, barY + barH,
-                    fade(mix(accent, 0xFFFFFFFF, 0.2f), openAnim));
+                    fade(mix(accent, C_TEXT, 0.2f), openAnim));
         }
     }
 
@@ -450,10 +477,10 @@ public class ClickGui extends Screen {
                                  Section sec, String badge, int accent, Theme t,
                                  float dt, boolean searching) {
         boolean isSel = !searching && !favView && section == sec;
-        boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, 22);
+        boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, NAV_H);
         int bg = isSel ? mix(C_CARD, accent, 0.18f) : (hov ? C_CARD : 0);
         if ((bg >>> 24) != 0) {
-            roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, 22, fade(bg, openAnim));
+            roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, NAV_H, fade(bg, openAnim));
         }
         ctx.text(this.font, Component.literal(label), x + 16, cy + 7,
                 fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
@@ -462,7 +489,7 @@ public class ClickGui extends Screen {
             ctx.text(this.font, Component.literal(badge),
                     x + SIDEBAR_W - 12 - bw, cy + 7, fade(accent, openAnim), false);
         }
-        hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, 22, Act.SECTION, null, null, sec));
+        hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, NAV_H, Act.SECTION, null, null, sec));
         if (isSel) {
             if (indicatorY < 0) indicatorY = cy;
             indicatorY = anim(indicatorY, cy, 16f, dt);
@@ -509,31 +536,48 @@ public class ClickGui extends Screen {
 
             if (visible) {
                 roundRect(ctx, cx, cy, cw, cardH, mix(C_CARD, C_CARD_HOV, hv));
+
+                // Aktiv-Streifen links, jetzt ueber die volle Kartenhoehe und
+                // abgerundet -- vorher ein harter Strich von 5 bis 21.
                 if (on > 0.01f) {
-                    ctx.fill(cx, cy + 5, cx + 2, cy + CARD_H - 5, fade(accent, on));
+                    roundRect(ctx, cx, cy + 6, 3, CARD_H - 12, fade(accent, on));
                 }
+
+                // ZWEIZEILIG: Name oben, Kurzbeschreibung darunter.
+                //
+                // Die Beschreibung stand frueher nur im Tooltip -- man musste
+                // also auf jedes Modul zeigen, um zu wissen, was es tut. Bei
+                // 58 Modulen ist das unbrauchbar. Jetzt steht sie direkt da,
+                // wofuer die groessere Kartenhoehe den Platz schafft.
                 ctx.text(this.font, Component.literal(m.getName()),
-                        cx + 12, cy + 9, m.isEnabled() ? t.text.get() : 0xFFA8A8B4);
+                        cx + 14, cy + 7, m.isEnabled() ? t.text.get() : C_TEXT_DIM);
+
+                String kurz = kurzInfo(m, cw - 90);
+                if (kurz != null) {
+                    ctx.text(this.font, Component.literal(kurz),
+                            cx + 14, cy + 19, C_TEXT_DIM, false);
+                }
+
                 if (hasContent(m)) {
                     ctx.text(this.font, Component.literal(ex > 0.5f ? "-" : "+"),
-                            cx + cw - 46, cy + 9, 0xFF8A8A96, false);
+                            cx + cw - 50, cy + 13, C_TEXT_DIM, false);
                 }
                 // Stern zum Anpinnen (leuchtet, wenn das Modul Favorit ist).
                 boolean fav = GuiState.isFavorite(m.getName());
-                boolean starHov = inRect(mx, my, cx + cw - 62, cy + 6, 14, 14);
+                boolean starHov = inRect(mx, my, cx + cw - 66, cy + 10, 14, 14);
                 ctx.text(this.font, Component.literal("*"),
-                        cx + cw - 58, cy + 9,
-                        fav ? accent : (starHov ? 0xFFD0D0DA : 0xFF55555F), false);
-                drawSwitch(ctx, cx + cw - 32, cy + 8, on, accent);
+                        cx + cw - 62, cy + 13,
+                        fav ? accent : (starHov ? C_TEXT : 0xFF4A5164), false);
+                drawSwitch(ctx, cx + cw - 36, cy + 12, on, accent);
             }
 
             // WICHTIG: Klickflaechen nur registrieren, wenn die Karte wirklich im
             // sichtbaren Bereich liegt. Sonst koennte man durch die Kopfzeile oder
             // die Fussleiste hindurch auf weggescrollte Karten klicken.
             if (visible) {
-                hits.add(new Hit(cx, cy, cw - 36, CARD_H, Act.EXPAND, m, null, null));
-                hits.add(new Hit(cx + cw - 34, cy + 5, 28, 16, Act.TOGGLE, m, null, null));
-                hits.add(new Hit(cx + cw - 62, cy + 6, 14, 14, Act.STAR, m, null, null));
+                hits.add(new Hit(cx, cy, cw - 40, CARD_H, Act.EXPAND, m, null, null));
+                hits.add(new Hit(cx + cw - 38, cy + 9, 30, 16, Act.TOGGLE, m, null, null));
+                hits.add(new Hit(cx + cw - 66, cy + 10, 14, 14, Act.STAR, m, null, null));
             }
 
             if (ex > 0.01f) {
@@ -576,7 +620,7 @@ public class ClickGui extends Screen {
             if (p > 1f) p = 1f;
             int barY = y + 4 + (int) ((trackH - barH) * p);
             ctx.fill(x + w - 4, y + 4, x + w - 2, y + 4 + trackH, 0x30FFFFFF);
-            ctx.fill(x + w - 4, barY, x + w - 2, barY + barH, mix(accent, 0xFFFFFFFF, 0.15f));
+            ctx.fill(x + w - 4, barY, x + w - 2, barY + barH, mix(accent, C_TEXT, 0.15f));
         }
 
         if (list.isEmpty()) {
@@ -610,27 +654,15 @@ public class ClickGui extends Screen {
                 var wp = com.vortex.client.waypoint.WaypointSettings.INSTANCE;
                 int count = com.vortex.client.waypoint.WaypointManager.all().size();
 
-                ctx.text(this.font, Component.literal("Waypoints"),
-                        cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal(count + (count == 1 ? " markers"
-                                                         : " markers")),
-                        cx, cy + 11, t.textDim.get(), false);
-                cy += 28;
+                // Einzahl und Mehrzahl waren beide "markers" -- ein alter
+                // Tippfehler, der nie auffiel, weil beide Zweige gleich waren.
+                cy = seitenKopf(ctx, cx, cy, "Waypoints",
+                        count + (count == 1 ? " marker" : " markers"), t);
+                cy = aktionsZeile(ctx, cx, cy, cw, "Manage markers",
+                        mx, my, accent, t, Act.WP_MANAGE, null);
 
-                // Knopf zur Verwaltung.
-                boolean hov = inRect(mx, my, cx, cy, cw, 20);
-                roundRect(ctx, cx, cy, cw, 20,
-                        hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Manage markers"),
-                        cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
-                        cx + cw - 14, cy + 6, accent, false);
-                hits.add(new Hit(cx, cy, cw, 20, Act.WP_MANAGE, null, null, null));
-                cy += 28;
-
-                ctx.fill(cx, cy, cx + cw, cy + 1, C_LINE);
-                cy += 8;
+                trennlinie(ctx, cx, cy, cw);
+                cy += GAP;
 
                 for (Setting st : wp.getSettings()) {
                     // Nur zeichnen, was im Fenster liegt -- spart Arbeit und
@@ -643,24 +675,14 @@ public class ClickGui extends Screen {
                 break;
             }
             case MACROS: {
-                ctx.text(this.font, Component.literal("Macros"),
-                        cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Record clicks and keys, edit the timing, bind a key"),
-                        cx, cy + 11, t.textDim.get(), false);
-                cy += 28;
-                boolean mh = inRect(mx, my, cx, cy, cw, 20);
-                roundRect(ctx, cx, cy, cw, 20, mh ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open macro editor"),
-                        cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
-                        cx + cw - 14, cy + 6, accent, false);
-                hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openMacros"));
-                cy += 28;
-
                 int n = com.vortex.client.macro.MacroManager.all().size();
+                cy = seitenKopf(ctx, cx, cy, "Macros",
+                        "Record clicks and keys, edit the timing, bind a key", t);
+                cy = aktionsZeile(ctx, cx, cy, cw, "Open macro editor",
+                        mx, my, accent, t, Act.SECTION, "openMacros");
                 ctx.text(this.font,
-                        Component.literal(n == 0 ? "No macros yet" : n + " saved"),
+                        Component.literal(n == 0 ? "No macros yet"
+                                                 : n + (n == 1 ? " saved" : " saved")),
                         cx, cy, t.textDim.get(), false);
                 break;
             }
@@ -670,66 +692,33 @@ public class ClickGui extends Screen {
                 ctx.text(this.font,
                         Component.literal("Macros and presets shared by other players"),
                         cx, cy + 11, t.textDim.get(), false);
-                cy += 28;
-                boolean ch = inRect(mx, my, cx, cy, cw, 20);
-                roundRect(ctx, cx, cy, cw, 20, ch ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Browse shared macros"),
-                        cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
-                        cx + cw - 14, cy + 6, accent, false);
-                hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openCommunity"));
-                cy += 26;
+                cy += GAP + 8;
+                cy = aktionsZeile(ctx, cx, cy, cw, "Browse shared macros",
+                        mx, my, accent, t, Act.SECTION, "openCommunity");
                 ctx.text(this.font,
                         Component.literal("Share your own on the website"),
                         cx, cy, t.textDim.get(), false);
                 break;
             }
             case KEYS: {
-                ctx.text(this.font, Component.literal("Keys"),
-                        cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Every assigned key in one list, conflicts marked"),
-                        cx, cy + 11, t.textDim.get(), false);
-                cy += 28;
-                boolean kh = inRect(mx, my, cx, cy, cw, 20);
-                roundRect(ctx, cx, cy, cw, 20, kh ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open key list"),
-                        cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
-                        cx + cw - 14, cy + 6, accent, false);
-                hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openKeys"));
+                cy = seitenKopf(ctx, cx, cy, "Keys",
+                        "Every assigned key in one list, conflicts marked", t);
+                cy = aktionsZeile(ctx, cx, cy, cw, "Open key list",
+                        mx, my, accent, t, Act.SECTION, "openKeys");
                 break;
             }
             case SKINS: {
-                ctx.text(this.font, Component.literal("Skins"),
-                        cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Wardrobe, player name lookup, your own files"),
-                        cx, cy + 11, t.textDim.get(), false);
-                cy += 28;
-                boolean hov = inRect(mx, my, cx, cy, cw, 20);
-                roundRect(ctx, cx, cy, cw, 20, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open skin wardrobe"),
-                        cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
-                        cx + cw - 14, cy + 6, accent, false);
-                hits.add(new Hit(cx, cy, cw, 20, Act.SECTION, null, null, "openSkins"));
+                cy = seitenKopf(ctx, cx, cy, "Skins",
+                        "Wardrobe, player name lookup, your own files", t);
+                cy = aktionsZeile(ctx, cx, cy, cw, "Open skin wardrobe",
+                        mx, my, accent, t, Act.SECTION, "openSkins");
                 break;
             }
             case DESIGN: {
-                ctx.text(this.font, Component.literal("Theme"),
-                        cx, cy, t.text.get());
-                ctx.text(this.font,
-                        Component.literal("Customise the interface colours"),
-                        cx, cy + 11, t.textDim.get(), false);
-                cy += 28;
-                boolean hov = inRect(mx, my, cx, cy, cw, 20);
-                roundRect(ctx, cx, cy, cw, 20, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-                ctx.text(this.font, Component.literal("Open theme editor"),
-                        cx + 10, cy + 6, t.text.get(), false);
-                ctx.text(this.font, Component.literal(">"),
-                        cx + cw - 14, cy + 6, accent, false);
-                hits.add(new Hit(cx, cy, cw, 20, Act.THEME, null, null, null));
+                cy = seitenKopf(ctx, cx, cy, "Theme",
+                        "Customise the interface colours", t);
+                cy = aktionsZeile(ctx, cx, cy, cw, "Open theme editor",
+                        mx, my, accent, t, Act.THEME, null);
                 break;
             }
             default:
@@ -749,7 +738,7 @@ public class ClickGui extends Screen {
             int barY = y + 4 + (int) ((trackH - barH) * p);
             ctx.fill(x + w - 4, y + 4, x + w - 2, y + 4 + trackH, 0x30FFFFFF);
             ctx.fill(x + w - 4, barY, x + w - 2, barY + barH,
-                    mix(accent, 0xFFFFFFFF, 0.15f));
+                    mix(accent, C_TEXT, 0.15f));
         }
     }
 
@@ -801,7 +790,7 @@ public class ClickGui extends Screen {
             ctx.fill(x, ty, x + w, ty + 3, C_TRACK);
             ctx.fill(x, ty, x + (int) (w * p), ty + 3, accent);
             int kx = x + (int) (w * p);
-            ctx.fill(kx - 2, ty - 2, kx + 3, ty + 5, 0xFFFFFFFF);
+            ctx.fill(kx - 2, ty - 2, kx + 3, ty + 5, C_TEXT);
             hits.add(new Hit(x, y + 7, w, 13, Act.S_NUM, m, s, null));
 
         } else if (s instanceof ModeSetting mode) {
@@ -878,10 +867,25 @@ public class ClickGui extends Screen {
         }
     }
 
+    /**
+     * Schalter.
+     *
+     * Etwas groesser als vorher (26x13 statt 22x11) und mit rundem Knopf.
+     * Der Knauf war ein hartes Rechteck -- bei einem Element, das man staendig
+     * ansieht, faellt so etwas am meisten auf.
+     *
+     * Im ausgeschalteten Zustand liegt der Knauf leicht gedaempft, im
+     * eingeschalteten hell: so erkennt man den Zustand auch ohne Farbe, was
+     * bei einem selbst gewaehlten Akzent wichtig ist.
+     */
     private void drawSwitch(GuiGraphicsExtractor ctx, int x, int y, float on, int accent) {
-        roundRect(ctx, x, y, 22, 11, mix(0xFF43434F, accent, on));
-        int kx = x + 2 + (int) (on * 10f);
-        ctx.fill(kx, y + 2, kx + 8, y + 9, 0xFFFFFFFF);
+        roundRect(ctx, x, y, 26, 13, mix(C_TRACK, accent, on));
+        int kx = x + 2 + (int) (on * 12f);
+        // Runder Knauf: Mittelstreifen plus schmalere Zeilen oben und unten.
+        int knauf = mix(0xFFCBD2E0, 0xFFFFFFFF, on);
+        ctx.fill(kx, y + 3, kx + 9, y + 10, knauf);
+        ctx.fill(kx + 1, y + 2, kx + 8, y + 3, knauf);
+        ctx.fill(kx + 1, y + 10, kx + 8, y + 11, knauf);
     }
 
     private void drawFooter(GuiGraphicsExtractor ctx, int x, int y, int w) {
@@ -1303,11 +1307,35 @@ public class ClickGui extends Screen {
     }
 
     /** Rechteck mit leicht abgerundet wirkenden Ecken. */
+    /**
+     * Rechteck mit abgerundeten Ecken.
+     *
+     * Die alte Fassung schnitt nur EINEN Pixel ab -- das sieht man kaum, und
+     * die Oberflaeche wirkte weiterhin kastig. Jetzt wird der Radius
+     * treppenfoermig ausgespart, was bei drei Pixeln schon deutlich weicher
+     * aussieht.
+     *
+     * Kleine Flaechen bekommen automatisch einen kleineren Radius, damit
+     * Schalter und Schieber nicht rund werden.
+     */
     private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
         if (w <= 0 || h <= 0) return;
-        ctx.fill(x + 1, y, x + w - 1, y + h, color);
-        ctx.fill(x, y + 1, x + 1, y + h - 1, color);
-        ctx.fill(x + w - 1, y + 1, x + w, y + h - 1, color);
+        int r = Math.min(RADIUS, Math.min(w / 2, h / 2));
+        if (r <= 0) { ctx.fill(x, y, x + w, y + h, color); return; }
+
+        // Mittelblock in voller Hoehe, dann oben und unten eingerueckt.
+        ctx.fill(x, y + r, x + w, y + h - r, color);
+        ctx.fill(x + r, y, x + w - r, y + r, color);
+        ctx.fill(x + r, y + h - r, x + w - r, y + h, color);
+
+        // Ecken treppenfoermig auffuellen.
+        for (int i = 0; i < r; i++) {
+            int ein = r - i - 1;
+            ctx.fill(x + ein, y + i, x + r, y + i + 1, color);
+            ctx.fill(x + w - r, y + i, x + w - ein, y + i + 1, color);
+            ctx.fill(x + ein, y + h - i - 1, x + r, y + h - i, color);
+            ctx.fill(x + w - r, y + h - i - 1, x + w - ein, y + h - i, color);
+        }
     }
 
     /** Deckkraft einer Farbe skalieren (fuers Einblenden). */
@@ -1424,6 +1452,160 @@ public class ClickGui extends Screen {
             }
         }
         return Module.Category.values()[0];
+    }
+
+
+    // ======================================================================
+    // Zeichenhilfen
+    // ======================================================================
+    //
+    // Minecraft kann nur Rechtecke fuellen. Runde Ecken entstehen, indem man
+    // die Ecken aussparrt: ein breites Rechteck in der Mitte, ein schmales
+    // oben und unten. Bei zwei bis drei Pixeln reicht das voellig und nimmt
+    // der Oberflaeche das Kastige.
+
+
+    /**
+     * Weicher Schatten unter einer Flaeche.
+     *
+     * Vier immer blassere Rahmen. Das trennt die Ebenen optisch, ohne eine
+     * harte Linie zu ziehen -- genau das, was die alte Oberflaeche flach und
+     * gedraengt wirken liess.
+     */
+    private static void schatten(GuiGraphicsExtractor ctx, int x, int y, int x2, int y2,
+                                 float staerke) {
+        for (int i = 1; i <= 4; i++) {
+            int a = (int) (36 * staerke / i);
+            if (a <= 0) continue;
+            int c = (a << 24);
+            ctx.fill(x - i, y - i, x2 + i, y - i + 1, c);
+            ctx.fill(x - i, y2 + i - 1, x2 + i, y2 + i, c);
+            ctx.fill(x - i, y - i, x - i + 1, y2 + i, c);
+            ctx.fill(x2 + i - 1, y - i, x2 + i, y2 + i, c);
+        }
+    }
+
+    /** Waagerechter Verlauf zwischen zwei Farben. */
+    private static void verlauf(GuiGraphicsExtractor ctx, int x, int y, int x2, int y2,
+                                int von, int bis) {
+        int w = x2 - x;
+        if (w <= 0) return;
+        for (int i = 0; i < w; i++) {
+            ctx.fill(x + i, y, x + i + 1, y2, mix(von, bis, i / (float) w));
+        }
+    }
+
+
+    /**
+     * Kurzbeschreibung fuer die Modulkarte.
+     *
+     * Nimmt den ersten Satz aus ModuleInfo und kuerzt ihn auf die verfuegbare
+     * Breite. Passt nichts mehr, wird mit Auslassungspunkten abgeschnitten --
+     * ein abgehackter Satz ist schlimmer als gar keiner.
+     */
+    private String kurzInfo(Module m, int maxBreite) {
+        try {
+            String info = ModuleInfo.get(m.getName());
+            if (info == null || info.isBlank()) return null;
+            int punkt = info.indexOf('.');
+            String satz = (punkt > 8) ? info.substring(0, punkt) : info;
+            if (this.font.width(satz) <= maxBreite) return satz;
+            // Wortweise kuerzen, damit nicht mitten im Wort abgeschnitten wird.
+            String[] worte = satz.split(" ");
+            StringBuilder b = new StringBuilder();
+            for (String w : worte) {
+                String test = b.length() == 0 ? w : b + " " + w;
+                if (this.font.width(test + "...") > maxBreite) break;
+                b.setLength(0);
+                b.append(test);
+            }
+            if (b.length() == 0) return null;
+            return b + "...";
+        } catch (Throwable pvpErr) {
+            return null;
+        }
+    }
+
+
+    // ======================================================================
+    // Raster fuer die Unterseiten
+    // ======================================================================
+    //
+    // Die Unterseiten -- Macros, Waypoints, Skins, Theme, Keys, Community --
+    // waren ueber Jahre gewachsen und benutzten jeweils eigene Abstaende:
+    // mal 26, mal 28 Pixel, Zeilen fest auf 20 hoch. Nebeneinander sah das
+    // unruhig aus, und beim Vergroessern des Fensters passte nichts mehr
+    // zusammen.
+    //
+    // Diese beiden Helfer legen ein gemeinsames Raster fest. Jede Seite
+    // benutzt sie, also aendert sich das Aussehen ueberall gleichzeitig,
+    // wenn man hier eine Zahl anpasst.
+
+    /** Hoehe einer Aktionszeile. */
+    private static final int ROW_H = 26;
+    /** Abstand zwischen zwei Bloecken. */
+    private static final int GAP = 12;
+    /**
+     * Hoehe eines Eintrags in der Seitenleiste.
+     *
+     * Die Leiste ist von 108 auf 148 Pixel gewachsen -- dann muessen die
+     * Eintraege mitwachsen, sonst wirken sie verloren in der Breite.
+     */
+    private static final int NAV_H = 26;
+
+    /**
+     * Ueberschrift mit Unterzeile.
+     *
+     * @return das neue cy, also die Stelle direkt darunter
+     */
+    private int seitenKopf(GuiGraphicsExtractor ctx, int cx, int cy,
+                           String titel, String unterzeile, Theme t) {
+        ctx.text(this.font, Component.literal(titel), cx, cy, t.text.get());
+        if (unterzeile != null) {
+            ctx.text(this.font, Component.literal(unterzeile),
+                    cx, cy + 12, t.textDim.get(), false);
+            return cy + 12 + GAP + 8;
+        }
+        return cy + GAP + 8;
+    }
+
+    /**
+     * Anklickbare Zeile mit Pfeil rechts.
+     *
+     * Registriert die Klickflaeche gleich mit -- vorher stand sie an jeder
+     * Stelle einzeln im Code, und bei Aenderungen an der Hoehe vergass man
+     * leicht eine davon.
+     *
+     * @return das neue cy
+     */
+    private int aktionsZeile(GuiGraphicsExtractor ctx, int cx, int cy, int cw,
+                             String beschriftung, int mx, int my,
+                             int accent, Theme t, Act aktion, String schluessel) {
+        boolean hov = inRect(mx, my, cx, cy, cw, ROW_H);
+        roundRect(ctx, cx, cy, cw, ROW_H,
+                hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
+        // Akzentstreifen links beim Ueberfahren -- dasselbe Signal wie bei
+        // den Modulkarten, damit sich die Oberflaeche einheitlich anfuehlt.
+        if (hov) roundRect(ctx, cx, cy + 5, 3, ROW_H - 10, accent);
+        ctx.text(this.font, Component.literal(beschriftung),
+                cx + 12, cy + (ROW_H - 8) / 2, t.text.get(), false);
+        ctx.text(this.font, Component.literal(">"),
+                cx + cw - 16, cy + (ROW_H - 8) / 2, hov ? accent : C_TEXT_DIM, false);
+        hits.add(new Hit(cx, cy, cw, ROW_H, aktion, null, null, schluessel));
+        return cy + ROW_H + 8;
+    }
+
+
+    /**
+     * Weiche Trennlinie.
+     *
+     * Vorher eine harte Ein-Pixel-Linie ueber die volle Breite. Ein Verlauf
+     * zu beiden Seiten hin wirkt ruhiger und trennt trotzdem deutlich.
+     */
+    private void trennlinie(GuiGraphicsExtractor ctx, int x, int y, int w) {
+        int halb = w / 2;
+        verlauf(ctx, x, y, x + halb, y + 1, C_LINE & 0x00FFFFFF, C_LINE);
+        verlauf(ctx, x + halb, y, x + w, y + 1, C_LINE, C_LINE & 0x00FFFFFF);
     }
 
 }
