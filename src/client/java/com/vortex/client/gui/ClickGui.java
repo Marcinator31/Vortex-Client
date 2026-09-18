@@ -52,7 +52,7 @@ public class ClickGui extends Screen {
     // Mehr Luft ist die wirksamste Massnahme gegen den "pixeligen" Eindruck:
     // Minecrafts Schrift hat eine feste Groesse, also muss der Raum
     // drumherum wachsen, nicht die Schrift schrumpfen.
-    private static final int WIN_MAX_W = 780;
+    private static final int WIN_MAX_W = 900;
     private static final int WIN_MAX_H = 470;
     private static final int HEADER_H = 46;
     private static final int FOOTER_H = 24;
@@ -511,11 +511,32 @@ public class ClickGui extends Screen {
         ctx.enableScissor(x, y, x + w, y + h);
 
         List<Module> list = visibleModules();
-        int cx = x + PAD;
-        int cw = w - PAD * 2 - 4;
-        int cy = y + PAD - (int) scroll;
+
+        // --- ZWEISPALTIGES RASTER -----------------------------------------
+        //
+        // Die Module standen bisher in EINER langen Spalte. Bei 58 Modulen
+        // bedeutet das endloses Scrollen, und die halbe Fensterbreite blieb
+        // leer -- der Hauptgrund, warum die Oberflaeche voll und unuebersicht-
+        // lich wirkte.
+        //
+        // Zwei Spalten halbieren die Hoehe. Weil ausgeklappte Module
+        // unterschiedlich hoch sind, bekommt jede Spalte ihr EIGENES cy: die
+        // naechste Karte kommt immer in die Spalte, die gerade kuerzer ist.
+        // So entstehen keine Luecken.
+        int spalten = (w > 520) ? 2 : 1;
+        int luecke = 10;
+        int cw = (w - PAD * 2 - 4 - (spalten - 1) * luecke) / spalten;
+        int[] spaltenY = new int[spalten];
+        for (int i = 0; i < spalten; i++) spaltenY[i] = y + PAD - (int) scroll;
 
         for (Module m : list) {
+            // Kuerzeste Spalte waehlen.
+            int sp = 0;
+            for (int i = 1; i < spalten; i++) {
+                if (spaltenY[i] < spaltenY[sp]) sp = i;
+            }
+            int cx = x + PAD + sp * (cw + luecke);
+            int cy = spaltenY[sp];
             float ex = expandAnim.getOrDefault(m, 0f);
             ex = anim(ex, expanded.contains(m) ? 1f : 0f, 12f, dt);
             expandAnim.put(m, ex);
@@ -606,10 +627,15 @@ public class ClickGui extends Screen {
                 ctx.disableScissor();
             }
 
-            cy += cardH + 6;
+            // Nur die benutzte Spalte weiterschieben.
+            spaltenY[sp] = cy + cardH + luecke;
         }
 
-        contentHeight = (cy + (int) scroll) - (y + PAD) + PAD;
+        // Hoehe ist die der LAENGSTEN Spalte -- sonst laesst sich das Ende
+        // der laengeren Spalte nicht erreichen.
+        int maxY = spaltenY[0];
+        for (int i = 1; i < spalten; i++) maxY = Math.max(maxY, spaltenY[i]);
+        contentHeight = (maxY + (int) scroll) - (y + PAD) + PAD;
         ctx.disableScissor();
 
         if (contentHeight > h) {

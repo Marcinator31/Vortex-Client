@@ -41,4 +41,36 @@ public final class EspRenderLayer {
     public static RenderType espLines() {
         return ESP_LINES;
     }
+
+    // ----------------------------------------------------------------------
+    // Linien MIT Tiefentest -- fuer Hitboxen
+    // ----------------------------------------------------------------------
+    //
+    // Hitboxen sollen sich wie die Vanilla-Boxen (F3+B) verhalten: hinter
+    // einer Wand nicht sichtbar. Sie benutzten bisher dieselbe Ebene wie ESP
+    // und waren dadurch ueberall zu sehen.
+    //
+    // Hier wird KEIN eigener DepthStencilState gesetzt, sondern schlicht
+    // keiner: damit behaelt die Pipeline den Tiefentest des
+    // LINES_SNIPPET, also genau das Vanilla-Verhalten. Das ist sicherer, als
+    // einen Vergleichswert zu raten -- die Namen der CompareOp-Werte sind
+    // zwischen den Fassungen mehrfach umgezogen.
+
+    private static final RenderPipeline DEPTH_LINES_PIPELINE = RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
+                    .withLocation(Identifier.fromNamespaceAndPath(
+                            "vortexclient", "pipeline/depth_lines"))
+                    .withCull(false)
+                    .build()
+    );
+
+    private static final RenderType DEPTH_LINES = RenderType.create(
+            "vortexclient_depth_lines",
+            RenderSetup.builder(DEPTH_LINES_PIPELINE).createRenderSetup()
+    );
+
+    /** Linien, die von Bloecken verdeckt werden -- wie die Vanilla-Hitbox. */
+    public static RenderType depthLines() {
+        return DEPTH_LINES;
+    }
 }

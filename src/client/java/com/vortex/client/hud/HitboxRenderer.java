@@ -119,7 +119,9 @@ public final class HitboxRenderer {
                             pos.x + hw, pos.y + h, pos.z + hw);
                     // AABB bleibt in Welt-Koordinaten; die zentrale 26.2-Hilfe
                     // reiht ihre durch Wände sichtbare Outline als Render-Node ein.
-                    EspRender.submitBox(collector, matrices, box, cam, color, lineWidth);
+                    // false = mit Tiefentest, also hinter Bloecken unsichtbar -- genau
+                    // wie die Vanilla-Hitbox mit F3+B.
+                    EspRender.submitBox(collector, matrices, box, cam, color, lineWidth, false);
                 }
             } catch (Throwable ignored) {
                 // Falls eine Render-Methode in dieser Version doch abweicht:

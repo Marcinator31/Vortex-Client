@@ -72,11 +72,25 @@ public final class EspRender {
      */
     public static void submitBox(SubmitNodeCollector collector, PoseStack matrices,
                                  AABB box, Vec3 cam, int argb, float lineWidth) {
+        submitBox(collector, matrices, box, cam, argb, lineWidth, true);
+    }
+
+    /**
+     * Wie submitBox, aber mit Wahl der Ebene.
+     *
+     * @param durchWaende true = ESP-Verhalten (ueberall sichtbar),
+     *                    false = wie die Vanilla-Hitbox, also von Bloecken
+     *                    verdeckt
+     */
+    public static void submitBox(SubmitNodeCollector collector, PoseStack matrices,
+                                 AABB box, Vec3 cam, int argb, float lineWidth,
+                                 boolean durchWaende) {
         matrices.pushPose();
         try {
             matrices.translate(-cam.x, -cam.y, -cam.z);
             collector.submitShapeOutline(matrices, Shapes.create(box),
-                    EspRenderLayer.espLines(), argb, lineWidth, true);
+                    durchWaende ? EspRenderLayer.espLines() : EspRenderLayer.depthLines(),
+                    argb, lineWidth, true);
         } finally {
             matrices.popPose();
         }
