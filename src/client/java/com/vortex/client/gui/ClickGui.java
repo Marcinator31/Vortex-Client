@@ -56,7 +56,25 @@ public class ClickGui extends Screen {
     private static final int WIN_MAX_H = 470;
     private static final int HEADER_H = 46;
     private static final int FOOTER_H = 24;
-    private static final int SIDEBAR_W = 148;
+    /**
+     * Hoehe der waagerechten Reiterzeile.
+     *
+     * Ersetzt SIDEBAR_W: die Leiste lag frueher links und kostete 148 Pixel
+     * Breite. Jetzt kostet sie 34 Pixel Hoehe -- bei einem Fenster, das
+     * breiter als hoch ist, der deutlich guenstigere Tausch.
+     */
+    private static final int TAB_H = 34;
+
+    /**
+     * Breite des Detailfeldes rechts.
+     *
+     * Die Einstellungen klappten bisher IN der Karte auf. Bei zwei Spalten
+     * heisst das: die halbe Liste springt, sobald man ein Modul oeffnet, und
+     * man verliert die Stelle, an der man war.
+     *
+     * Im eigenen Feld rechts bleibt das Raster ruhig.
+     */
+    private static final int DETAIL_W = 300;
     private static final int CARD_H = 34;
     private static final int SET_H = 28;
     private static final int SUB_H = 28;
@@ -158,6 +176,10 @@ public class ClickGui extends Screen {
             return px >= x && px < x + w && py >= y && py < y + h;
         }
     }
+
+    /** Modul, dessen Einstellungen rechts stehen. null = kein Feld. */
+    private Module detail = null;
+    private float detailAnim = 0f;
 
     private final List<Hit> hits = new ArrayList<>();
 
@@ -261,9 +283,11 @@ public class ClickGui extends Screen {
                 fade(accent, openAnim * 0.9f), fade(accent, openAnim * 0.25f));
 
         drawHeader(ctx, winX, winY, winW, accent, t);
-        drawSidebar(ctx, winX, winY + HEADER_H, winH - HEADER_H - FOOTER_H, accent, t, dt);
-        drawContent(ctx, winX + SIDEBAR_W, winY + HEADER_H,
-                winW - SIDEBAR_W, winH - HEADER_H - FOOTER_H, accent, t, dt);
+        drawTabs(ctx, winX, winY + HEADER_H, winW, accent, t, dt);
+        // Volle Breite -- die Seitenleiste ist weg. Und die Hoehe um die
+        // Reiterzeile verringert, sonst laeuft der Inhalt in die Fusszeile.
+        drawContent(ctx, winX, winY + HEADER_H + TAB_H,
+                winW, winH - HEADER_H - TAB_H - FOOTER_H, accent, t, dt);
         drawFooter(ctx, winX, winY + winH - FOOTER_H, winW);
 
         // Hinweistext: erscheint, wenn die Maus kurz auf einer Karte steht.
@@ -357,144 +381,106 @@ public class ClickGui extends Screen {
         }
     }
 
-    private void drawSidebar(GuiGraphicsExtractor ctx, int x, int y, int h,
-                             int accent, Theme t, float dt) {
-        ctx.fill(x, y, x + SIDEBAR_W, y + h, fade(C_SIDEBAR, openAnim));
-        ctx.fill(x + SIDEBAR_W - 1, y, x + SIDEBAR_W, y + h, fade(C_LINE, openAnim));
-
-        sideScroll = anim(sideScroll, sideScrollTarget, 18f, dt);
+    /**
+     * Waagerechte Reiterleiste.
+     *
+     * ERSETZT DIE SEITENLEISTE. Die stand links und nahm 148 Pixel Breite --
+     * Platz, der dem eigentlichen Inhalt fehlte, waehrend die Leiste selbst
+     * meist halb leer war.
+     *
+     * Jetzt liegen die Kategorien in einer Zeile unter dem Kopf. Links die
+     * Modulkategorien, rechts die uebrigen Bereiche (Waypoints, Macros und
+     * so weiter) etwas gedaempft -- so sieht man auf einen Blick, was Module
+     * sind und was nicht.
+     *
+     * Der Gewinn: die volle Fensterbreite steht dem Raster zur Verfuegung,
+     * und die Oberflaeche wird breit statt hoch.
+     */
+    private void drawTabs(GuiGraphicsExtractor ctx, int x, int y, int w,
+                          int accent, Theme t, float dt) {
+        ctx.fill(x, y, x + w, y + TAB_H, fade(C_SIDEBAR, openAnim));
+        ctx.fill(x, y + TAB_H - 1, x + w, y + TAB_H, fade(C_LINE, openAnim));
 
         boolean searching = search != null && !search.getValue().isEmpty();
-        int cy = y + PAD - (int) sideScroll;
-        int cyStart = cy;
+        int cx = x + PAD;
+        int ty = y + (TAB_H - NAV_H) / 2;
 
-        // Nur innerhalb der Leiste zeichnen.
-        ctx.enableScissor(x, y, x + SIDEBAR_W, y + h);
-
-        // Favoriten ganz oben -- nur wenn welche angepinnt sind.
+        // --- Favoriten ----------------------------------------------------
         if (GuiState.hasFavorites()) {
+            String txt = "* " + GuiState.getFavorites().size();
+            int bw = this.font.width(txt) + 20;
             boolean isSel = !searching && favView;
-            boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, NAV_H);
-            int bg = isSel ? mix(C_CARD, accent, 0.18f) : (hov ? C_CARD : 0);
-            if ((bg >>> 24) != 0) {
-                roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, NAV_H, fade(bg, openAnim));
-            }
-            ctx.text(this.font, Component.literal("* Favourites"),
-                    x + 16, cy + 7,
-                    fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
-            String badge = String.valueOf(GuiState.getFavorites().size());
-            int bw0 = this.font.width(badge);
-            ctx.text(this.font, Component.literal(badge),
-                    x + SIDEBAR_W - 12 - bw0, cy + 7, fade(accent, openAnim), false);
-            hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, NAV_H, Act.FAVCAT, null, null, null));
-            if (isSel) {
-                if (indicatorY < 0) indicatorY = cy;
-                indicatorY = anim(indicatorY, cy, 16f, dt);
-            }
-            cy += NAV_H + 4;
+            boolean hov = inRect(mx, my, cx, ty, bw, NAV_H);
+            reiter(ctx, cx, ty, bw, txt, isSel, hov, accent, t, dt);
+            hits.add(new Hit(cx, ty, bw, NAV_H, Act.FAVCAT, null, null, null));
+            cx += bw + 6;
         }
 
+        // --- Modulkategorien ----------------------------------------------
         for (Module.Category cat : Module.Category.values()) {
-            // Leere Kategorien nicht anzeigen: die Cheats liegen im Addon,
-            // ohne Addon ist die Kategorie leer -- ein Reiter ins Nichts
-            // sieht nach einem Fehler aus.
+            // Leere Kategorien nicht anzeigen -- ein Reiter ins Nichts sieht
+            // nach einem Fehler aus.
             if (!hatModule(cat)) continue;
-
-            boolean isSel = !searching && !favView
-                    && section == Section.MODULE && cat == selected;
-            boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, NAV_H);
-
-            if (isSel) {
-                if (indicatorY < 0) indicatorY = cy;
-                indicatorY = anim(indicatorY, cy, 16f, dt);
-            }
-
-            int bg = isSel ? mix(C_CARD, accent, 0.18f) : (hov ? C_CARD : 0);
-            if ((bg >>> 24) != 0) {
-                roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, NAV_H, fade(bg, openAnim));
-            }
-
-            ctx.text(this.font, Component.literal(pretty(cat.name())),
-                    x + 16, cy + 7, fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
 
             int on = 0, total = 0;
             for (Module m : ModuleManager.INSTANCE.getByCategory(cat)) {
                 total++;
                 if (m.isEnabled()) on++;
             }
-            String badge = on + "/" + total;
-            int bw = this.font.width(badge);
-            ctx.text(this.font, Component.literal(badge),
-                    x + SIDEBAR_W - 12 - bw, cy + 7,
-                    fade(on > 0 ? accent : 0xFF5A5A66, openAnim), false);
+            String txt = pretty(cat.name()) + "  " + on + "/" + total;
+            int bw = this.font.width(txt) + 20;
+            boolean isSel = !searching && !favView
+                    && section == Section.MODULE && cat == selected;
+            boolean hov = inRect(mx, my, cx, ty, bw, NAV_H);
 
-            hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, NAV_H, Act.CATEGORY, null, null, cat));
-            cy += NAV_H + 4;
+            reiter(ctx, cx, ty, bw, txt, isSel, hov, accent, t, dt);
+            hits.add(new Hit(cx, ty, bw, NAV_H, Act.CATEGORY, null, null, cat));
+            cx += bw + 6;
         }
 
-        // Trennlinie: darunter stehen Bereiche, die keine Module sind.
-        cy += 4;
-        ctx.fill(x + 12, cy, x + SIDEBAR_W - 12, cy + 1, fade(C_LINE, openAnim));
-        cy += 8;
-
-        cy = drawSectionEntry(ctx, x, cy, "Waypoints", Section.WAYPOINTS,
-                String.valueOf(com.vortex.client.waypoint.WaypointManager.all().size()),
-                accent, t, dt, searching);
-        cy = drawSectionEntry(ctx, x, cy, "Macros", Section.MACROS,
-                String.valueOf(com.vortex.client.macro.MacroManager.all().size()),
-                accent, t, dt, searching);
-        cy = drawSectionEntry(ctx, x, cy, "Community", Section.COMMUNITY, null,
-                accent, t, dt, searching);
-        cy = drawSectionEntry(ctx, x, cy, "Keys", Section.KEYS, null,
-                accent, t, dt, searching);
-        cy = drawSectionEntry(ctx, x, cy, "Skins", Section.SKINS, null,
-                accent, t, dt, searching);
-        cy = drawSectionEntry(ctx, x, cy, "Theme", Section.DESIGN, null,
-                accent, t, dt, searching);
-
-        if (!searching && indicatorY >= 0) {
-            ctx.fill(x + 2, (int) indicatorY + 4, x + 4, (int) indicatorY + 18,
-                    fade(accent, openAnim));
-        }
-        ctx.disableScissor();
-
-        sideContentHeight = (cy - cyStart) + PAD;
-
-        // Hinweis, dass es weitergeht.
-        if (sideContentHeight > h) {
-            int barH = Math.max(20, (int) ((h - 8) * (h / (float) sideContentHeight)));
-            float p = sideScroll / Math.max(1f, sideContentHeight - h);
-            if (p < 0f) p = 0f;
-            if (p > 1f) p = 1f;
-            int barY = y + 4 + (int) ((h - 8 - barH) * p);
-            ctx.fill(x + SIDEBAR_W - 3, barY, x + SIDEBAR_W - 1, barY + barH,
-                    fade(mix(accent, C_TEXT, 0.2f), openAnim));
+        // --- Uebrige Bereiche, rechtsbuendig -------------------------------
+        //
+        // Von rechts nach links aufgebaut, damit sie am Rand kleben und die
+        // Kategorien links nicht verschieben, wenn eine dazukommt.
+        Object[][] bereiche = {
+            {"Theme", Section.DESIGN}, {"Keys", Section.KEYS},
+            {"Skins", Section.SKINS}, {"Macros", Section.MACROS},
+            {"Waypoints", Section.WAYPOINTS}
+        };
+        int rx = x + w - PAD;
+        for (Object[] b : bereiche) {
+            String label = (String) b[0];
+            Section sec = (Section) b[1];
+            int bw = this.font.width(label) + 18;
+            rx -= bw;
+            if (rx < cx + 10) break;          // kein Platz mehr
+            boolean isSel = !searching && !favView && section == sec;
+            boolean hov = inRect(mx, my, rx, ty, bw, NAV_H);
+            reiter(ctx, rx, ty, bw, label, isSel, hov, accent, t, dt);
+            hits.add(new Hit(rx, ty, bw, NAV_H, Act.SECTION, null, null, sec));
+            rx -= 6;
         }
     }
 
-    /** Eine Zeile in der Leiste fuer einen Bereich ausserhalb der Module. */
-    private int drawSectionEntry(GuiGraphicsExtractor ctx, int x, int cy, String label,
-                                 Section sec, String badge, int accent, Theme t,
-                                 float dt, boolean searching) {
-        boolean isSel = !searching && !favView && section == sec;
-        boolean hov = inRect(mx, my, x + 6, cy, SIDEBAR_W - 12, NAV_H);
-        int bg = isSel ? mix(C_CARD, accent, 0.18f) : (hov ? C_CARD : 0);
-        if ((bg >>> 24) != 0) {
-            roundRect(ctx, x + 6, cy, SIDEBAR_W - 12, NAV_H, fade(bg, openAnim));
+    /**
+     * Ein einzelner Reiter.
+     *
+     * Der ausgewaehlte bekommt einen Balken UNTEN statt einer Flaeche --
+     * das ist die uebliche Form bei waagerechten Reitern und wirkt ruhiger
+     * als ein gefuellter Kasten.
+     */
+    private void reiter(GuiGraphicsExtractor ctx, int x, int y, int w, String text,
+                        boolean isSel, boolean hov, int accent, Theme t, float dt) {
+        if (hov && !isSel) {
+            roundRect(ctx, x, y, w, NAV_H, fade(C_CARD, openAnim * 0.8f));
         }
-        ctx.text(this.font, Component.literal(label), x + 16, cy + 7,
-                fade(isSel ? t.text.get() : t.textDim.get(), openAnim), false);
-        if (badge != null) {
-            int bw = this.font.width(badge);
-            ctx.text(this.font, Component.literal(badge),
-                    x + SIDEBAR_W - 12 - bw, cy + 7, fade(accent, openAnim), false);
-        }
-        hits.add(new Hit(x + 6, cy, SIDEBAR_W - 12, NAV_H, Act.SECTION, null, null, sec));
+        int col = isSel ? t.text.get() : (hov ? t.text.get() : t.textDim.get());
+        int tw = this.font.width(text);
+        ctx.text(this.font, Component.literal(text),
+                x + (w - tw) / 2, y + (NAV_H - 8) / 2, fade(col, openAnim), false);
         if (isSel) {
-            if (indicatorY < 0) indicatorY = cy;
-            indicatorY = anim(indicatorY, cy, 16f, dt);
+            ctx.fill(x + 4, y + NAV_H - 2, x + w - 4, y + NAV_H, fade(accent, openAnim));
         }
-        return cy + 26;
     }
 
     private void drawContent(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
@@ -508,7 +494,14 @@ public class ClickGui extends Screen {
             return;
         }
 
-        ctx.enableScissor(x, y, x + w, y + h);
+        // Ist das Detailfeld offen, bekommt das Raster weniger Breite.
+        // detailAnim blendet den Uebergang ein, damit die Karten nicht
+        // springen.
+        detailAnim = anim(detailAnim, detail != null ? 1f : 0f, 14f, dt);
+        int feldB = (int) (DETAIL_W * detailAnim);
+        int rasterB = w - feldB;
+
+        ctx.enableScissor(x, y, x + rasterB, y + h);
 
         List<Module> list = visibleModules();
 
@@ -523,9 +516,9 @@ public class ClickGui extends Screen {
         // unterschiedlich hoch sind, bekommt jede Spalte ihr EIGENES cy: die
         // naechste Karte kommt immer in die Spalte, die gerade kuerzer ist.
         // So entstehen keine Luecken.
-        int spalten = (w > 520) ? 2 : 1;
+        int spalten = (rasterB > 520) ? 2 : 1;
         int luecke = 10;
-        int cw = (w - PAD * 2 - 4 - (spalten - 1) * luecke) / spalten;
+        int cw = (rasterB - PAD * 2 - 4 - (spalten - 1) * luecke) / spalten;
         int[] spaltenY = new int[spalten];
         for (int i = 0; i < spalten; i++) spaltenY[i] = y + PAD - (int) scroll;
 
@@ -541,8 +534,9 @@ public class ClickGui extends Screen {
             ex = anim(ex, expanded.contains(m) ? 1f : 0f, 12f, dt);
             expandAnim.put(m, ex);
 
-            int extra = extraHeight(m);
-            int cardH = CARD_H + (int) (extra * ex);
+            // Karten haben jetzt eine feste Hoehe -- das Aufklappen passiert
+            // im Detailfeld.
+            int cardH = CARD_H;
             boolean visible = (cy + cardH >= y) && (cy <= y + h);
 
             boolean hov = visible && inRect(mx, my, cx, cy, cw, CARD_H);
@@ -601,31 +595,9 @@ public class ClickGui extends Screen {
                 hits.add(new Hit(cx + cw - 66, cy + 10, 14, 14, Act.STAR, m, null, null));
             }
 
-            if (ex > 0.01f) {
-                int inner = (int) (extra * ex);
-                if (visible) {
-                    ctx.fill(cx + 8, cy + CARD_H, cx + cw - 8, cy + CARD_H + 1, C_LINE);
-                }
-                ctx.enableScissor(cx, cy + CARD_H, cx + cw, cy + CARD_H + inner);
-
-                int sy = cy + CARD_H + 4;
-                int clipTop = Math.max(y, cy + CARD_H);
-                int clipBottom = Math.min(y + h, cy + CARD_H + inner);
-                if (sy + 18 > clipTop && sy < clipBottom) {
-                    sy = drawSubButton(ctx, m, cx, sy, cw, accent, t);
-                } else {
-                    sy += subHeight(m);
-                }
-                for (Setting s : m.getSettings()) {
-                    if (s == m.getEnabledSetting()) continue;
-                    // Nur zeichnen (und klickbar machen), was im Fenster liegt.
-                    if (sy + SET_H > clipTop && sy < clipBottom) {
-                        drawSetting(ctx, m, s, cx + 8, sy, cw - 16, accent, t);
-                    }
-                    sy += SET_H;
-                }
-                ctx.disableScissor();
-            }
+            // Die Einstellungen stehen jetzt RECHTS im Detailfeld, nicht mehr
+            // in der Karte. Dadurch bleiben alle Karten gleich hoch und das
+            // Raster springt nicht mehr beim Oeffnen.
 
             // Nur die benutzte Spalte weiterschieben.
             spaltenY[sp] = cy + cardH + luecke;
@@ -636,6 +608,11 @@ public class ClickGui extends Screen {
         int maxY = spaltenY[0];
         for (int i = 1; i < spalten; i++) maxY = Math.max(maxY, spaltenY[i]);
         contentHeight = (maxY + (int) scroll) - (y + PAD) + PAD;
+
+        // --- Detailfeld rechts --------------------------------------------
+        if (feldB > 4 && detail != null) {
+            zeichneDetail(ctx, x + rasterB, y, feldB, h, accent, t);
+        }
         ctx.disableScissor();
 
         if (contentHeight > h) {
@@ -977,6 +954,11 @@ public class ClickGui extends Screen {
                 case SECTION:
                     // Skin-Garderobe hat einen eigenen Bildschirm.
                     if ("openSkins".equals(hit.extra)) {
+                    // Schliessen-Knopf des Detailfeldes.
+                    if ("closeDetail".equals(hit.extra)) {
+                        detail = null;
+                        break;
+                    }
                         Minecraft.getInstance().gui.setScreen(new SkinScreen(this));
                         break;
                     }
@@ -1033,6 +1015,7 @@ public class ClickGui extends Screen {
                     break;
                 }
                 case CATEGORY:
+                    detail = null;
                     favView = false;
                     section = Section.MODULE;
                     selected = (Module.Category) hit.extra;
@@ -1044,10 +1027,14 @@ public class ClickGui extends Screen {
                     hit.module.toggle();
                     break;
                 case EXPAND:
+                    // Rechtsklick schaltet weiterhin um -- das ist der
+                    // schnellste Weg und soll sich nicht aendern.
                     if (button == 1 || !hasContent(hit.module)) {
                         hit.module.toggle();
-                    } else if (!expanded.add(hit.module)) {
-                        expanded.remove(hit.module);
+                    } else if (detail == hit.module) {
+                        detail = null;          // nochmal klicken schliesst
+                    } else {
+                        detail = hit.module;    // Einstellungen rechts oeffnen
                     }
                     break;
                 case SUB_SCREEN:
@@ -1192,12 +1179,10 @@ public class ClickGui extends Screen {
                                  double horizontal, double vertical) {
         int h = windowHeight() - HEADER_H - FOOTER_H;
 
-        // Zeigt die Maus auf die Leiste? Dann diese scrollen.
-        if (mx >= lastWinX && mx < lastWinX + SIDEBAR_W) {
-            sideScrollTarget -= (float) vertical * 28f;
-            float smax = Math.max(0f, sideContentHeight - h);
-            if (sideScrollTarget < 0f) sideScrollTarget = 0f;
-            if (sideScrollTarget > smax) sideScrollTarget = smax;
+        // Die Seitenleiste gibt es nicht mehr -- die Reiter stehen jetzt
+        // waagerecht und passen ohne Scrollen. Es wird also immer der Inhalt
+        // gescrollt.
+        if (false) {
             return true;
         }
         scrollTarget -= (float) vertical * 32f;
@@ -1632,6 +1617,58 @@ public class ClickGui extends Screen {
         int halb = w / 2;
         verlauf(ctx, x, y, x + halb, y + 1, C_LINE & 0x00FFFFFF, C_LINE);
         verlauf(ctx, x + halb, y, x + w, y + 1, C_LINE, C_LINE & 0x00FFFFFF);
+    }
+
+
+    /**
+     * Detailfeld rechts: die Einstellungen des gewaehlten Moduls.
+     *
+     * WARUM NICHT MEHR IN DER KARTE: bei zwei Spalten sprang beim Aufklappen
+     * die halbe Liste, und man verlor die Stelle, an der man war. Hier bleibt
+     * das Raster ruhig, und die Einstellungen haben mehr Platz als in einer
+     * halbbreiten Karte.
+     */
+    private void zeichneDetail(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+                               int accent, Theme t) {
+        Module m = detail;
+        if (m == null) return;
+
+        ctx.fill(x, y, x + w, y + h, fade(C_SIDEBAR, openAnim));
+        ctx.fill(x, y, x + 1, y + h, fade(C_LINE, openAnim));
+
+        ctx.enableScissor(x, y, x + w, y + h);
+        int cy = y + PAD;
+
+        // Kopf: Name, Zustand, Schliessen
+        ctx.text(this.font, Component.literal(m.getName()), x + PAD, cy, t.text.get());
+        boolean zuHov = inRect(mx, my, x + w - PAD - 12, cy - 2, 14, 14);
+        ctx.text(this.font, Component.literal("x"), x + w - PAD - 10, cy,
+                zuHov ? t.text.get() : t.textDim.get(), false);
+        hits.add(new Hit(x + w - PAD - 12, cy - 2, 14, 14, Act.SECTION, null, null, "closeDetail"));
+        cy += 14;
+
+        String info = ModuleInfo.get(m.getName());
+        if (info != null && !info.isBlank()) {
+            for (net.minecraft.util.FormattedCharSequence z
+                    : this.font.split(Component.literal(info), w - PAD * 2)) {
+                ctx.text(this.font, z, x + PAD, cy, t.textDim.get(), false);
+                cy += 10;
+            }
+        }
+        cy += 6;
+        trennlinie(ctx, x + PAD, cy, w - PAD * 2);
+        cy += GAP;
+
+        // Eigener Auswahlbildschirm, falls das Modul einen hat
+        cy = drawSubButton(ctx, m, x + PAD, cy, w - PAD * 2, accent, t);
+
+        for (Setting st : m.getSettings()) {
+            if (st == m.getEnabledSetting()) continue;
+            if (cy + SET_H > y + h) break;            // Rest passt nicht mehr
+            drawSetting(ctx, m, st, x + PAD, cy, w - PAD * 2, accent, t);
+            cy += SET_H;
+        }
+        ctx.disableScissor();
     }
 
 }
