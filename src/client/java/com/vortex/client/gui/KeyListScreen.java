@@ -69,7 +69,14 @@ public class KeyListScreen extends Screen {
                 winX + 12, winY + 32, winW - 24, 16, Component.literal(""));
         search.setBordered(false);
         search.setMaxLength(32);
-        this.addRenderableWidget(search);
+        this.
+        // Bei Texteingabe nach oben scrollen -- sonst liegen die Treffer
+        // oberhalb des sichtbaren Bereichs, und es sieht aus, als haette die
+        // Suche nichts gefunden.
+        search.setResponder(text -> {
+            scroll = 0f;
+        });
+addRenderableWidget(search);
         this.setFocused(search);
 
         collect();

@@ -60,10 +60,13 @@ public class ClickGui extends Screen {
      * Hoehe der waagerechten Reiterzeile.
      *
      * Ersetzt SIDEBAR_W: die Leiste lag frueher links und kostete 148 Pixel
-     * Breite. Jetzt kostet sie 34 Pixel Hoehe -- bei einem Fenster, das
-     * breiter als hoch ist, der deutlich guenstigere Tausch.
+     * Breite. Jetzt kostet sie 64 Pixel Hoehe fuer ZWEI Zeilen -- oben die
+     * Modulkategorien, darunter die uebrigen Bereiche.
+     *
+     * Zwei Zeilen sind noetig: in einer passten beide zusammen nicht, und
+     * was nicht passte, verschwand stillschweigend.
      */
-    private static final int TAB_H = 34;
+    private static final int TAB_H = 64;
 
     /**
      * Breite des Detailfeldes rechts.
@@ -200,6 +203,14 @@ public class ClickGui extends Screen {
                 winX + winW - sw - PAD, winY + 10, sw, 14, Component.literal(""));
         this.search.setBordered(false);
         this.search.setMaxLength(32);
+        // Bei Texteingabe nach oben scrollen -- sonst liegen die Treffer
+        // oberhalb des sichtbaren Bereichs, und es sieht aus, als haette die
+        // Suche nichts gefunden.
+        this.search.setResponder(text -> {
+            scroll = 0f;
+            scrollTarget = 0f;
+        });
+
         this.addRenderableWidget(this.search);
     }
 
@@ -310,7 +321,14 @@ public class ClickGui extends Screen {
     }
 
     private void drawHeader(GuiGraphicsExtractor ctx, int x, int y, int w, int accent, Theme t) {
-        ctx.fill(x, y, x + w, y + HEADER_H, fade(C_SIDEBAR, openAnim));
+        // Kopf mit Verlauf statt einer flachen Flaeche.
+        //
+        // Links ein Hauch Akzentfarbe, nach rechts auslaufend. Das gibt dem
+        // Fenster einen Anfang und bindet das Zeichen links optisch ein --
+        // vorher stand es auf einer gleichmaessig dunklen Platte.
+        verlauf(ctx, x, y, x + w, y + HEADER_H,
+                fade(mix(C_SIDEBAR, accent, 0.10f), openAnim),
+                fade(C_SIDEBAR, openAnim));
         ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
 
         // The mark: a hollow ring, the same shape as the icon and as the
@@ -326,8 +344,11 @@ public class ClickGui extends Screen {
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             if (m.isEnabled()) active++;
         }
+        // Laufen Module, wird die Zahl in der Akzentfarbe gezeigt -- so
+        // sieht man den Zustand, ohne die Zahl lesen zu muessen.
         ctx.text(this.font, Component.literal(active + " active"),
-                x + PAD + 9, y + 19, fade(t.textDim.get(), openAnim), false);
+                x + PAD + 9, y + 19,
+                fade(active > 0 ? accent : t.textDim.get(), openAnim), false);
 
         // Rueckmeldung nach einem Preset-Wechsel, blendet nach 3 Sekunden aus.
         if (presetInfo != null && presetInfoTime < 3f) {
@@ -403,7 +424,7 @@ public class ClickGui extends Screen {
 
         boolean searching = search != null && !search.getValue().isEmpty();
         int cx = x + PAD;
-        int ty = y + (TAB_H - NAV_H) / 2;
+        int ty = y + 4;
 
         // --- Favoriten ----------------------------------------------------
         if (GuiState.hasFavorites()) {
@@ -429,6 +450,13 @@ public class ClickGui extends Screen {
             }
             String txt = pretty(cat.name()) + "  " + on + "/" + total;
             int bw = this.font.width(txt) + 20;
+            // Passt die Kategorie nicht mehr, wird umgebrochen -- nicht
+            // weggelassen. Eine Kategorie, die es nicht gibt, kann man auch
+            // nicht anwaehlen.
+            if (cx + bw > x + w - PAD) {
+                cx = x + PAD;
+                ty += NAV_H + 4;
+            }
             boolean isSel = !searching && !favView
                     && section == Section.MODULE && cat == selected;
             boolean hov = inRect(mx, my, cx, ty, bw, NAV_H);
@@ -438,27 +466,39 @@ public class ClickGui extends Screen {
             cx += bw + 6;
         }
 
-        // --- Uebrige Bereiche, rechtsbuendig -------------------------------
+        // --- Uebrige Bereiche: EIGENE ZEILE --------------------------------
         //
-        // Von rechts nach links aufgebaut, damit sie am Rand kleben und die
-        // Kategorien links nicht verschieben, wenn eine dazukommt.
+        // HIER LAG EIN SCHWERER FEHLER.
+        //
+        // Sie standen vorher rechts in DERSELBEN Zeile wie die Kategorien.
+        // Zusammen brauchen beide rund 944 Pixel, verfuegbar sind 872 -- die
+        // Schleife brach also ab, und Waypoints und Macros verschwanden
+        // einfach. Ohne Meldung, ohne Hinweis: die Bereiche waren schlicht
+        // nicht mehr erreichbar.
+        //
+        // Zwei Zeilen loesen das dauerhaft. Und wenn doch einmal etwas nicht
+        // passt, wird umgebrochen statt weggelassen -- ein Bedienelement darf
+        // nie stillschweigend verschwinden.
+        int by = y + NAV_H + 6;
+        int bx = x + PAD;
         Object[][] bereiche = {
-            {"Theme", Section.DESIGN}, {"Keys", Section.KEYS},
-            {"Skins", Section.SKINS}, {"Macros", Section.MACROS},
-            {"Waypoints", Section.WAYPOINTS}
+            {"Waypoints", Section.WAYPOINTS}, {"Macros", Section.MACROS},
+            {"Skins", Section.SKINS}, {"Keys", Section.KEYS},
+            {"Theme", Section.DESIGN}
         };
-        int rx = x + w - PAD;
         for (Object[] b : bereiche) {
             String label = (String) b[0];
             Section sec = (Section) b[1];
             int bw = this.font.width(label) + 18;
-            rx -= bw;
-            if (rx < cx + 10) break;          // kein Platz mehr
+            if (bx + bw > x + w - PAD) {       // umbrechen statt weglassen
+                bx = x + PAD;
+                by += NAV_H + 4;
+            }
             boolean isSel = !searching && !favView && section == sec;
-            boolean hov = inRect(mx, my, rx, ty, bw, NAV_H);
-            reiter(ctx, rx, ty, bw, label, isSel, hov, accent, t, dt);
-            hits.add(new Hit(rx, ty, bw, NAV_H, Act.SECTION, null, null, sec));
-            rx -= 6;
+            boolean hov = inRect(mx, my, bx, by, bw, NAV_H);
+            reiter(ctx, bx, by, bw, label, isSel, hov, accent, t, dt);
+            hits.add(new Hit(bx, by, bw, NAV_H, Act.SECTION, null, null, sec));
+            bx += bw + 6;
         }
     }
 
@@ -479,7 +519,15 @@ public class ClickGui extends Screen {
         ctx.text(this.font, Component.literal(text),
                 x + (w - tw) / 2, y + (NAV_H - 8) / 2, fade(col, openAnim), false);
         if (isSel) {
+            // Balken unten, darueber ein blasser Schein.
+            //
+            // Der harte Strich allein wirkte angeklebt. Zwei immer blassere
+            // Zeilen darueber lassen ihn aus der Flaeche herauswachsen.
             ctx.fill(x + 4, y + NAV_H - 2, x + w - 4, y + NAV_H, fade(accent, openAnim));
+            ctx.fill(x + 6, y + NAV_H - 3, x + w - 6, y + NAV_H - 2,
+                    fade(accent, openAnim * 0.45f));
+            ctx.fill(x + 10, y + NAV_H - 4, x + w - 10, y + NAV_H - 3,
+                    fade(accent, openAnim * 0.18f));
         }
     }
 
@@ -504,6 +552,28 @@ public class ClickGui extends Screen {
         ctx.enableScissor(x, y, x + rasterB, y + h);
 
         List<Module> list = visibleModules();
+
+        // Leerer Zustand.
+        //
+        // Findet die Suche nichts, blieb hier bisher eine leere Flaeche --
+        // und man weiss nicht, ob die Suche nichts fand oder die Oberflaeche
+        // haengt. Eine Zeile Text beantwortet das.
+        if (list.isEmpty()) {
+            String txt = (search != null && !search.getValue().isEmpty())
+                    ? "Nothing found for \"" + search.getValue() + "\""
+                    : "Nothing here yet";
+            int tw = this.font.width(txt);
+            ctx.text(this.font, Component.literal(txt),
+                    x + (w - tw) / 2, y + h / 2 - 12,
+                    fade(t.textDim.get(), openAnim), false);
+            String hinweis = "Right Shift closes this window";
+            int hw = this.font.width(hinweis);
+            ctx.text(this.font, Component.literal(hinweis),
+                    x + (w - hw) / 2, y + h / 2 + 2,
+                    fade(mix(t.textDim.get(), C_LINE, 0.4f), openAnim), false);
+            ctx.disableScissor();
+            return;
+        }
 
         // --- ZWEISPALTIGES RASTER -----------------------------------------
         //
@@ -551,6 +621,21 @@ public class ClickGui extends Screen {
 
             if (visible) {
                 roundRect(ctx, cx, cy, cw, cardH, mix(C_CARD, C_CARD_HOV, hv));
+                // Beim Ueberfahren ein zarter Schatten: die Karte hebt sich
+                // vom Raster ab, statt nur heller zu werden. Das macht den
+                // Unterschied zwischen "markiert" und "angehoben".
+                if (hv > 0.05f) {
+                    schatten(ctx, cx, cy, cx + cw, cy + cardH, hv * openAnim * 0.7f);
+                }
+                // Lichtkante oben.
+                //
+                // Eine Zeile, die um eine Spur heller ist als die Karte. Das
+                // laesst die Flaeche wirken, als faele Licht von oben darauf
+                // -- der Unterschied zwischen "Farbflaeche" und "Koerper".
+                // Kostet nichts und ist der wirksamste einzelne Handgriff
+                // gegen den flachen Eindruck.
+                ctx.fill(cx + RADIUS, cy, cx + cw - RADIUS, cy + 1,
+                        fade(mix(C_CARD, C_TEXT, 0.10f + 0.06f * hv), openAnim));
 
                 // Aktiv-Streifen links, jetzt ueber die volle Kartenhoehe und
                 // abgerundet -- vorher ein harter Strich von 5 bis 21.
@@ -623,7 +708,10 @@ public class ClickGui extends Screen {
             if (p > 1f) p = 1f;
             int barY = y + 4 + (int) ((trackH - barH) * p);
             ctx.fill(x + w - 4, y + 4, x + w - 2, y + 4 + trackH, 0x30FFFFFF);
-            ctx.fill(x + w - 4, barY, x + w - 2, barY + barH, mix(accent, C_TEXT, 0.15f));
+            // Abgerundet und etwas breiter -- der Zwei-Pixel-Strich von
+            // vorher sah aus wie ein Zeichenfehler.
+            roundRect(ctx, x + w - 6, barY, 4, barH,
+                    fade(mix(accent, C_TEXT, 0.15f), openAnim));
         }
 
         if (list.isEmpty()) {
@@ -1662,11 +1750,31 @@ public class ClickGui extends Screen {
         // Eigener Auswahlbildschirm, falls das Modul einen hat
         cy = drawSubButton(ctx, m, x + PAD, cy, w - PAD * 2, accent, t);
 
+        int nr = 0;
         for (Setting st : m.getSettings()) {
             if (st == m.getEnabledSetting()) continue;
             if (cy + SET_H > y + h) break;            // Rest passt nicht mehr
+
+            // Jede zweite Zeile minimal abgesetzt.
+            //
+            // Bei einem Modul mit acht Einstellungen verschwimmen die Zeilen
+            // sonst ineinander, und man greift beim Schieben den falschen
+            // Regler. Der Unterschied ist bewusst winzig -- er soll fuehren,
+            // nicht auffallen.
+            if (nr % 2 == 1) {
+                roundRect(ctx, x + PAD - 4, cy - 2, w - PAD * 2 + 8, SET_H,
+                        fade(mix(C_SIDEBAR, C_TEXT, 0.03f), openAnim));
+            }
             drawSetting(ctx, m, st, x + PAD, cy, w - PAD * 2, accent, t);
             cy += SET_H;
+            nr++;
+        }
+
+        // Hat das Modul gar keine Einstellungen, sagt es das -- statt einer
+        // leeren Flaeche, bei der man raetselt, ob etwas fehlt.
+        if (nr == 0) {
+            ctx.text(this.font, Component.literal("No settings"),
+                    x + PAD, cy, fade(t.textDim.get(), openAnim), false);
         }
         ctx.disableScissor();
     }

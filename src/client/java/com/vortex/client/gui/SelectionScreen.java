@@ -127,6 +127,23 @@ public abstract class SelectionScreen extends Screen {
                 winX + winW - sw - PAD, winY + 26, sw, 14, Component.literal(""));
         this.search.setBordered(false);
         this.search.setMaxLength(48);
+
+        // BEI JEDER TEXTAENDERUNG NACH OBEN SCROLLEN.
+        //
+        // Ohne das bleibt die Scrollposition stehen, waehrend die Liste
+        // gefiltert wird: man scrollt weit nach unten, tippt einen Namen,
+        // und die zwei Treffer liegen oberhalb des sichtbaren Bereichs. Es
+        // sieht aus, als haette die Suche nichts gefunden -- man muss erst
+        // von Hand hochscrollen.
+        //
+        // Beide Werte werden gesetzt: scroll ist die aktuelle Stelle,
+        // scrollTarget das Ziel der weichen Bewegung. Nur eines davon zu
+        // setzen laesst die Liste sofort wieder zurueckgleiten.
+        this.search.setResponder(text -> {
+            scroll = 0f;
+            scrollTarget = 0f;
+        });
+
         this.addRenderableWidget(this.search);
     }
 

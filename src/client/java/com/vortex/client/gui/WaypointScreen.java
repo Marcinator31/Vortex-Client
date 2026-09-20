@@ -380,6 +380,10 @@ public class WaypointScreen extends Screen {
         if (inRect(wlx, winY + 56, wlw, 20)) {
             var worlds = WaypointManager.knownWorlds();
             if (worldFilter == null) {
+                // Nach jeder Filteraenderung nach oben scrollen: die Liste
+                // wird kuerzer, und die verbleibenden Eintraege liegen sonst
+                // oberhalb des sichtbaren Bereichs.
+                nachOben();
                 worldFilter = "*";
             } else if ("*".equals(worldFilter)) {
                 worldFilter = worlds.isEmpty() ? null : worlds.get(0);
@@ -410,6 +414,7 @@ public class WaypointScreen extends Screen {
         int dlw = this.font.width(dl) + 16;
         int dlx = wlx + wlw + 8;
         if (inRect(dlx, winY + 56, dlw, 20)) {
+            nachOben();
             dimFilter = nextDim(dimFilter);
             scrollTarget = 0f;
             scroll = 0f;
@@ -858,4 +863,17 @@ public class WaypointScreen extends Screen {
         // wurde -- dann zurueck ins Spiel statt in einen leeren Bildschirm.
         this.minecraft.gui.setScreen(parent);
     }
+
+    /**
+     * Setzt die Liste an den Anfang.
+     *
+     * Wird nach jeder Filteraenderung gerufen. Ohne das bleibt die
+     * Scrollposition stehen, waehrend die Liste kuerzer wird -- die
+     * verbleibenden Marker liegen dann ausserhalb des Bildes, und es sieht
+     * aus, als waeren sie verschwunden.
+     */
+    private void nachOben() {
+        scroll = 0f;
+    }
+
 }

@@ -95,7 +95,14 @@ public class SkinScreen extends Screen {
                 winX + 14, winY + 38, 180, 14, Component.literal(""));
         searchField.setBordered(false);
         searchField.setMaxLength(16);
-        this.addRenderableWidget(searchField);
+        this.
+        // Bei Texteingabe nach oben scrollen -- sonst liegen die Treffer
+        // oberhalb des sichtbaren Bereichs, und es sieht aus, als haette die
+        // Suche nichts gefunden.
+        searchField.setResponder(text -> {
+            scroll = 0f;
+        });
+addRenderableWidget(searchField);
 
         renameField = new EditBox(this.font,
                 winX + 14, winY + winH - 18, 180, 14, Component.literal(""));
