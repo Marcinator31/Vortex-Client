@@ -134,6 +134,10 @@ public class ClickGui extends Screen {
 
     private float scroll = 0f;
     private float scrollTarget = 0f;
+    /** Bildlauf im Detailfeld rechts -- eigener Wert, eigene Grenze. */
+    private float detailScroll = 0f;
+    private float detailScrollZiel = 0f;
+    private int detailHoehe = 0;
     private int contentHeight = 0;
 
     private EditBox search;
@@ -1133,6 +1137,10 @@ public class ClickGui extends Screen {
                         detail = null;          // nochmal klicken schliesst
                     } else {
                         detail = hit.module;    // Einstellungen rechts oeffnen
+                        // An den Anfang: sonst steht das neue Modul mitten
+                        // in der Liste, weil die Position vom vorigen bleibt.
+                        detailScroll = 0f;
+                        detailScrollZiel = 0f;
                     }
                     break;
                 case SUB_SCREEN:
@@ -1286,6 +1294,20 @@ public class ClickGui extends Screen {
         // Genau dieselbe Rechnung wie beim Zeichnen, sonst laufen die beiden
         // wieder auseinander.
         int h = windowHeight() - HEADER_H - TAB_H - FOOTER_H;
+
+        // ZEIGT DIE MAUS AUF DAS DETAILFELD? Dann dieses scrollen.
+        //
+        // Ohne diese Zuordnung lief das Rad immer auf das Raster, und das
+        // Feld liess sich gar nicht bewegen -- der Bildlauf darin waere
+        // wirkungslos geblieben.
+        if (detail != null && mx >= lastWinX + lastWinW - DETAIL_W) {
+            detailScrollZiel -= (float) vertical * 32f;
+            float dmax = Math.max(0f, detailHoehe - h);
+            if (detailScrollZiel < 0f) detailScrollZiel = 0f;
+            if (detailScrollZiel > dmax) detailScrollZiel = dmax;
+            return true;
+        }
+
         scrollTarget -= (float) vertical * 32f;
         float max = contentHeight - h;
         if (max < 0f) max = 0f;
@@ -1738,7 +1760,15 @@ public class ClickGui extends Screen {
         ctx.fill(x, y, x + 1, y + h, fade(C_LINE, openAnim));
 
         ctx.enableScissor(x, y, x + w, y + h);
-        int cy = y + PAD;
+
+        // BILDLAUF IM FELD.
+        //
+        // Vorher brach die Schleife ab, sobald der Platz zu Ende war -- bei
+        // Modulen mit vielen Einstellungen, etwa Armor, sah man nur die
+        // erste und kam an die uebrigen nicht heran.
+        detailScroll = anim(detailScroll, detailScrollZiel, 16f, 0.05f);
+        int cy = y + PAD - (int) detailScroll;
+        int cyStart = cy;
 
         // Kopf: Name, Zustand, Schliessen
         ctx.text(this.font, Component.literal(m.getName()), x + PAD, cy, t.text.get());
@@ -1766,7 +1796,9 @@ public class ClickGui extends Screen {
         int nr = 0;
         for (Setting st : m.getSettings()) {
             if (st == m.getEnabledSetting()) continue;
-            if (cy + SET_H > y + h) break;            // Rest passt nicht mehr
+            // Nicht abbrechen, nur ueberspringen: sonst wird die Gesamthoehe
+            // falsch gemessen und man kann nie bis ans Ende scrollen.
+            boolean sichtbar = (cy + SET_H > y) && (cy < y + h);
 
             // Jede zweite Zeile minimal abgesetzt.
             //
@@ -1774,11 +1806,13 @@ public class ClickGui extends Screen {
             // sonst ineinander, und man greift beim Schieben den falschen
             // Regler. Der Unterschied ist bewusst winzig -- er soll fuehren,
             // nicht auffallen.
-            if (nr % 2 == 1) {
-                roundRect(ctx, x + PAD - 4, cy - 2, w - PAD * 2 + 8, SET_H,
-                        fade(mix(C_SIDEBAR, C_TEXT, 0.03f), openAnim));
+            if (sichtbar) {
+                if (nr % 2 == 1) {
+                    roundRect(ctx, x + PAD - 4, cy - 2, w - PAD * 2 + 8, SET_H,
+                            fade(mix(C_SIDEBAR, C_TEXT, 0.03f), openAnim));
+                }
+                drawSetting(ctx, m, st, x + PAD, cy, w - PAD * 2, accent, t);
             }
-            drawSetting(ctx, m, st, x + PAD, cy, w - PAD * 2, accent, t);
             cy += SET_H;
             nr++;
         }
@@ -1789,7 +1823,22 @@ public class ClickGui extends Screen {
             ctx.text(this.font, Component.literal("No settings"),
                     x + PAD, cy, fade(t.textDim.get(), openAnim), false);
         }
+
+        // Gesamthoehe fuers Scrollen merken.
+        detailHoehe = (cy - cyStart) + PAD * 2;
         ctx.disableScissor();
+
+        // Bildlaufbalken, sobald es mehr gibt als hineinpasst.
+        if (detailHoehe > h) {
+            int spurH = h - 8;
+            int balkenH = Math.max(24, (int) (spurH * (h / (float) detailHoehe)));
+            float pos = detailScroll / Math.max(1f, detailHoehe - h);
+            if (pos < 0f) pos = 0f;
+            if (pos > 1f) pos = 1f;
+            int balkenY = y + 4 + (int) ((spurH - balkenH) * pos);
+            roundRect(ctx, x + w - 6, balkenY, 4, balkenH,
+                    fade(mix(accent, C_TEXT, 0.15f), openAnim));
+        }
     }
 
 }
