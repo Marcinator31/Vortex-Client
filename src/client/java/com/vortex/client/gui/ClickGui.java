@@ -694,11 +694,21 @@ public class ClickGui extends Screen {
         for (int i = 1; i < spalten; i++) maxY = Math.max(maxY, spaltenY[i]);
         contentHeight = (maxY + (int) scroll) - (y + PAD) + PAD;
 
+        // ZUERST den Beschneidungsbereich des Rasters schliessen.
+        //
+        // HIER LAG DER FEHLER: das Detailfeld wurde davor gezeichnet,
+        // waehrend der Bereich noch auf x..x+rasterB begrenzt war. Das Feld
+        // liegt aber RECHTS davon -- es wurde also vollstaendig
+        // weggeschnitten.
+        //
+        // Folge: keine Einstellungen sichtbar, und die Oberflaeche sah aus
+        // wie vorher, weil die auffaelligste Neuerung unsichtbar blieb.
+        ctx.disableScissor();
+
         // --- Detailfeld rechts --------------------------------------------
         if (feldB > 4 && detail != null) {
             zeichneDetail(ctx, x + rasterB, y, feldB, h, accent, t);
         }
-        ctx.disableScissor();
 
         if (contentHeight > h) {
             int trackH = h - 8;
@@ -1265,14 +1275,17 @@ public class ClickGui extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY,
                                  double horizontal, double vertical) {
-        int h = windowHeight() - HEADER_H - FOOTER_H;
-
-        // Die Seitenleiste gibt es nicht mehr -- die Reiter stehen jetzt
-        // waagerecht und passen ohne Scrollen. Es wird also immer der Inhalt
-        // gescrollt.
-        if (false) {
-            return true;
-        }
+        // DIE REITERZEILE MUSS ABGEZOGEN WERDEN.
+        //
+        // Hier stand nur Kopf und Fuss. Der Inhaltsbereich ist aber seit dem
+        // Umbau zusaetzlich um TAB_H kleiner -- also hielt die Begrenzung
+        // den sichtbaren Bereich fuer 64 Pixel groesser als er ist und
+        // stoppte das Scrollen zu frueh. Die letzten Module blieben
+        // unerreichbar.
+        //
+        // Genau dieselbe Rechnung wie beim Zeichnen, sonst laufen die beiden
+        // wieder auseinander.
+        int h = windowHeight() - HEADER_H - TAB_H - FOOTER_H;
         scrollTarget -= (float) vertical * 32f;
         float max = contentHeight - h;
         if (max < 0f) max = 0f;
