@@ -94,16 +94,46 @@ public class ClickGui extends Screen {
     // und kleineren Helligkeitsspruengen zwischen den Ebenen. Dadurch wirken
     // die Flaechen als Schichten uebereinander statt als Kaesten
     // nebeneinander.
-    private static final int C_DIM      = 0xC8070910;  // Hintergrund abdunkeln
-    private static final int C_WINDOW   = 0xFA151821;  // Fensterflaeche
-    private static final int C_SIDEBAR  = 0xFF11141C;  // eine Stufe tiefer
-    private static final int C_CARD     = 0xFF1E2230;  // Karte
-    private static final int C_CARD_HOV = 0xFF272C3C;  // Karte unter dem Zeiger
-    private static final int C_INNER    = 0xFF181C27;  // eingelassene Flaeche
-    private static final int C_LINE     = 0xFF2A3040;  // Trennlinie, weicher
-    private static final int C_TRACK    = 0xFF323949;  // Schieber-Schiene
-    private static final int C_TEXT     = 0xFFE8ECF5;  // Haupttext
-    private static final int C_TEXT_DIM = 0xFF8A93A8;  // Nebentext
+    // ======================================================================
+    // Farbwelt
+    // ======================================================================
+    //
+    // Vollstaendig neu. Die alte Palette war neutrales Dunkelgrau mit einem
+    // Blaustich -- und damit austauschbar mit jedem anderen Menue.
+    //
+    // Die neue arbeitet mit einem violett gefaerbten Tiefschwarz als Basis
+    // und einem Verlauf von Violett nach Blau als Akzent. Das ist der
+    // Grundton, den moderne PvP-Clients benutzen, und er ist auf den ersten
+    // Blick wiedererkennbar.
+    //
+    // Die Helligkeitsstufen liegen bewusst eng beieinander: Flaechen sollen
+    // als Schichten wirken, nicht als Kaesten mit Rahmen.
+
+    private static final int C_DIM      = 0xD2060409;  // Welt abdunkeln
+    private static final int C_WINDOW   = 0xFC0E0B16;  // Fensterflaeche
+    private static final int C_SIDEBAR  = 0xFF0A0812;  // eine Stufe tiefer
+    private static final int C_CARD     = 0xFF15111F;  // Karte
+    private static final int C_CARD_HOV = 0xFF1E1930;  // Karte unter dem Zeiger
+    private static final int C_INNER    = 0xFF120E1B;  // eingelassene Flaeche
+    private static final int C_LINE     = 0xFF241E36;  // Trennlinie
+    private static final int C_TRACK    = 0xFF2A2340;  // Schiene
+    private static final int C_TEXT     = 0xFFF2F0F8;  // Haupttext
+    private static final int C_TEXT_DIM = 0xFF7F7896;  // Nebentext
+
+    /** Akzent links im Verlauf -- Violett. */
+    private static final int A_VIOLETT  = 0xFF8B5CF6;
+    /** Akzent rechts im Verlauf -- Blau. */
+    private static final int A_BLAU     = 0xFF3B82F6;
+
+    /**
+     * Akzentverlauf an einer Stelle zwischen 0 und 1.
+     *
+     * Ein einzelner Farbwert wirkt flach. Der Verlauf gibt Balken, Schaltern
+     * und dem ausgewaehlten Reiter Tiefe, ohne dass man dafuer zeichnen muss.
+     */
+    private static int akzent(float t) {
+        return mix(A_VIOLETT, A_BLAU, Math.max(0f, Math.min(1f, t)));
+    }
 
     // ---- Zustand ----
     private final Set<Module> expanded = new HashSet<>();
@@ -330,10 +360,21 @@ public class ClickGui extends Screen {
         // Links ein Hauch Akzentfarbe, nach rechts auslaufend. Das gibt dem
         // Fenster einen Anfang und bindet das Zeichen links optisch ein --
         // vorher stand es auf einer gleichmaessig dunklen Platte.
+        // Kopf im Akzentverlauf, sehr zurueckhaltend beigemischt.
+        //
+        // Links Violett, rechts Blau -- derselbe Verlauf wie bei Reitern und
+        // Schaltern. Dadurch haengt die Oberflaeche farblich zusammen, statt
+        // aus einzelnen gefaerbten Teilen zu bestehen.
         verlauf(ctx, x, y, x + w, y + HEADER_H,
-                fade(mix(C_SIDEBAR, accent, 0.10f), openAnim),
-                fade(C_SIDEBAR, openAnim));
-        ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
+                fade(mix(C_SIDEBAR, A_VIOLETT, 0.14f), openAnim),
+                fade(mix(C_SIDEBAR, A_BLAU, 0.07f), openAnim));
+
+        // Trennlinie als Verlauf statt harter Kante: in der Mitte kraeftig,
+        // zu den Raendern hin auslaufend.
+        verlauf(ctx, x, y + HEADER_H - 1, x + w / 2, y + HEADER_H,
+                fade(akzent(0f) & 0x30FFFFFF, openAnim), fade(akzent(0.5f), openAnim * 0.5f));
+        verlauf(ctx, x + w / 2, y + HEADER_H - 1, x + w, y + HEADER_H,
+                fade(akzent(0.5f), openAnim * 0.5f), fade(akzent(1f) & 0x30FFFFFF, openAnim));
 
         // The mark: a hollow ring, the same shape as the icon and as the
         // waypoint markers. Red once the addon is installed, so which of the
@@ -396,6 +437,15 @@ public class ClickGui extends Screen {
             int sx = search.getX() - 16;
             int sy = y + 7;
             int sw = search.getWidth() + 20;
+            // Suchfeld als eingelassene Pille.
+            //
+            // Beim Tippen leuchtet der Rand im Akzent auf -- so sieht man,
+            // dass das Feld den Fokus hat, ohne einen dicken Rahmen.
+            boolean tippt = search != null && !search.getValue().isEmpty();
+            if (tippt) {
+                roundRect(ctx, sx - 1, sy - 1, sw + 2, 22,
+                        fade(akzent(0.5f) & 0x66FFFFFF, openAnim));
+            }
             roundRect(ctx, sx, sy, sw, 20, fade(C_INNER, openAnim));
             ctx.text(this.font, Component.literal("Q"),
                     sx + 6, sy + 6, fade(0xFF6A6A76, openAnim), false);
@@ -513,25 +563,48 @@ public class ClickGui extends Screen {
      * das ist die uebliche Form bei waagerechten Reitern und wirkt ruhiger
      * als ein gefuellter Kasten.
      */
+    /**
+     * Ein Reiter als Pille.
+     *
+     * NEU: der ausgewaehlte Reiter ist eine gefuellte Pille im Akzentverlauf
+     * mit einem Schein darunter, nicht mehr ein Strich am unteren Rand. Das
+     * ist die Form, die moderne Clients benutzen, und der Zustand ist auch
+     * auf einen schnellen Blick eindeutig.
+     *
+     * Der Verlauf laeuft ueber die Pille von Violett nach Blau -- dadurch
+     * wirkt sie plastisch, ohne dass ein Rahmen noetig waere.
+     */
     private void reiter(GuiGraphicsExtractor ctx, int x, int y, int w, String text,
                         boolean isSel, boolean hov, int accent, Theme t, float dt) {
-        if (hov && !isSel) {
-            roundRect(ctx, x, y, w, NAV_H, fade(C_CARD, openAnim * 0.8f));
+        if (isSel) {
+            // Schein unter der Pille -- gibt ihr Hoehe.
+            for (int i = 1; i <= 3; i++) {
+                int a = (int) (26f / i * openAnim);
+                roundRect(ctx, x - i, y - i, w + i * 2, NAV_H + i * 2,
+                        (a << 24) | (akzent(0.5f) & 0x00FFFFFF));
+            }
+            verlaufRund(ctx, x, y, w, NAV_H,
+                    fade(akzent(0f), openAnim), fade(akzent(1f), openAnim));
+        } else if (hov) {
+            roundRect(ctx, x, y, w, NAV_H, fade(C_CARD_HOV, openAnim * 0.9f));
         }
-        int col = isSel ? t.text.get() : (hov ? t.text.get() : t.textDim.get());
+        int col = isSel ? 0xFFFFFFFF : (hov ? C_TEXT : C_TEXT_DIM);
         int tw = this.font.width(text);
         ctx.text(this.font, Component.literal(text),
                 x + (w - tw) / 2, y + (NAV_H - 8) / 2, fade(col, openAnim), false);
-        if (isSel) {
-            // Balken unten, darueber ein blasser Schein.
-            //
-            // Der harte Strich allein wirkte angeklebt. Zwei immer blassere
-            // Zeilen darueber lassen ihn aus der Flaeche herauswachsen.
-            ctx.fill(x + 4, y + NAV_H - 2, x + w - 4, y + NAV_H, fade(accent, openAnim));
-            ctx.fill(x + 6, y + NAV_H - 3, x + w - 6, y + NAV_H - 2,
-                    fade(accent, openAnim * 0.45f));
-            ctx.fill(x + 10, y + NAV_H - 4, x + w - 10, y + NAV_H - 3,
-                    fade(accent, openAnim * 0.18f));
+    }
+
+    /** Abgerundetes Rechteck mit waagerechtem Verlauf. */
+    private void verlaufRund(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+                             int von, int bis) {
+        int r = Math.min(RADIUS, Math.min(w / 2, h / 2));
+        for (int i = 0; i < w; i++) {
+            int c = mix(von, bis, i / (float) w);
+            // Die Ecken aussparen, damit die Rundung erhalten bleibt.
+            int ein = 0;
+            if (i < r) ein = r - i;
+            else if (i >= w - r) ein = r - (w - i - 1);
+            ctx.fill(x + i, y + ein, x + i + 1, y + h - ein, c);
         }
     }
 
@@ -641,10 +714,22 @@ public class ClickGui extends Screen {
                 ctx.fill(cx + RADIUS, cy, cx + cw - RADIUS, cy + 1,
                         fade(mix(C_CARD, C_TEXT, 0.10f + 0.06f * hv), openAnim));
 
-                // Aktiv-Streifen links, jetzt ueber die volle Kartenhoehe und
-                // abgerundet -- vorher ein harter Strich von 5 bis 21.
+                // STATUSPUNKT statt Balken.
+                //
+                // Ein Punkt links vor dem Namen, im Akzentverlauf und mit
+                // Schein, wenn das Modul laeuft -- sonst ein blasser Ring.
+                // Das ist ruhiger als ein Streifen ueber die ganze Karte und
+                // sitzt dort, wohin der Blick beim Lesen ohnehin geht.
+                int px = cx + 12, py = cy + CARD_H / 2 - 2;
                 if (on > 0.01f) {
-                    roundRect(ctx, cx, cy + 6, 3, CARD_H - 12, fade(accent, on));
+                    for (int g = 1; g <= 2; g++) {
+                        int a = (int) (40f / g * on * openAnim);
+                        ctx.fill(px - g, py - g, px + 4 + g, py + 4 + g,
+                                (a << 24) | (akzent(0.5f) & 0x00FFFFFF));
+                    }
+                    ctx.fill(px, py, px + 4, py + 4, fade(akzent(0.3f), on * openAnim));
+                } else {
+                    ctx.fill(px, py, px + 4, py + 4, fade(C_TRACK, openAnim));
                 }
 
                 // ZWEIZEILIG: Name oben, Kurzbeschreibung darunter.
@@ -653,13 +738,15 @@ public class ClickGui extends Screen {
                 // also auf jedes Modul zeigen, um zu wissen, was es tut. Bei
                 // 58 Modulen ist das unbrauchbar. Jetzt steht sie direkt da,
                 // wofuer die groessere Kartenhoehe den Platz schafft.
+                // Name kraeftig, Beschreibung gedaempft -- klare Rangfolge.
                 ctx.text(this.font, Component.literal(m.getName()),
-                        cx + 14, cy + 7, m.isEnabled() ? t.text.get() : C_TEXT_DIM);
+                        cx + 24, cy + 7, m.isEnabled() ? C_TEXT : C_TEXT_DIM);
 
-                String kurz = kurzInfo(m, cw - 90);
+                String kurz = kurzInfo(m, cw - 100);
                 if (kurz != null) {
                     ctx.text(this.font, Component.literal(kurz),
-                            cx + 14, cy + 19, C_TEXT_DIM, false);
+                            cx + 24, cy + 19,
+                            fade(mix(C_TEXT_DIM, C_LINE, 0.25f), openAnim), false);
                 }
 
                 if (hasContent(m)) {
@@ -983,14 +1070,40 @@ public class ClickGui extends Screen {
      * eingeschalteten hell: so erkennt man den Zustand auch ohne Farbe, was
      * bei einem selbst gewaehlten Akzent wichtig ist.
      */
+    /**
+     * Schalter.
+     *
+     * NEU: 28x14 mit Akzentverlauf im eingeschalteten Zustand und einem
+     * weichen Schein darum. Der Knauf ist rund und wirft einen kleinen
+     * Schatten.
+     *
+     * Der Zustand ist damit dreifach ablesbar -- Farbe, Position des Knaufs
+     * und Schein. Das ist wichtig, weil der Akzent frei waehlbar ist und
+     * nicht bei jeder Wahl gut sichtbar bleibt.
+     */
     private void drawSwitch(GuiGraphicsExtractor ctx, int x, int y, float on, int accent) {
-        roundRect(ctx, x, y, 26, 13, mix(C_TRACK, accent, on));
-        int kx = x + 2 + (int) (on * 12f);
-        // Runder Knauf: Mittelstreifen plus schmalere Zeilen oben und unten.
-        int knauf = mix(0xFFCBD2E0, 0xFFFFFFFF, on);
-        ctx.fill(kx, y + 3, kx + 9, y + 10, knauf);
-        ctx.fill(kx + 1, y + 2, kx + 8, y + 3, knauf);
-        ctx.fill(kx + 1, y + 10, kx + 8, y + 11, knauf);
+        if (on > 0.02f) {
+            // Schein nur im Ein-Zustand, mit dem Uebergang eingeblendet.
+            for (int i = 1; i <= 3; i++) {
+                int a = (int) (30f / i * on * openAnim);
+                roundRect(ctx, x - i, y - i, 28 + i * 2, 14 + i * 2,
+                        (a << 24) | (akzent(0.5f) & 0x00FFFFFF));
+            }
+        }
+        roundRect(ctx, x, y, 28, 14, fade(C_TRACK, openAnim));
+        if (on > 0.02f) {
+            verlaufRund(ctx, x, y, 28, 14,
+                    fade(akzent(0f), on * openAnim), fade(akzent(1f), on * openAnim));
+        }
+
+        int kx = x + 2 + (int) (on * 14f);
+        // Schatten unter dem Knauf.
+        ctx.fill(kx + 1, y + 11, kx + 9, y + 12, fade(0x40000000, openAnim));
+        // Knauf: Mittelblock plus schmalere Zeilen -- wirkt rund.
+        int knauf = fade(mix(0xFFD8D4E8, 0xFFFFFFFF, on), openAnim);
+        ctx.fill(kx, y + 3, kx + 10, y + 11, knauf);
+        ctx.fill(kx + 1, y + 2, kx + 9, y + 3, knauf);
+        ctx.fill(kx + 1, y + 11, kx + 9, y + 12, knauf);
     }
 
     private void drawFooter(GuiGraphicsExtractor ctx, int x, int y, int w) {
