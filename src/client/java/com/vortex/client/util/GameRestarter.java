@@ -1,10 +1,12 @@
 package com.vortex.client.util;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import net.minecraft.client.Minecraft;
 
 /**
@@ -48,7 +50,7 @@ public final class GameRestarter {
         // Java liest Argumente seit Version 9 auch aus einer Datei: "java
         // @datei". Dort gibt es keine Laengengrenze. Also wird alles ausser
         // dem Programmpfad in eine Datei geschrieben.
-        String java = command.get(0);
+        String javaExecutable = command.get(0);
         List<String> rest = command.subList(1, command.size());
         File argDatei = File.createTempFile("vortex-restart-", ".args");
         argDatei.deleteOnExit();
@@ -60,9 +62,10 @@ public final class GameRestarter {
             b.append('"').append(arg.replace("\\", "\\\\").replace("\"", "\\\""))
              .append('"').append(System.lineSeparator());
         }
-        java.nio.file.Files.writeString(argDatei.toPath(), b.toString());
+        Files.writeString(argDatei.toPath(), b.toString());
 
-        ProcessBuilder pb = new ProcessBuilder(java, "@" + argDatei.getAbsolutePath());
+        ProcessBuilder pb = new ProcessBuilder(
+                javaExecutable, "@" + argDatei.getAbsolutePath());
         String dir = System.getProperty("user.dir");
         if (dir != null) pb.directory(new File(dir));
         // Ausgabe des neuen Prozesses verwerfen, sonst blockiert er, sobald
@@ -80,7 +83,7 @@ public final class GameRestarter {
         // Jetzt: drei Sekunden warten. Lebt der neue Prozess dann noch, hat er
         // seine Hauptklasse gefunden und laedt. Ist er tot, bleibt das alte
         // Spiel offen und meldet den Fehler, statt sich wegzuwerfen.
-        boolean beendet = neu.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+        boolean beendet = neu.waitFor(3, TimeUnit.SECONDS);
         if (beendet) {
             throw new IllegalStateException(
                     "Neustart fehlgeschlagen (Rueckgabe " + neu.exitValue()
