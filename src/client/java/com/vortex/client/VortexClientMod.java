@@ -186,7 +186,9 @@ public class VortexClientMod implements ClientModInitializer {
             clickGuiKeyWasDown = rightShiftDown;
 
             if (openClickGui && client.gui.screen() == null) {
-                client.gui.setScreen(new ClickGui());
+                // Erst der Startbildschirm, von dort aus zu den Mods --
+                // wie bei grossen PvP-Clients.
+                client.gui.setScreen(new com.vortex.client.gui.HomeScreen());
                 System.out.println("[vortexclient] ClickGUI opened via Right Shift.");
             }
 

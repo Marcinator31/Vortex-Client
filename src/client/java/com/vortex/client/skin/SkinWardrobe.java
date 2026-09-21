@@ -176,6 +176,32 @@ public final class SkinWardrobe {
      * Garderobe stehen. So kann man Skins einfach hineinkopieren, statt sie
      * einzeln hinzuzufuegen.
      */
+    /**
+     * Entfernt Eintraege, deren PNG-Datei nicht mehr da ist.
+     *
+     * DAS WAR DIE URSACHE von "Skin file not found": Die Garderobe merkt
+     * sich Skins in einer Liste. Fehlt die Datei dazu -- geloescht,
+     * verschoben, nie heruntergeladen --, bleibt der Eintrag trotzdem
+     * stehen. Man sieht ihn, klickt ihn an, und das Hochladen scheitert.
+     *
+     * Diese Korrektur gab es schon einmal (2.28.18). Sie ging verloren, als
+     * die 26.2-Fassung aus einem aelteren Stand neu aufgebaut werden musste.
+     */
+    public static synchronized int pruneMissing() {
+        ensureLoaded();
+        int weg = 0;
+        try {
+            java.util.Iterator<Skin> it = LIST.iterator();
+            while (it.hasNext()) {
+                if (!it.next().exists()) { it.remove(); weg++; }
+            }
+            if (weg > 0) save();
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("SkinWardrobe.prune", pvpErr);
+        }
+        return weg;
+    }
+
     public static synchronized int importLooseFiles() {
         ensureLoaded();
         int added = 0;

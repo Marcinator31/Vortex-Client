@@ -112,6 +112,10 @@ addRenderableWidget(searchField);
         this.addRenderableWidget(renameField);
 
         // Beim Oeffnen lose PNG-Dateien uebernehmen -- bequemer als ein Knopf.
+        // Erst verwaiste Eintraege entfernen, dann neue Dateien aufnehmen.
+        // Andersherum wuerde eine gerade hineinkopierte Datei sofort wieder
+        // entfernt, falls das Einlesen sie noch nicht kennt.
+        SkinWardrobe.pruneMissing();
         int found = SkinWardrobe.importLooseFiles();
         if (found > 0) status = found + " file(s) imported from the folder.";
     }
@@ -466,6 +470,11 @@ addRenderableWidget(searchField);
                     if (com.vortex.client.skin.ActiveSkin.get() == h.skin) {
                         com.vortex.client.skin.ActiveSkin.clear();
                         status = "Back to your own skin.";
+                    } else if (!h.skin.exists()) {
+                        // Datei fehlt: klar sagen, statt es beim Hochladen
+                        // mit einer unverstaendlichen Meldung scheitern zu
+                        // lassen.
+                        status = h.skin.name + ": file is missing from the skins folder.";
                     } else {
                         com.vortex.client.skin.ActiveSkin.set(h.skin);
                         status = h.skin.name + " applied (visible only to you).";

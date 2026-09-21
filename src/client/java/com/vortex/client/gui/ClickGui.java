@@ -176,6 +176,8 @@ public class ClickGui extends Screen {
     private float scrollTarget = 0f;
     /** Bildlauf im Detailfeld rechts -- eigener Wert, eigene Grenze. */
     private float detailScroll = 0f;
+    /** Zeit des letzten Bildes -- fuer Animationen ausserhalb des Hauptpfads. */
+    private float letzteDt = 0.016f;
     private float detailScrollZiel = 0f;
     private int detailHoehe = 0;
     private int contentHeight = 0;
@@ -302,6 +304,7 @@ public class ClickGui extends Screen {
         float dt = (lastNano == 0L) ? 0.016f : (now - lastNano) / 1_000_000_000.0f;
         lastNano = now;
         if (dt > 0.1f) dt = 0.1f;
+        letzteDt = dt;
 
         openAnim = anim(openAnim, 1f, 14f, dt);
         if (presetInfo != null) presetInfoTime += dt;
@@ -389,11 +392,26 @@ public class ClickGui extends Screen {
         // The mark: a hollow ring, the same shape as the icon and as the
         // waypoint markers. Red once the addon is installed, so which of the
         // two you are running is visible at a glance rather than a surprise.
-        int markColor = fade(Branding.accent(), openAnim);
-        drawRingMark(ctx, x + PAD + 6, y + 17, 6, markColor);
+        // DAS ECHTE LOGO statt des gepixelten Rings.
+        //
+        // Gezeichnet ueber blitSprite -- derselbe Weg, den HudRenderer fuer
+        // die Effekt-Symbole benutzt, also im Projekt belegt. Das Bild liegt
+        // unter textures/gui/sprites/logo.png und ist eine Kopie von
+        // icon.png.
+        //
+        // Faellt das Laden aus, bleibt der Ring als Rueckfall -- lieber ein
+        // einfaches Zeichen als eine leere Stelle.
+        int logoG = 28;
+        try {
+            ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "logo"),
+                    x + PAD, y + (HEADER_H - logoG) / 2, logoG, logoG);
+        } catch (Throwable pvpErr) {
+            drawRingMark(ctx, x + PAD + 6, y + 17, 6, fade(Branding.accent(), openAnim));
+        }
 
         ctx.text(this.font, Component.literal(Branding.title()),
-                x + PAD + 17, y + 8, fade(t.text.get(), openAnim));
+                x + PAD + logoG + 8, y + 8, fade(t.text.get(), openAnim));
 
         int active = 0;
         for (Module m : ModuleManager.INSTANCE.getModules()) {
@@ -402,7 +420,7 @@ public class ClickGui extends Screen {
         // Laufen Module, wird die Zahl in der Akzentfarbe gezeigt -- so
         // sieht man den Zustand, ohne die Zahl lesen zu muessen.
         ctx.text(this.font, Component.literal(active + " active"),
-                x + PAD + 9, y + 19,
+                x + PAD + 36, y + 20,
                 fade(active > 0 ? accent : t.textDim.get(), openAnim), false);
 
         // Rueckmeldung nach einem Preset-Wechsel, blendet nach 3 Sekunden aus.
@@ -605,16 +623,35 @@ public class ClickGui extends Screen {
     }
 
     /** Abgerundetes Rechteck mit waagerechtem Verlauf. */
+    /**
+     * Abgerundetes Rechteck mit waagerechtem Verlauf.
+     *
+     * Nur die wenigen Spalten an den Ecken werden einzeln gezeichnet, weil
+     * dort die Rundung entsteht. Die Mitte in Baendern -- das war vorher
+     * pixelweise und machte bei vielen Schaltern und Kacheln den Grossteil
+     * der Zeichenlast aus.
+     */
     private void verlaufRund(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
                              int von, int bis) {
+        if (w <= 0 || h <= 0) return;
         int r = Math.min(RADIUS, Math.min(w / 2, h / 2));
-        for (int i = 0; i < w; i++) {
-            int c = mix(von, bis, i / (float) w);
-            // Die Ecken aussparen, damit die Rundung erhalten bleibt.
-            int ein = 0;
-            if (i < r) ein = r - i;
-            else if (i >= w - r) ein = r - (w - i - 1);
-            ctx.fill(x + i, y + ein, x + i + 1, y + h - ein, c);
+        // Ecken: einzeln, wegen der Rundung
+        for (int i = 0; i < r; i++) {
+            int ein = r - i;
+            ctx.fill(x + i, y + ein, x + i + 1, y + h - ein, mix(von, bis, i / (float) w));
+            int rx = x + w - 1 - i;
+            ctx.fill(rx, y + ein, rx + 1, y + h - ein, mix(von, bis, (w - 1 - i) / (float) w));
+        }
+        // Mitte: in Baendern
+        int mw = w - 2 * r;
+        if (mw <= 0) return;
+        int baender = Math.max(1, (mw + 7) / 8);
+        for (int b = 0; b < baender; b++) {
+            int ax = x + r + (int) ((long) mw * b / baender);
+            int bx = x + r + (int) ((long) mw * (b + 1) / baender);
+            if (bx <= ax) continue;
+            float t = (r + ((ax - x - r) + (bx - x - r)) / 2f) / w;
+            ctx.fill(ax, y, bx, y + h, mix(von, bis, t));
         }
     }
 
@@ -1580,10 +1617,26 @@ public class ClickGui extends Screen {
     }
 
     /** Zeitbasierter Uebergang -- unabhaengig von der Bildrate. */
+    /**
+     * Weiche Annaeherung an einen Zielwert.
+     *
+     * VORHER: cur + (target - cur) * (speed * dt), gekappt bei 1.
+     * Das ist nur bei hoher Bildrate weich. Sinkt sie, wird speed * dt
+     * schnell groesser als 1 -- die Bewegung SPRINGT dann in einem Schritt
+     * ans Ziel. Bei jedem kleinen Einbruch der Bildrate ruckelte dadurch
+     * alles, was sich bewegt: Bildlauf, Einblenden, Hervorhebungen.
+     *
+     * JETZT: 1 - e^(-speed * dt). Das ist die exakte Form einer
+     * gleichmaessigen Annaeherung. Sie ist bei 30 und bei 240 Bildern pro
+     * Sekunde gleich schnell, wird nie groesser als 1 und springt nie.
+     */
     private static float anim(float cur, float target, float speed, float dt) {
-        float f = speed * dt;
-        if (f > 1f) f = 1f;
-        return cur + (target - cur) * f;
+        float f = 1f - (float) Math.exp(-speed * dt);
+        float neu = cur + (target - cur) * f;
+        // Winzigen Rest abschneiden, sonst naehert sich der Wert ewig an und
+        // die Oberflaeche zeichnet Bewegung, die man nicht mehr sieht.
+        if (Math.abs(target - neu) < 0.01f) return target;
+        return neu;
     }
 
     /** Rechteck mit leicht abgerundet wirkenden Ecken. */
@@ -1770,8 +1823,24 @@ public class ClickGui extends Screen {
                                 int von, int bis) {
         int w = x2 - x;
         if (w <= 0) return;
-        for (int i = 0; i < w; i++) {
-            ctx.fill(x + i, y, x + i + 1, y2, mix(von, bis, i / (float) w));
+        // IN BAENDERN STATT PIXELWEISE.
+        //
+        // Hier lag der Scroll-Ruckler: der Verlauf zeichnete eine Spalte je
+        // Pixel, jede als eigener Aufruf. Der Kopf allein war 960 Aufrufe,
+        // zusammen mit Trennlinie, Pillen, Kacheln und Schaltern ueber 3000
+        // pro Bild. Beim Scrollen wird alles neu gezeichnet -- daher der
+        // Eindruck von 5 Bildern pro Sekunde.
+        //
+        // Baender von 8 Pixeln sehen fuer das Auge genauso aus: die
+        // Farbstufen zwischen zwei Baendern sind kleiner, als man
+        // unterscheiden kann. Rund siebenmal weniger Aufrufe.
+        int baender = Math.max(1, Math.min(w, (w + 7) / 8));
+        for (int b = 0; b < baender; b++) {
+            int ax = x + (int) ((long) w * b / baender);
+            int bx = x + (int) ((long) w * (b + 1) / baender);
+            if (bx <= ax) continue;
+            float t = (b + 0.5f) / baender;
+            ctx.fill(ax, y, bx, y2, mix(von, bis, t));
         }
     }
 
@@ -1912,7 +1981,10 @@ public class ClickGui extends Screen {
         // Vorher brach die Schleife ab, sobald der Platz zu Ende war -- bei
         // Modulen mit vielen Einstellungen, etwa Armor, sah man nur die
         // erste und kam an die uebrigen nicht heran.
-        detailScroll = anim(detailScroll, detailScrollZiel, 16f, 0.05f);
+        // Echte Bildzeit statt eines festen Werts. Mit 0.05 lief der
+        // Bildlauf bei 144 Bildern pro Sekunde dreimal zu schnell und bei 30
+        // zu langsam -- in beiden Faellen sprunghaft statt weich.
+        detailScroll = anim(detailScroll, detailScrollZiel, 16f, letzteDt);
         int cy = y + PAD - (int) detailScroll;
         int cyStart = cy;
 

@@ -36,14 +36,57 @@ public final class GameRestarter {
                     "Could not determine the command line");
         }
 
-        ProcessBuilder pb = new ProcessBuilder(command);
-        // Im selben Arbeitsverzeichnis starten wie der aktuelle Prozess.
+        // --- 1) Argumentdatei statt Kommandozeile ---------------------------
+        //
+        // HIER LAG DER ABSTURZ.
+        //
+        // Ein Fabric-Classpath ist laenger als die Windows-Grenze von 32767
+        // Zeichen fuer eine Kommandozeile. Der neue Prozess bekam einen
+        // abgeschnittenen Classpath, fand seine Hauptklasse nicht ("Fehler:
+        // Hauptklasse konnte nicht gefunden werden") und starb.
+        //
+        // Java liest Argumente seit Version 9 auch aus einer Datei: "java
+        // @datei". Dort gibt es keine Laengengrenze. Also wird alles ausser
+        // dem Programmpfad in eine Datei geschrieben.
+        String java = command.get(0);
+        List<String> rest = command.subList(1, command.size());
+        File argDatei = File.createTempFile("vortex-restart-", ".args");
+        argDatei.deleteOnExit();
+        StringBuilder b = new StringBuilder();
+        for (String arg : rest) {
+            // Anfuehrungszeichen und Backslashes maskieren -- Pfade unter
+            // Windows enthalten beides, und ohne Maskierung liest Java sie
+            // falsch ein.
+            b.append('"').append(arg.replace("\\", "\\\\").replace("\"", "\\\""))
+             .append('"').append(System.lineSeparator());
+        }
+        java.nio.file.Files.writeString(argDatei.toPath(), b.toString());
+
+        ProcessBuilder pb = new ProcessBuilder(java, "@" + argDatei.getAbsolutePath());
         String dir = System.getProperty("user.dir");
         if (dir != null) pb.directory(new File(dir));
-        pb.start();
+        // Ausgabe des neuen Prozesses verwerfen, sonst blockiert er, sobald
+        // der Puffer voll ist -- der alte Prozess liest sie ja nicht mehr.
+        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+        Process neu = pb.start();
 
-        // Erst nach erfolgreichem Start herunterfahren (scheduleStop speichert
-        // Optionen und schliesst sauber).
+        // --- 2) Erst pruefen, DANN beenden -----------------------------------
+        //
+        // Vorher wurde das laufende Spiel sofort beendet, egal ob der neue
+        // Prozess ueberlebte. Starb er, war danach gar nichts mehr da -- genau
+        // dein Absturz.
+        //
+        // Jetzt: drei Sekunden warten. Lebt der neue Prozess dann noch, hat er
+        // seine Hauptklasse gefunden und laedt. Ist er tot, bleibt das alte
+        // Spiel offen und meldet den Fehler, statt sich wegzuwerfen.
+        boolean beendet = neu.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+        if (beendet) {
+            throw new IllegalStateException(
+                    "Neustart fehlgeschlagen (Rueckgabe " + neu.exitValue()
+                    + ") -- das laufende Spiel bleibt offen.");
+        }
+
         Minecraft client = Minecraft.getInstance();
         if (client != null) client.stop();
     }
