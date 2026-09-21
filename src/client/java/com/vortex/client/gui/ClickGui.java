@@ -52,8 +52,8 @@ public class ClickGui extends Screen {
     // Mehr Luft ist die wirksamste Massnahme gegen den "pixeligen" Eindruck:
     // Minecrafts Schrift hat eine feste Groesse, also muss der Raum
     // drumherum wachsen, nicht die Schrift schrumpfen.
-    private static final int WIN_MAX_W = 900;
-    private static final int WIN_MAX_H = 470;
+    private static final int WIN_MAX_W = 960;
+    private static final int WIN_MAX_H = 520;
     private static final int HEADER_H = 46;
     private static final int FOOTER_H = 24;
     /**
@@ -66,7 +66,17 @@ public class ClickGui extends Screen {
      * Zwei Zeilen sind noetig: in einer passten beide zusammen nicht, und
      * was nicht passte, verschwand stillschweigend.
      */
-    private static final int TAB_H = 64;
+    private static final int TAB_H = 0;   // keine Reiterzeile mehr -- siehe SIDEBAR_W
+
+    /**
+     * Breite der Seitenleiste links.
+     *
+     * ZURUECK NACH DER VORLAGE. Die Reiterzeile oben war ein Irrweg: die
+     * Vorlage zeigt Kategorien untereinander links, mit Symbol, Namen und
+     * Zaehler. Das ist bei elf Eintraegen auch schlicht lesbarer als eine
+     * Zeile, die umbrechen muss.
+     */
+    private static final int SIDEBAR_W = 176;
 
     /**
      * Breite des Detailfeldes rechts.
@@ -328,11 +338,11 @@ public class ClickGui extends Screen {
                 fade(accent, openAnim * 0.9f), fade(accent, openAnim * 0.25f));
 
         drawHeader(ctx, winX, winY, winW, accent, t);
-        drawTabs(ctx, winX, winY + HEADER_H, winW, accent, t, dt);
+        drawSeitenleiste(ctx, winX, winY + HEADER_H, winH - HEADER_H - FOOTER_H, accent, t, dt);
         // Volle Breite -- die Seitenleiste ist weg. Und die Hoehe um die
         // Reiterzeile verringert, sonst laeuft der Inhalt in die Fusszeile.
-        drawContent(ctx, winX, winY + HEADER_H + TAB_H,
-                winW, winH - HEADER_H - TAB_H - FOOTER_H, accent, t, dt);
+        drawContent(ctx, winX + SIDEBAR_W, winY + HEADER_H + TAB_H,
+                winW - SIDEBAR_W, winH - HEADER_H - TAB_H - FOOTER_H, accent, t, dt);
         drawFooter(ctx, winX, winY + winH - FOOTER_H, winW);
 
         // Hinweistext: erscheint, wenn die Maus kurz auf einer Karte steht.
@@ -663,7 +673,10 @@ public class ClickGui extends Screen {
         // unterschiedlich hoch sind, bekommt jede Spalte ihr EIGENES cy: die
         // naechste Karte kommt immer in die Spalte, die gerade kuerzer ist.
         // So entstehen keine Luecken.
-        int spalten = (rasterB > 520) ? 2 : 1;
+        // EINE Spalte, wie in der Vorlage. Zwei Spalten waren dicht, aber
+        // die Zeilen wurden so schmal, dass Beschreibung und Steuerung sich
+        // draengten. Eine breite Zeile je Modul liest sich ruhiger.
+        int spalten = 1;
         int luecke = 10;
         int cw = (rasterB - PAD * 2 - 4 - (spalten - 1) * luecke) / spalten;
         int[] spaltenY = new int[spalten];
@@ -714,22 +727,33 @@ public class ClickGui extends Screen {
                 ctx.fill(cx + RADIUS, cy, cx + cw - RADIUS, cy + 1,
                         fade(mix(C_CARD, C_TEXT, 0.10f + 0.06f * hv), openAnim));
 
-                // STATUSPUNKT statt Balken.
+                // SYMBOLKACHEL LINKS, wie in der Vorlage.
                 //
-                // Ein Punkt links vor dem Namen, im Akzentverlauf und mit
-                // Schein, wenn das Modul laeuft -- sonst ein blasser Ring.
-                // Das ist ruhiger als ein Streifen ueber die ganze Karte und
-                // sitzt dort, wohin der Blick beim Lesen ohnehin geht.
-                int px = cx + 12, py = cy + CARD_H / 2 - 2;
+                // Ein abgerundetes Quadrat mit dem Anfangsbuchstaben des
+                // Moduls. Laeuft das Modul, faerbt sich die Kachel im
+                // Akzentverlauf -- der Zustand ist so schon am linken Rand
+                // ablesbar, bevor man den Schalter sucht.
+                int kx = cx + 8, ky = cy + (CARD_H - 22) / 2;
                 if (on > 0.01f) {
-                    for (int g = 1; g <= 2; g++) {
-                        int a = (int) (40f / g * on * openAnim);
-                        ctx.fill(px - g, py - g, px + 4 + g, py + 4 + g,
-                                (a << 24) | (akzent(0.5f) & 0x00FFFFFF));
-                    }
-                    ctx.fill(px, py, px + 4, py + 4, fade(akzent(0.3f), on * openAnim));
+                    verlaufRund(ctx, kx, ky, 22, 22,
+                            fade(mix(C_INNER, akzent(0f), 0.55f * on), openAnim),
+                            fade(mix(C_INNER, akzent(1f), 0.55f * on), openAnim));
                 } else {
-                    ctx.fill(px, py, px + 4, py + 4, fade(C_TRACK, openAnim));
+                    roundRect(ctx, kx, ky, 22, 22, fade(C_INNER, openAnim));
+                }
+                String buchstabe = m.getName().substring(0, 1).toUpperCase();
+                int bw = this.font.width(buchstabe);
+                ctx.text(this.font, Component.literal(buchstabe),
+                        kx + (22 - bw) / 2, ky + 7,
+                        fade(on > 0.5f ? 0xFFFFFFFF : C_TEXT_DIM, openAnim), false);
+
+                // Gewaehltes Modul: violetter Rahmen, wie in der Vorlage.
+                if (detail == m) {
+                    int rc = fade(akzent(0.4f), openAnim);
+                    ctx.fill(cx + RADIUS, cy, cx + cw - RADIUS, cy + 1, rc);
+                    ctx.fill(cx + RADIUS, cy + cardH - 1, cx + cw - RADIUS, cy + cardH, rc);
+                    ctx.fill(cx, cy + RADIUS, cx + 1, cy + cardH - RADIUS, rc);
+                    ctx.fill(cx + cw - 1, cy + RADIUS, cx + cw, cy + cardH - RADIUS, rc);
                 }
 
                 // ZWEIZEILIG: Name oben, Kurzbeschreibung darunter.
@@ -740,12 +764,12 @@ public class ClickGui extends Screen {
                 // wofuer die groessere Kartenhoehe den Platz schafft.
                 // Name kraeftig, Beschreibung gedaempft -- klare Rangfolge.
                 ctx.text(this.font, Component.literal(m.getName()),
-                        cx + 24, cy + 7, m.isEnabled() ? C_TEXT : C_TEXT_DIM);
+                        cx + 38, cy + 7, m.isEnabled() ? C_TEXT : C_TEXT_DIM);
 
-                String kurz = kurzInfo(m, cw - 100);
+                String kurz = kurzInfo(m, cw - 116);
                 if (kurz != null) {
                     ctx.text(this.font, Component.literal(kurz),
-                            cx + 24, cy + 19,
+                            cx + 38, cy + 19,
                             fade(mix(C_TEXT_DIM, C_LINE, 0.25f), openAnim), false);
                 }
 
@@ -1408,6 +1432,15 @@ public class ClickGui extends Screen {
         // wieder auseinander.
         int h = windowHeight() - HEADER_H - TAB_H - FOOTER_H;
 
+        // Zeigt die Maus auf die Seitenleiste? Dann diese scrollen.
+        if (mx < lastWinX + SIDEBAR_W) {
+            leisteScrollZiel -= (float) vertical * 28f;
+            float lmax = Math.max(0f, leisteHoehe - h + 70);
+            if (leisteScrollZiel < 0f) leisteScrollZiel = 0f;
+            if (leisteScrollZiel > lmax) leisteScrollZiel = lmax;
+            return true;
+        }
+
         // ZEIGT DIE MAUS AUF DAS DETAILFELD? Dann dieses scrollen.
         //
         // Ohne diese Zuordnung lief das Rad immer auf das Raster, und das
@@ -1952,6 +1985,177 @@ public class ClickGui extends Screen {
             roundRect(ctx, x + w - 6, balkenY, 4, balkenH,
                     fade(mix(accent, C_TEXT, 0.15f), openAnim));
         }
+    }
+
+
+    // ======================================================================
+    // Seitenleiste nach der Vorlage
+    // ======================================================================
+
+    /** Hoehe eines Eintrags in der Seitenleiste. */
+    // 26 statt 30: bei zwoelf Eintraegen plus Zaehlkarte lief die Leiste
+    // mit 30 ueber den unteren Rand -- die letzten Bereiche waeren wieder
+    // unerreichbar gewesen, derselbe Fehler wie frueher bei den Reitern.
+    private static final int LEISTE_H = 26;
+    private float leisteScroll = 0f;
+    private float leisteScrollZiel = 0f;
+    private int leisteHoehe = 0;
+
+    /**
+     * Symbol je Kategorie.
+     *
+     * Minecraft zeichnet keine Vektorsymbole, also werden sie aus Zeichen
+     * der Standardschrift gebaut. Das ist bewusst schlicht -- lieber ein
+     * klares Zeichen als ein unscharfes Bild.
+     */
+    private static String symbol(String name) {
+        switch (name.toUpperCase()) {
+            case "HUD":         return "\u25A3";   // Rahmen mit Punkt
+            case "PVP":         return "\u2694";   // gekreuzte Schwerter
+            case "CHEATS":      return "\u2620";   // Totenkopf
+            case "PERFORMANCE": return "\u26A1";   // Blitz
+            case "MISC":        return "\u2699";   // Zahnrad
+            case "BOTS":        return "\u2699";
+            case "WAYPOINTS":   return "\u2691";   // Fahne
+            case "MACROS":      return "\u25B6";   // Abspielen
+            case "SKINS":       return "\u263A";   // Gesicht
+            case "KEYS":        return "\u2328";   // Tastatur
+            case "THEME":       return "\u25D0";   // Halbkreis
+            default:            return "\u25C6";
+        }
+    }
+
+    /**
+     * Seitenleiste links.
+     *
+     * Aufbau wie in der Vorlage:
+     *   - Modulkategorien untereinander, je mit Symbol, Name und Zaehler
+     *   - darunter die uebrigen Bereiche (Waypoints, Macros ...)
+     *   - ganz unten die Gesamtzahl aktiver Module mit Fortschrittsbalken
+     *
+     * Der gewaehlte Eintrag ist eine gefuellte Pille im Akzentverlauf mit
+     * leichtem Schein -- klar erkennbar, ohne zu schreien.
+     */
+    private void drawSeitenleiste(GuiGraphicsExtractor ctx, int x, int y, int h,
+                                  int accent, Theme t, float dt) {
+        ctx.fill(x, y, x + SIDEBAR_W, y + h, fade(C_SIDEBAR, openAnim));
+        ctx.fill(x + SIDEBAR_W - 1, y, x + SIDEBAR_W, y + h, fade(C_LINE, openAnim));
+
+        boolean searching = search != null && !search.getValue().isEmpty();
+        int ex = x + 10, ew = SIDEBAR_W - 20;
+
+        // Auf kleinen Bildschirmen passt nicht alles hinein. Dann wird
+        // gescrollt statt abgeschnitten -- ein Eintrag, den man nicht
+        // erreicht, ist schlimmer als einer, zu dem man scrollen muss.
+        leisteScroll = anim(leisteScroll, leisteScrollZiel, 18f, dt);
+        ctx.enableScissor(x, y, x + SIDEBAR_W, y + h);
+        int cy = y + 12 - (int) leisteScroll;
+        int cyAnfang = cy;
+
+        // --- Favoriten ------------------------------------------------------
+        if (GuiState.hasFavorites()) {
+            boolean sel = !searching && favView;
+            cy = leistenEintrag(ctx, ex, cy, ew, "\u2605", "Favorites",
+                    String.valueOf(GuiState.getFavorites().size()), sel, t,
+                    new Hit(ex, cy, ew, LEISTE_H, Act.FAVCAT, null, null, null));
+        }
+
+        // --- Modulkategorien -------------------------------------------------
+        for (Module.Category cat : Module.Category.values()) {
+            if (!hatModule(cat)) continue;
+            int on = 0, total = 0;
+            for (Module m : ModuleManager.INSTANCE.getByCategory(cat)) {
+                total++;
+                if (m.isEnabled()) on++;
+            }
+            boolean sel = !searching && !favView
+                    && section == Section.MODULE && cat == selected;
+            cy = leistenEintrag(ctx, ex, cy, ew, symbol(cat.name()), pretty(cat.name()),
+                    on + "/" + total, sel, t,
+                    new Hit(ex, cy, ew, LEISTE_H, Act.CATEGORY, null, null, cat));
+        }
+
+        // --- Trenner und uebrige Bereiche ------------------------------------
+        cy += 6;
+        trennlinie(ctx, ex, cy, ew);
+        cy += 10;
+        Object[][] bereiche = {
+            {"Waypoints", Section.WAYPOINTS}, {"Macros", Section.MACROS},
+            {"Skins", Section.SKINS}, {"Keys", Section.KEYS},
+            {"Theme", Section.DESIGN}
+        };
+        for (Object[] b : bereiche) {
+            String name = (String) b[0];
+            Section sec = (Section) b[1];
+            boolean sel = !searching && !favView && section == sec;
+            cy = leistenEintrag(ctx, ex, cy, ew, symbol(name), name, "", sel, t,
+                    new Hit(ex, cy, ew, LEISTE_H, Act.SECTION, null, null, sec));
+        }
+
+        leisteHoehe = (cy - cyAnfang) + 12;
+        ctx.disableScissor();
+
+        // --- Gesamtzaehlung unten, wie in der Vorlage ------------------------
+        int aktiv = 0, alle = 0;
+        for (Module m : ModuleManager.INSTANCE.getModules()) {
+            alle++;
+            if (m.isEnabled()) aktiv++;
+        }
+        int by = y + h - 58;
+        if (by > cy + 8) {
+            roundRect(ctx, ex, by, ew, 46, fade(C_CARD, openAnim));
+            ctx.fill(ex + RADIUS, by, ex + ew - RADIUS, by + 1,
+                    fade(mix(C_CARD, C_TEXT, 0.08f), openAnim));
+            ctx.text(this.font, Component.literal("Active modules"),
+                    ex + 10, by + 8, fade(C_TEXT_DIM, openAnim), false);
+            ctx.text(this.font, Component.literal(aktiv + " / " + alle),
+                    ex + 10, by + 20, fade(C_TEXT, openAnim), false);
+            // Fortschrittsbalken
+            int bw = ew - 20;
+            roundRect(ctx, ex + 10, by + 34, bw, 4, fade(C_TRACK, openAnim));
+            int voll = (alle == 0) ? 0 : (int) (bw * (aktiv / (float) alle));
+            if (voll > 2) {
+                verlaufRund(ctx, ex + 10, by + 34, voll, 4,
+                        fade(akzent(0f), openAnim), fade(akzent(1f), openAnim));
+            }
+        }
+    }
+
+    /**
+     * Ein Eintrag der Seitenleiste.
+     *
+     * Die Klickflaeche wird hier mitgegeben und registriert -- so kann sie
+     * nie von der gezeichneten Flaeche abweichen. Genau dieses
+     * Auseinanderlaufen hatte frueher Macros und Waypoints unerreichbar
+     * gemacht.
+     */
+    private int leistenEintrag(GuiGraphicsExtractor ctx, int x, int y, int w,
+                               String sym, String name, String zahl,
+                               boolean sel, Theme t, Hit treffer) {
+        boolean hov = inRect(mx, my, x, y, w, LEISTE_H);
+        if (sel) {
+            for (int i = 1; i <= 3; i++) {
+                int a = (int) (22f / i * openAnim);
+                roundRect(ctx, x - i, y - i, w + i * 2, LEISTE_H + i * 2,
+                        (a << 24) | (akzent(0.5f) & 0x00FFFFFF));
+            }
+            verlaufRund(ctx, x, y, w, LEISTE_H,
+                    fade(akzent(0f), openAnim), fade(akzent(1f), openAnim));
+        } else if (hov) {
+            roundRect(ctx, x, y, w, LEISTE_H, fade(C_CARD_HOV, openAnim));
+        }
+        int txt = sel ? 0xFFFFFFFF : (hov ? C_TEXT : C_TEXT_DIM);
+        int mitte = y + (LEISTE_H - 8) / 2;
+        ctx.text(this.font, Component.literal(sym), x + 10, mitte,
+                fade(sel ? 0xFFFFFFFF : akzent(0.3f), openAnim), false);
+        ctx.text(this.font, Component.literal(name), x + 26, mitte, fade(txt, openAnim), false);
+        if (!zahl.isEmpty()) {
+            int zw = this.font.width(zahl);
+            ctx.text(this.font, Component.literal(zahl), x + w - zw - 10, mitte,
+                    fade(sel ? 0xFFFFFFFF : C_TEXT_DIM, openAnim), false);
+        }
+        hits.add(treffer);
+        return y + LEISTE_H + 3;
     }
 
 }
