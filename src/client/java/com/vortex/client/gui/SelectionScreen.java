@@ -12,27 +12,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Gemeinsame Grundlage der Auswahl-Menues (Mobs, Bloecke, Entities).
- *
- * Alle drei zeigen dasselbe: eine lange Liste von Eintraegen mit Symbol und
- * Namen, von denen beliebig viele an- oder abgewaehlt werden koennen. Statt das
- * dreimal zu schreiben, steckt die komplette Darstellung und Bedienung hier --
- * die drei Menues liefern nur noch ihre Eintraege und sagen, wie ein Eintrag
- * an- und abgeschaltet wird.
- *
- * Der Stil entspricht dem ClickGUI: Fenster mit Kopfzeile, Suchfeld, weich
- * animierte Karten, Scrollbalken. Gerade bei ueber hundert Entity-Typen macht
- * die Suche den Unterschied.
- */
+/** Shared modern selection UI for mob, entity and block selectors. */
 public abstract class SelectionScreen extends Screen {
-
-    /** Ein auswaehlbarer Eintrag. */
     protected static final class Entry {
         final ItemStack icon;
         final String id;
         final String name;
-        final String search; // klein geschrieben, fuer die Suche
+        final String search;
         Entry(Item icon, String id, String name) {
             this.icon = new ItemStack(icon);
             this.id = id;
@@ -41,51 +27,45 @@ public abstract class SelectionScreen extends Screen {
         }
     }
 
-    // ---- Masse ----
     private static final int WIN_MAX_W = 620;
     private static final int WIN_MAX_H = 400;
     private static final int HEADER_H = 46;
     private static final int FOOTER_H = 20;
     private static final int CELL_H = 30;
-    private static final int PAD = 8;
-
-    // ---- Farben (wie im ClickGUI) ----
-    private static final int C_DIM      = 0xB4000000;
-    private static final int C_WINDOW   = 0xF21B1B21;
-    private static final int C_BAR      = 0xFF16161B;
-    private static final int C_CARD     = 0xFF24242B;
-    private static final int C_CARD_HOV = 0xFF2E2E38;
-    private static final int C_INNER    = 0xFF1C1C22;
-    private static final int C_LINE     = 0xFF31313A;
+    private static final int PAD = 10;
+    private static final int C_DIM = 0xD2060409;
+    private static final int C_WINDOW = 0xFC0E0B16;
+    private static final int C_BAR = 0xFF0A0812;
+    private static final int C_CARD = 0xFF15111F;
+    private static final int C_HOVER = 0xFF1E1930;
+    private static final int C_INNER = 0xFF120E1B;
+    private static final int C_LINE = 0xFF241E36;
+    private static final int A_PURPLE = 0xFF8B5CF6;
+    private static final int A_BLUE = 0xFF3B82F6;
 
     private final Screen parent;
     private final String title;
-
     protected final List<Entry> entries = new ArrayList<>();
-    private final Map<String, Float> hoverAnim = new HashMap<>();
-    private final Map<String, Float> selAnim = new HashMap<>();
-
+    private final Map<String, Float> hover = new HashMap<>();
+    private final Map<String, Float> selected = new HashMap<>();
     private EditBox search;
-    private float openAnim = 0f;
-    private float scroll = 0f;
-    private float scrollTarget = 0f;
-    private int contentHeight = 0;
-    private long lastNano = 0L;
-    private int mx = 0, my = 0;
+    private float openAnim;
+    private float scroll, scrollTarget;
+    private int contentHeight;
+    private long lastNano;
+    private int mx, my;
+    private final List<Hit> hits = new ArrayList<>();
+    private Hit clearButton;
 
-    // Klickflaechen, beim Zeichnen gefuellt (siehe ClickGui -- gleiches Prinzip).
     private static final class Hit {
-        final int x, y, w, h;
-        final String id;
+        final int x, y, w, h; final String id;
         Hit(int x, int y, int w, int h, String id) {
-            this.x = x; this.y = y; this.w = w; this.h = h; this.id = id;
+            this.x=x; this.y=y; this.w=w; this.h=h; this.id=id;
         }
         boolean contains(double px, double py) {
-            return px >= x && px < x + w && py >= y && py < y + h;
+            return px >= x && px < x+w && py >= y && py < y+h;
         }
     }
-    private final List<Hit> hits = new ArrayList<>();
-    private Hit clearButton = null;
 
     protected SelectionScreen(Screen parent, String title) {
         super(Component.literal(title));
@@ -93,336 +73,146 @@ public abstract class SelectionScreen extends Screen {
         this.title = title;
     }
 
-    // ---- Von den drei Menues zu liefern ----
-
-    /** Eintraege aufbauen (wird einmal beim Oeffnen gerufen). */
     protected abstract void buildEntries();
-
-    /** Ist dieser Eintrag ausgewaehlt? */
     protected abstract boolean isOn(String id);
-
-    /** Auswahl umschalten. */
     protected abstract void toggle(String id);
-
-    /** Gesamte Auswahl leeren. */
     protected abstract void clearAll();
-
-    /** Beschriftung, was die Auswahl bewirkt (Kopfzeile). */
     protected abstract String hint();
-
-    // ---------------------------------------------------------------- Aufbau
 
     @Override
     protected void init() {
         if (entries.isEmpty()) {
             buildEntries();
-            entries.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+            entries.sort((a,b) -> a.name.compareToIgnoreCase(b.name));
         }
-        int winW = Math.min(this.width - 40, WIN_MAX_W);
-        int winX = (this.width - winW) / 2;
-        int winY = (this.height - windowHeight()) / 2;
-
-        int sw = 150;
-        this.search = new EditBox(this.font,
-                winX + winW - sw - PAD, winY + 26, sw, 14, Component.literal(""));
-        this.search.setBordered(false);
-        this.search.setMaxLength(48);
-
-        // BEI JEDER TEXTAENDERUNG NACH OBEN SCROLLEN.
-        //
-        // Ohne das bleibt die Scrollposition stehen, waehrend die Liste
-        // gefiltert wird: man scrollt weit nach unten, tippt einen Namen,
-        // und die zwei Treffer liegen oberhalb des sichtbaren Bereichs. Es
-        // sieht aus, als haette die Suche nichts gefunden -- man muss erst
-        // von Hand hochscrollen.
-        //
-        // Beide Werte werden gesetzt: scroll ist die aktuelle Stelle,
-        // scrollTarget das Ziel der weichen Bewegung. Nur eines davon zu
-        // setzen laesst die Liste sofort wieder zurueckgleiten.
-        this.search.setResponder(text -> {
-            scroll = 0f;
-            scrollTarget = 0f;
-        });
-
-        this.addRenderableWidget(this.search);
+        int w = Math.min(this.width - 20, WIN_MAX_W);
+        int h = windowHeight();
+        int x = (this.width-w)/2, y = (this.height-h)/2;
+        search = new EditBox(this.font, x+w-166, y+25, 150, 14, Component.literal(""));
+        search.setBordered(false);
+        search.setMaxLength(48);
+        search.setResponder(text -> { scroll=0f; scrollTarget=0f; });
+        addRenderableWidget(search);
     }
 
-    private int windowHeight() {
-        return Math.min(this.height - 40, WIN_MAX_H);
-    }
-
-    // -------------------------------------------------------------- Zeichnen
+    private int windowHeight() { return Math.min(this.height-20, WIN_MAX_H); }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
-        this.mx = mouseX;
-        this.my = mouseY;
-        hits.clear();
-        clearButton = null;
+        mx=mouseX; my=mouseY; hits.clear(); clearButton=null;
+        long now=System.nanoTime();
+        float dt=lastNano==0 ? .016f : Math.min(.1f,(now-lastNano)/1_000_000_000f);
+        lastNano=now;
+        openAnim=anim(openAnim,1f,14f,dt);
+        scroll=anim(scroll,scrollTarget,18f,dt);
+        int w=Math.min(this.width-20,WIN_MAX_W), h=windowHeight();
+        int x=(this.width-w)/2, y=(this.height-h)/2+(int)((1f-openAnim)*12f);
+        int accent=Theme.INSTANCE.accent.get()|0xFF000000;
 
-        long now = System.nanoTime();
-        float dt = (lastNano == 0L) ? 0.016f : (now - lastNano) / 1_000_000_000.0f;
-        lastNano = now;
-        if (dt > 0.1f) dt = 0.1f;
-        openAnim = anim(openAnim, 1f, 14f, dt);
-
-        ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
-
-        int winW = Math.min(this.width - 40, WIN_MAX_W);
-        int winH = windowHeight();
-        int winX = (this.width - winW) / 2;
-        int winY = (this.height - winH) / 2 + (int) ((1f - openAnim) * 12f);
-
-        Theme t = Theme.INSTANCE;
-        int accent = t.accent.get() | 0xFF000000;
-
-        roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
-        ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim * 0.9f));
-
-        drawHeader(ctx, winX, winY, winW, accent, t);
-        drawGrid(ctx, winX, winY + HEADER_H, winW, winH - HEADER_H - FOOTER_H, accent, t, dt);
-        drawFooter(ctx, winX, winY + winH - FOOTER_H, winW);
-
-        if (search != null) {
-            search.setX(winX + winW - search.getWidth() - PAD);
-            search.setY(winY + 26);
-        }
-        super.extractRenderState(ctx, mouseX, mouseY, delta);
+        ctx.fill(0,0,width,height,fade(C_DIM,openAnim));
+        roundRect(ctx,x,y,w,h,fade(C_WINDOW,openAnim));
+        gradient(ctx,x,y,x+w,y+2,fade(accent,openAnim),fade(A_BLUE,openAnim*.3f));
+        drawHeader(ctx,x,y,w,accent);
+        drawGrid(ctx,x,y+HEADER_H,w,h-HEADER_H-FOOTER_H,accent,dt);
+        ctx.fill(x,y+h-FOOTER_H,x+w,y+h,fade(C_BAR,openAnim));
+        ctx.fill(x,y+h-FOOTER_H,x+w,y+h-FOOTER_H+1,fade(C_LINE,openAnim));
+        ctx.text(font,Component.literal("Click to toggle  ·  Type to search  ·  ESC to go back"),
+                x+PAD,y+h-FOOTER_H+6,fade(0xFF74747F,openAnim),false);
+        if(search!=null){ search.setX(x+w-166); search.setY(y+25); }
+        super.extractRenderState(ctx,mouseX,mouseY,delta);
     }
 
-    private void drawHeader(GuiGraphicsExtractor ctx, int x, int y, int w, int accent, Theme t) {
-        ctx.fill(x, y, x + w, y + HEADER_H, fade(C_BAR, openAnim));
-        ctx.fill(x, y + HEADER_H - 1, x + w, y + HEADER_H, fade(C_LINE, openAnim));
-
-        // Zurueck-Pfeil + Titel.
-        boolean backHov = inRect(mx, my, x + PAD, y + 8, 16, 16);
-        ctx.text(this.font, Component.literal("<"),
-                x + PAD + 4, y + 12, fade(backHov ? accent : 0xFF9A9AA6, openAnim));
-        hits.add(new Hit(x + PAD, y + 8, 16, 16, "\0back"));
-
-        ctx.text(this.font, Component.literal(title),
-                x + PAD + 22, y + 11, fade(t.text.get(), openAnim));
-
-        int on = countSelected();
-        ctx.text(this.font,
-                Component.literal(on + " ausgewaehlt  \u00B7  " + hint()),
-                x + PAD + 22, y + 28, fade(t.textDim.get(), openAnim), false);
-
-        // "Clear selection" -- nur wenn es etwas zu leeren gibt.
-        if (on > 0) {
-            String lbl = "Clear selection";
-            int lw = this.font.width(lbl) + 12;
-            int bx = x + w - lw - PAD;
-            int by = y + 7;
-            boolean hov = inRect(mx, my, bx, by, lw, 14);
-            roundRect(ctx, bx, by, lw, 14, fade(hov ? mix(C_INNER, accent, 0.3f) : C_INNER, openAnim));
-            ctx.text(this.font, Component.literal(lbl),
-                    bx + 6, by + 3, fade(t.text.get(), openAnim), false);
-            clearButton = new Hit(bx, by, lw, 14, "\0clear");
+    private void drawHeader(GuiGraphicsExtractor ctx,int x,int y,int w,int accent) {
+        gradient(ctx,x,y,x+w,y+HEADER_H,fade(C_BAR,openAnim),fade(0xFF101022,openAnim));
+        ctx.fill(x,y+HEADER_H-1,x+w,y+HEADER_H,fade(accent,openAnim*.45f));
+        boolean back=in(x+PAD,y+8,16,16);
+        ctx.text(font,Component.literal("<"),x+PAD+4,y+12,fade(back?accent:0xFF9A9AA6,openAnim));
+        hits.add(new Hit(x+PAD,y+8,16,16,"\0back"));
+        ctx.text(font,Component.literal(title),x+PAD+22,y+11,fade(Theme.INSTANCE.text.get(),openAnim));
+        int on=countSelected();
+        ctx.text(font,Component.literal(on+" selected  ·  "+hint()),x+PAD+22,y+28,
+                fade(Theme.INSTANCE.textDim.get(),openAnim),false);
+        if(on>0){
+            String label="Clear selection"; int bw=font.width(label)+14;
+            int bx=x+w-bw-PAD; boolean hov=in(bx,y+7,bw,15);
+            roundRect(ctx,bx,y+7,bw,15,fade(hov?mix(C_INNER,accent,.4f):C_INNER,openAnim));
+            ctx.text(font,Component.literal(label),bx+7,y+10,fade(Theme.INSTANCE.text.get(),openAnim),false);
+            clearButton=new Hit(bx,y+7,bw,15,"\0clear");
         }
-
-        // Suchfeld-Rahmen.
-        if (search != null) {
-            int sx = search.getX() - 16, sy = y + 23, sw = search.getWidth() + 20;
-            roundRect(ctx, sx, sy, sw, 20, fade(C_INNER, openAnim));
-            ctx.text(this.font, Component.literal("Q"),
-                    sx + 6, sy + 6, fade(0xFF6A6A76, openAnim), false);
-            if (search.getValue().isEmpty()) {
-                ctx.text(this.font, Component.literal("Search..."),
-                        sx + 18, sy + 6, fade(0xFF6A6A76, openAnim), false);
-            }
+        if(search!=null){
+            int sx=search.getX()-8, sy=y+22, sw=search.getWidth()+14;
+            roundRect(ctx,sx,sy,sw,20,fade(C_INNER,openAnim));
+            ctx.text(font,Component.literal("Q"),sx+6,sy+6,fade(0xFF6A6A76,openAnim),false);
+            if(search.getValue().isEmpty()) ctx.text(font,Component.literal("Search..."),
+                    sx+18,sy+6,fade(0xFF6A6A76,openAnim),false);
         }
     }
 
-    private void drawGrid(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
-                          int accent, Theme t, float dt) {
-        scroll = anim(scroll, scrollTarget, 18f, dt);
-        ctx.enableScissor(x, y, x + w, y + h);
-
-        List<Entry> list = filtered();
-        int inner = w - PAD * 2 - 6;
-        int cols = Math.max(1, inner / 190);
-        int cellW = (inner - (cols - 1) * 6) / cols;
-
-        int i = 0;
-        int cy0 = y + PAD - (int) scroll;
-        for (Entry e : list) {
-            int col = i % cols;
-            int row = i / cols;
-            int cx = x + PAD + col * (cellW + 6);
-            int cy = cy0 + row * (CELL_H + 6);
-            i++;
-
-            if (cy + CELL_H < y || cy > y + h) continue; // ausserhalb -> ueberspringen
-
-            boolean on = isOn(e.id);
-            boolean hov = inRect(mx, my, cx, cy, cellW, CELL_H);
-
-            float hv = hoverAnim.getOrDefault(e.id, 0f);
-            hv = anim(hv, hov ? 1f : 0f, 14f, dt);
-            hoverAnim.put(e.id, hv);
-
-            float sv = selAnim.getOrDefault(e.id, on ? 1f : 0f);
-            sv = anim(sv, on ? 1f : 0f, 14f, dt);
-            selAnim.put(e.id, sv);
-
-            int bg = mix(mix(C_CARD, C_CARD_HOV, hv), mix(C_CARD, accent, 0.35f), sv);
-            roundRect(ctx, cx, cy, cellW, CELL_H, bg);
-            if (sv > 0.01f) {
-                ctx.fill(cx, cy + 4, cx + 2, cy + CELL_H - 4, fade(accent, sv));
-            }
-
-            try {
-                ctx.item(e.icon, cx + 8, cy + 7);
-            } catch (Throwable pvpErr) {
-                com.vortex.client.core.Errors.report("SelectionScreen", pvpErr);
-            }
-
-            // Namen kuerzen, wenn er nicht passt.
-            String name = e.name;
-            int maxW = cellW - 34;
-            if (this.font.width(name) > maxW) {
-                while (name.length() > 1 && this.font.width(name + "..") > maxW) {
-                    name = name.substring(0, name.length() - 1);
-                }
-                name = name + "..";
-            }
-            ctx.text(this.font, Component.literal(name),
-                    cx + 30, cy + 11, on ? t.text.get() : 0xFFB4B4C0, false);
-
-            hits.add(new Hit(cx, cy, cellW, CELL_H, e.id));
+    private void drawGrid(GuiGraphicsExtractor ctx,int x,int y,int w,int h,int accent,float dt) {
+        ctx.enableScissor(x,y,x+w,y+h);
+        List<Entry> list=filtered(); int inner=w-PAD*2-6;
+        int cols=Math.max(1,inner/190), cellW=(inner-(cols-1)*6)/cols;
+        for(int i=0;i<list.size();i++){
+            Entry e=list.get(i); int cx=x+PAD+(i%cols)*(cellW+6);
+            int cy=y+PAD+(i/cols)*(CELL_H+6)-(int)scroll;
+            if(cy+CELL_H<y||cy>y+h) continue;
+            boolean on=isOn(e.id), hov=in(cx,cy,cellW,CELL_H);
+            float hv=anim(hover.getOrDefault(e.id,0f),hov?1f:0f,14f,dt);
+            float sv=anim(selected.getOrDefault(e.id,on?1f:0f),on?1f:0f,14f,dt);
+            hover.put(e.id,hv); selected.put(e.id,sv);
+            int bg=mix(mix(C_CARD,C_HOVER,hv),mix(C_CARD,accent,.35f),sv);
+            roundRect(ctx,cx,cy,cellW,CELL_H,bg);
+            if(sv>.01f) gradient(ctx,cx,cy,cx+3,cy+CELL_H,fade(A_PURPLE,sv),fade(A_BLUE,sv));
+            try { ctx.item(e.icon,cx+8,cy+7); } catch(Throwable ignored) { }
+            String name=e.name; int max=cellW-34;
+            while(name.length()>1&&font.width(name+"..")>max) name=name.substring(0,name.length()-1);
+            if(!name.equals(e.name)) name+="..";
+            ctx.text(font,Component.literal(name),cx+30,cy+11,
+                    on?Theme.INSTANCE.text.get():Theme.INSTANCE.textDim.get(),false);
+            hits.add(new Hit(cx,cy,cellW,CELL_H,e.id));
         }
-
-        int rows = (list.size() + cols - 1) / cols;
-        contentHeight = rows * (CELL_H + 6) + PAD * 2;
+        contentHeight=((list.size()+cols-1)/cols)*(CELL_H+6)+PAD*2;
         ctx.disableScissor();
-
-        if (contentHeight > h) {
-            int trackH = h - 8;
-            int barH = Math.max(24, (int) (trackH * (h / (float) contentHeight)));
-            float p = scroll / Math.max(1f, contentHeight - h);
-            if (p < 0f) p = 0f;
-            if (p > 1f) p = 1f;
-            int barY = y + 4 + (int) ((trackH - barH) * p);
-            ctx.fill(x + w - 5, y + 4, x + w - 3, y + 4 + trackH, 0x30FFFFFF);
-            ctx.fill(x + w - 5, barY, x + w - 3, barY + barH, mix(accent, 0xFFFFFFFF, 0.15f));
+        if(contentHeight>h){
+            int track=h-8, bar=Math.max(24,(int)(track*(h/(float)contentHeight)));
+            float p=Math.max(0f,Math.min(1f,scroll/Math.max(1f,contentHeight-h)));
+            int by=y+4+(int)((track-bar)*p);
+            ctx.fill(x+w-6,y+4,x+w-4,y+4+track,0x30FFFFFF);
+            roundRect(ctx,x+w-7,by,4,bar,fade(mix(accent,0xFFFFFFFF,.15f),openAnim));
         }
-
-        if (list.isEmpty()) {
-            String msg = "No results";
-            ctx.text(this.font, Component.literal(msg),
-                    x + (w - this.font.width(msg)) / 2, y + h / 2 - 4,
-                    0xFF6A6A76, false);
-        }
+        if(list.isEmpty()) ctx.text(font,Component.literal("No results"),
+                x+(w-font.width("No results"))/2,y+h/2-4,fade(0xFF6A6A76,openAnim),false);
     }
 
-    private void drawFooter(GuiGraphicsExtractor ctx, int x, int y, int w) {
-        ctx.fill(x, y, x + w, y + FOOTER_H, fade(C_BAR, openAnim));
-        ctx.fill(x, y, x + w, y + 1, fade(C_LINE, openAnim));
-        ctx.text(this.font,
-                Component.literal("Click to toggle   ·   Type to search   ·   ESC to go back"),
-                x + PAD, y + 6, fade(0xFF74747F, openAnim), false);
-    }
-
-    // ---------------------------------------------------------------- Eingabe
-
-    @Override
-    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
-        if (super.mouseClicked(click, doubled)) return true;
-
-        if (clearButton != null && clearButton.contains(mx, my)) {
-            clearAll();
-            selAnim.clear();
-            return true;
-        }
-        for (int i = hits.size() - 1; i >= 0; i--) {
-            Hit hit = hits.get(i);
-            if (!hit.contains(mx, my)) continue;
-            if ("\0back".equals(hit.id)) {
-                this.onClose();
-            } else {
-                toggle(hit.id);
-            }
-            return true;
-        }
+    @Override public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click,boolean doubled){
+        if(super.mouseClicked(click,doubled)) return true;
+        if(clearButton!=null&&clearButton.contains(mx,my)){clearAll();selected.clear();return true;}
+        for(int i=hits.size()-1;i>=0;i--){Hit hit=hits.get(i);if(!hit.contains(mx,my))continue;
+            if("\0back".equals(hit.id)) onClose(); else toggle(hit.id); return true;}
         return false;
     }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY,
-                                 double horizontal, double vertical) {
-        int h = windowHeight() - HEADER_H - FOOTER_H;
-        scrollTarget -= (float) vertical * 36f;
-        float max = contentHeight - h;
-        if (max < 0f) max = 0f;
-        if (scrollTarget < 0f) scrollTarget = 0f;
-        if (scrollTarget > max) scrollTarget = max;
-        return true;
+    @Override public boolean mouseScrolled(double mouseX,double mouseY,double horizontal,double vertical){
+        int h=windowHeight()-HEADER_H-FOOTER_H; scrollTarget-=(float)vertical*36f;
+        float max=Math.max(0f,contentHeight-h); scrollTarget=Math.max(0f,Math.min(max,scrollTarget)); return true;
     }
-
-    // ----------------------------------------------------------- Hilfsmittel
-
-    private List<Entry> filtered() {
-        String q = (search == null) ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
-        if (q.isEmpty()) return entries;
-        List<Entry> out = new ArrayList<>();
-        for (Entry e : entries) {
-            if (e.search.contains(q)) out.add(e);
-        }
-        return out;
+    private List<Entry> filtered(){
+        String q=search==null?"":search.getValue().trim().toLowerCase(Locale.ROOT);
+        if(q.isEmpty()) return entries; List<Entry> out=new ArrayList<>();
+        for(Entry e:entries) if(e.search.contains(q)) out.add(e); return out;
     }
-
-    private int countSelected() {
-        int n = 0;
-        for (Entry e : entries) {
-            if (isOn(e.id)) n++;
-        }
-        return n;
+    private int countSelected(){int n=0;for(Entry e:entries)if(isOn(e.id))n++;return n;}
+    private boolean in(int x,int y,int w,int h){return mx>=x&&mx<x+w&&my>=y&&my<y+h;}
+    private static float anim(float a,float b,float speed,float dt){return a+(b-a)*(1f-(float)Math.exp(-speed*dt));}
+    private void roundRect(GuiGraphicsExtractor c,int x,int y,int w,int h,int color){
+        if(w<=0||h<=0)return; int r=Math.min(3,Math.min(w/2,h/2));
+        c.fill(x+r,y,x+w-r,y+h,color); c.fill(x,y+r,x+r,y+h-r,color); c.fill(x+w-r,y+r,x+w,y+h-r,color);
     }
-
-    private boolean inRect(int px, int py, int x, int y, int w, int h) {
-        return px >= x && px < x + w && py >= y && py < y + h;
+    private static void gradient(GuiGraphicsExtractor c,int x,int y,int x2,int y2,int a,int b){
+        if(x2<=x){c.fill(x,y,x+3,y2,mix(a,b,.5f));return;}
+        int n=Math.max(1,(x2-x+7)/8); for(int i=0;i<n;i++){int ax=x+(x2-x)*i/n,bx=x+(x2-x)*(i+1)/n;c.fill(ax,y,bx,y2,mix(a,b,(i+.5f)/n));}
     }
-
-    private static float anim(float cur, float target, float speed, float dt) {
-        float f = speed * dt;
-        if (f > 1f) f = 1f;
-        return cur + (target - cur) * f;
-    }
-
-    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
-        if (w <= 0 || h <= 0) return;
-        ctx.fill(x + 1, y, x + w - 1, y + h, color);
-        ctx.fill(x, y + 1, x + 1, y + h - 1, color);
-        ctx.fill(x + w - 1, y + 1, x + w, y + h - 1, color);
-    }
-
-    private static int fade(int argb, float f) {
-        if (f >= 1f) return argb;
-        if (f <= 0f) return argb & 0x00FFFFFF;
-        int a = (int) (((argb >>> 24) & 0xFF) * f);
-        return (a << 24) | (argb & 0x00FFFFFF);
-    }
-
-    private static int mix(int a, int b, float t) {
-        if (t < 0f) t = 0f;
-        if (t > 1f) t = 1f;
-        int aa = (a >>> 24) & 0xFF, ar = (a >> 16) & 0xFF, ag = (a >> 8) & 0xFF, ab = a & 0xFF;
-        int ba = (b >>> 24) & 0xFF, br = (b >> 16) & 0xFF, bg = (b >> 8) & 0xFF, bb = b & 0xFF;
-        int al = (int) (aa + (ba - aa) * t);
-        int r  = (int) (ar + (br - ar) * t);
-        int g  = (int) (ag + (bg - ag) * t);
-        int bl = (int) (ab + (bb - ab) * t);
-        return (al << 24) | (r << 16) | (g << 8) | bl;
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
-
-    @Override
-    public void onClose() {
-        this.minecraft.gui.setScreen(parent);
-    }
+    private static int fade(int c,float f){if(f>=1)return c;if(f<=0)return c&0x00FFFFFF;return((int)(((c>>>24)&255)*f)<<24)|(c&0x00FFFFFF);}
+    private static int mix(int a,int b,float t){t=Math.max(0,Math.min(1,t));int aa=(a>>>24)&255,ar=(a>>16)&255,ag=(a>>8)&255,ab=a&255;int ba=(b>>>24)&255,br=(b>>16)&255,bg=(b>>8)&255,bb=b&255;return((int)(aa+(ba-aa)*t)<<24)|((int)(ar+(br-ar)*t)<<16)|((int)(ag+(bg-ag)*t)<<8)|(int)(ab+(bb-ab)*t);}
+    @Override public boolean isPauseScreen(){return false;}
+    @Override public void onClose(){minecraft.gui.setScreen(parent);}
 }
