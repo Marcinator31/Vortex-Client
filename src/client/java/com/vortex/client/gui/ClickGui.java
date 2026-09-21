@@ -57,36 +57,36 @@ public class ClickGui extends Screen {
     private static final int HEADER_H = 46;
     private static final int FOOTER_H = 24;
     /**
-     * Hoehe der waagerechten Reiterzeile.
-     *
-     * Ersetzt SIDEBAR_W: die Leiste lag frueher links und kostete 148 Pixel
-     * Breite. Jetzt kostet sie 64 Pixel Hoehe fuer ZWEI Zeilen -- oben die
-     * Modulkategorien, darunter die uebrigen Bereiche.
-     *
-     * Zwei Zeilen sind noetig: in einer passten beide zusammen nicht, und
-     * was nicht passte, verschwand stillschweigend.
-     */
+      * Hoehe der waagerechten Reiterzeile.
+      *
+      * Ersetzt SIDEBAR_W: die Leiste lag frueher links und kostete 148 Pixel
+      * Breite. Jetzt kostet sie 64 Pixel Hoehe fuer ZWEI Zeilen -- oben die
+      * Modulkategorien, darunter die uebrigen Bereiche.
+      *
+      * Zwei Zeilen sind noetig: in einer passten beide zusammen nicht, und
+      * was nicht passte, verschwand stillschweigend.
+      */
     private static final int TAB_H = 0;   // keine Reiterzeile mehr -- siehe SIDEBAR_W
 
     /**
-     * Breite der Seitenleiste links.
-     *
-     * ZURUECK NACH DER VORLAGE. Die Reiterzeile oben war ein Irrweg: die
-     * Vorlage zeigt Kategorien untereinander links, mit Symbol, Namen und
-     * Zaehler. Das ist bei elf Eintraegen auch schlicht lesbarer als eine
-     * Zeile, die umbrechen muss.
-     */
+      * Breite der Seitenleiste links.
+      *
+      * ZURUECK NACH DER VORLAGE. Die Reiterzeile oben war ein Irrweg: die
+      * Vorlage zeigt Kategorien untereinander links, mit Symbol, Namen und
+      * Zaehler. Das ist bei elf Eintraegen auch schlicht lesbarer als eine
+      * Zeile, die umbrechen muss.
+      */
     private static final int SIDEBAR_W = 176;
 
     /**
-     * Breite des Detailfeldes rechts.
-     *
-     * Die Einstellungen klappten bisher IN der Karte auf. Bei zwei Spalten
-     * heisst das: die halbe Liste springt, sobald man ein Modul oeffnet, und
-     * man verliert die Stelle, an der man war.
-     *
-     * Im eigenen Feld rechts bleibt das Raster ruhig.
-     */
+      * Breite des Detailfeldes rechts.
+      *
+      * Die Einstellungen klappten bisher IN der Karte auf. Bei zwei Spalten
+      * heisst das: die halbe Liste springt, sobald man ein Modul oeffnet, und
+      * man verliert die Stelle, an der man war.
+      *
+      * Im eigenen Feld rechts bleibt das Raster ruhig.
+      */
     private static final int DETAIL_W = 300;
     private static final int CARD_H = 34;
     private static final int SET_H = 28;
@@ -379,3 +379,4 @@ public class ClickGui extends Screen {
 
     // The remainder of the file is unchanged from the previous version.
     // (This marker is intentionally not used; the full implementation follows.)
+}
