@@ -232,6 +232,20 @@ public class ClickGui extends Screen {
 
     private final List<Hit> hits = new ArrayList<>();
 
+    /**
+     * Oeffnet das ClickGUI direkt in einer bestimmten Kategorie.
+     *
+     * Fuer den Startbildschirm: dort gibt es einen eigenen Knopf "Bots", der
+     * ohne Umweg in die Bot-Module fuehren soll.
+     */
+    public ClickGui(Module.Category start) {
+        this();
+        if (start != null && hatModule(start)) {
+            this.selected = start;
+            this.section = Section.MODULE;
+        }
+    }
+
     public ClickGui() {
         super(Component.literal("Vortex Client"));
     }
@@ -285,7 +299,7 @@ public class ClickGui extends Screen {
     /** Deckkraft aus dem Design -- macht das Fenster auf Wunsch durchsichtig. */
     private float opacity() {
         try {
-            return (float) Theme.INSTANCE.opacity.get();
+            return 1f;   // feste Deckkraft -- das Theme ist nicht mehr einstellbar
         } catch (Throwable pvpErr) {
             return 1f;
         }
@@ -328,7 +342,13 @@ public class ClickGui extends Screen {
         this.lastWinW = winW;
 
         Theme t = Theme.INSTANCE;
-        int accent = t.accent.get() | 0xFF000000;
+        // Akzent fest aus der Palette, nicht mehr aus dem Theme.
+        //
+        // Das Theme laesst sich nicht mehr einstellen. Hatte jemand dort
+        // frueher eine eigene Farbe gewaehlt, waere sie sonst fuer immer
+        // geblieben -- ohne Weg zurueck. So sieht das Menue bei allen gleich
+        // aus, genau wie es gestaltet ist.
+        int accent = akzent(0.5f);
 
         // openAnim blendet ein, opacity() ist die eingestellte Durchsichtigkeit.
         // Schatten zuerst: er liegt unter dem Fenster und hebt es vom
@@ -401,7 +421,12 @@ public class ClickGui extends Screen {
         //
         // Faellt das Laden aus, bleibt der Ring als Rueckfall -- lieber ein
         // einfaches Zeichen als eine leere Stelle.
-        int logoG = 28;
+        // NUR DAS LOGO -- kein Schriftzug, keine Zaehlung daneben.
+        //
+        // Die Zahl der aktiven Module steht bereits unten in der
+        // Seitenleiste. Doppelt angezeigt lenkt sie nur ab, und der Name des
+        // Clients steckt ohnehin im Logo.
+        int logoG = 34;
         try {
             ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
                     net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "logo"),
@@ -410,18 +435,7 @@ public class ClickGui extends Screen {
             drawRingMark(ctx, x + PAD + 6, y + 17, 6, fade(Branding.accent(), openAnim));
         }
 
-        ctx.text(this.font, Component.literal(Branding.title()),
-                x + PAD + logoG + 8, y + 8, fade(t.text.get(), openAnim));
 
-        int active = 0;
-        for (Module m : ModuleManager.INSTANCE.getModules()) {
-            if (m.isEnabled()) active++;
-        }
-        // Laufen Module, wird die Zahl in der Akzentfarbe gezeigt -- so
-        // sieht man den Zustand, ohne die Zahl lesen zu muessen.
-        ctx.text(this.font, Component.literal(active + " active"),
-                x + PAD + 36, y + 20,
-                fade(active > 0 ? accent : t.textDim.get(), openAnim), false);
 
         // Rueckmeldung nach einem Preset-Wechsel, blendet nach 3 Sekunden aus.
         if (presetInfo != null && presetInfoTime < 3f) {
@@ -689,12 +703,12 @@ public class ClickGui extends Screen {
             int tw = this.font.width(txt);
             ctx.text(this.font, Component.literal(txt),
                     x + (w - tw) / 2, y + h / 2 - 12,
-                    fade(t.textDim.get(), openAnim), false);
+                    fade(C_TEXT_DIM, openAnim), false);
             String hinweis = "Right Shift closes this window";
             int hw = this.font.width(hinweis);
             ctx.text(this.font, Component.literal(hinweis),
                     x + (w - hw) / 2, y + h / 2 + 2,
-                    fade(mix(t.textDim.get(), C_LINE, 0.4f), openAnim), false);
+                    fade(mix(C_TEXT_DIM, C_LINE, 0.4f), openAnim), false);
             ctx.disableScissor();
             return;
         }
@@ -936,21 +950,21 @@ public class ClickGui extends Screen {
                 ctx.text(this.font,
                         Component.literal(n == 0 ? "No macros yet"
                                                  : n + (n == 1 ? " saved" : " saved")),
-                        cx, cy, t.textDim.get(), false);
+                        cx, cy, C_TEXT_DIM, false);
                 break;
             }
             case COMMUNITY: {
                 ctx.text(this.font, Component.literal("Community"),
-                        cx, cy, t.text.get());
+                        cx, cy, C_TEXT);
                 ctx.text(this.font,
                         Component.literal("Macros and presets shared by other players"),
-                        cx, cy + 11, t.textDim.get(), false);
+                        cx, cy + 11, C_TEXT_DIM, false);
                 cy += GAP + 8;
                 cy = aktionsZeile(ctx, cx, cy, cw, "Browse shared macros",
                         mx, my, accent, t, Act.SECTION, "openCommunity");
                 ctx.text(this.font,
                         Component.literal("Share your own on the website"),
-                        cx, cy, t.textDim.get(), false);
+                        cx, cy, C_TEXT_DIM, false);
                 break;
             }
             case KEYS: {
@@ -1010,7 +1024,7 @@ public class ClickGui extends Screen {
         boolean hov = inRect(mx, my, bx, sy, bw, 18);
         roundRect(ctx, bx, sy, bw, 18, hov ? mix(C_INNER, accent, 0.28f) : C_INNER);
         ctx.text(this.font, Component.literal(label),
-                bx + 8, sy + 5, t.text.get(), false);
+                bx + 8, sy + 5, C_TEXT, false);
         ctx.text(this.font, Component.literal(">"),
                 bx + bw - 12, sy + 5, accent, false);
         hits.add(new Hit(bx, sy, bw, 18, act, m, null, null));
@@ -1024,13 +1038,13 @@ public class ClickGui extends Screen {
 
         if (s instanceof BooleanSetting b) {
             ctx.text(this.font, Component.literal(name), x, y + 6,
-                    b.get() ? t.text.get() : t.textDim.get(), false);
+                    b.get() ? C_TEXT : C_TEXT_DIM, false);
             drawSwitch(ctx, x + w - 24, y + 4, b.get() ? 1f : 0f, accent);
             hits.add(new Hit(x, y, w, SET_H, Act.S_BOOL, m, s, null));
 
         } else if (s instanceof NumberSetting n) {
             ctx.text(this.font, Component.literal(name), x, y + 1,
-                    t.textDim.get(), false);
+                    C_TEXT_DIM, false);
             String val = fmt(n.get());
             int vw = this.font.width(val);
             ctx.text(this.font, Component.literal(val), x + w - vw, y + 1, accent, false);
@@ -1048,7 +1062,7 @@ public class ClickGui extends Screen {
 
         } else if (s instanceof ModeSetting mode) {
             ctx.text(this.font, Component.literal(name), x, y + 6,
-                    t.textDim.get(), false);
+                    C_TEXT_DIM, false);
             String val = mode.get();
             int vw = this.font.width(val);
             int rightX = x + w;
@@ -1063,25 +1077,25 @@ public class ClickGui extends Screen {
 
         } else if (s instanceof ColorSetting c) {
             ctx.text(this.font, Component.literal(name), x, y + 6,
-                    t.textDim.get(), false);
+                    C_TEXT_DIM, false);
             roundRect(ctx, x + w - 26, y + 4, 24, 12, 0xFF000000);
             roundRect(ctx, x + w - 25, y + 5, 22, 10, c.get() | 0xFF000000);
             hits.add(new Hit(x, y, w, SET_H, Act.S_COLOR, m, s, null));
 
         } else if (s instanceof KeySetting k) {
             ctx.text(this.font, Component.literal(name), x, y + 6,
-                    t.textDim.get(), false);
+                    C_TEXT_DIM, false);
             String val = k.isListening() ? "Press a key" : k.getKeyName();
             int vw = this.font.width(val);
             roundRect(ctx, x + w - vw - 10, y + 3, vw + 8, 14,
                     k.isListening() ? mix(C_INNER, accent, 0.4f) : C_INNER);
             ctx.text(this.font, Component.literal(val),
-                    x + w - vw - 6, y + 6, k.isListening() ? accent : t.text.get(), false);
+                    x + w - vw - 6, y + 6, k.isListening() ? accent : C_TEXT, false);
             hits.add(new Hit(x, y, w, SET_H, Act.S_KEY, m, s, null));
 
         } else {
             ctx.text(this.font, Component.literal(name), x, y + 6,
-                    t.textDim.get(), false);
+                    C_TEXT_DIM, false);
         }
     }
 
@@ -1174,7 +1188,7 @@ public class ClickGui extends Screen {
         // Griff unten rechts zum Groesserziehen -- drei kurze Schraegstriche.
         int gx = x + w - 12, gy = y + FOOTER_H - 12;
         boolean gHov = inRect(mx, my, gx - 2, gy - 2, 14, 14);
-        int gc = gHov ? (Theme.INSTANCE.accent.get() | 0xFF000000) : 0xFF6A6A76;
+        int gc = gHov ? akzent(0.5f) : C_TEXT_DIM;
         for (int i = 0; i < 3; i++) {
             int o = i * 4;
             ctx.fill(gx + 8 - o, gy + 8, gx + 10 - o, gy + 10, gc);
@@ -1780,6 +1794,10 @@ public class ClickGui extends Screen {
     /** Erste Kategorie mit Modulen -- sonst oeffnet das Menue leer. */
     private static Module.Category ersteBelegteKategorie() {
         for (Module.Category cat : Module.Category.values()) {
+            // Eine nur vom Start erreichbare Kategorie darf nicht die
+            // Vorauswahl sein -- sonst oeffnet das Mod-Menue auf einer Seite,
+            // die in der Leiste gar nicht steht.
+            if (nurVomStart(cat)) continue;
             for (Module m : com.vortex.client.module.ModuleManager.INSTANCE.getModules()) {
                 if (m.getCategory() == cat) return cat;
             }
@@ -1909,10 +1927,10 @@ public class ClickGui extends Screen {
      */
     private int seitenKopf(GuiGraphicsExtractor ctx, int cx, int cy,
                            String titel, String unterzeile, Theme t) {
-        ctx.text(this.font, Component.literal(titel), cx, cy, t.text.get());
+        ctx.text(this.font, Component.literal(titel), cx, cy, C_TEXT);
         if (unterzeile != null) {
             ctx.text(this.font, Component.literal(unterzeile),
-                    cx, cy + 12, t.textDim.get(), false);
+                    cx, cy + 12, C_TEXT_DIM, false);
             return cy + 12 + GAP + 8;
         }
         return cy + GAP + 8;
@@ -1937,7 +1955,7 @@ public class ClickGui extends Screen {
         // den Modulkarten, damit sich die Oberflaeche einheitlich anfuehlt.
         if (hov) roundRect(ctx, cx, cy + 5, 3, ROW_H - 10, accent);
         ctx.text(this.font, Component.literal(beschriftung),
-                cx + 12, cy + (ROW_H - 8) / 2, t.text.get(), false);
+                cx + 12, cy + (ROW_H - 8) / 2, C_TEXT, false);
         ctx.text(this.font, Component.literal(">"),
                 cx + cw - 16, cy + (ROW_H - 8) / 2, hov ? accent : C_TEXT_DIM, false);
         hits.add(new Hit(cx, cy, cw, ROW_H, aktion, null, null, schluessel));
@@ -1989,10 +2007,10 @@ public class ClickGui extends Screen {
         int cyStart = cy;
 
         // Kopf: Name, Zustand, Schliessen
-        ctx.text(this.font, Component.literal(m.getName()), x + PAD, cy, t.text.get());
+        ctx.text(this.font, Component.literal(m.getName()), x + PAD, cy, C_TEXT);
         boolean zuHov = inRect(mx, my, x + w - PAD - 12, cy - 2, 14, 14);
         ctx.text(this.font, Component.literal("x"), x + w - PAD - 10, cy,
-                zuHov ? t.text.get() : t.textDim.get(), false);
+                zuHov ? C_TEXT : C_TEXT_DIM, false);
         hits.add(new Hit(x + w - PAD - 12, cy - 2, 14, 14, Act.SECTION, null, null, "closeDetail"));
         cy += 14;
 
@@ -2000,7 +2018,7 @@ public class ClickGui extends Screen {
         if (info != null && !info.isBlank()) {
             for (net.minecraft.util.FormattedCharSequence z
                     : this.font.split(Component.literal(info), w - PAD * 2)) {
-                ctx.text(this.font, z, x + PAD, cy, t.textDim.get(), false);
+                ctx.text(this.font, z, x + PAD, cy, C_TEXT_DIM, false);
                 cy += 10;
             }
         }
@@ -2039,7 +2057,7 @@ public class ClickGui extends Screen {
         // leeren Flaeche, bei der man raetselt, ob etwas fehlt.
         if (nr == 0) {
             ctx.text(this.font, Component.literal("No settings"),
-                    x + PAD, cy, fade(t.textDim.get(), openAnim), false);
+                    x + PAD, cy, fade(C_TEXT_DIM, openAnim), false);
         }
 
         // Gesamthoehe fuers Scrollen merken.
@@ -2127,7 +2145,7 @@ public class ClickGui extends Screen {
         // --- Favoriten ------------------------------------------------------
         if (GuiState.hasFavorites()) {
             boolean sel = !searching && favView;
-            cy = leistenEintrag(ctx, ex, cy, ew, "\u2605", "Favorites",
+            cy = leistenEintrag(ctx, ex, cy, ew, "", "Favorites",
                     String.valueOf(GuiState.getFavorites().size()), sel, t,
                     new Hit(ex, cy, ew, LEISTE_H, Act.FAVCAT, null, null, null));
         }
@@ -2135,6 +2153,11 @@ public class ClickGui extends Screen {
         // --- Modulkategorien -------------------------------------------------
         for (Module.Category cat : Module.Category.values()) {
             if (!hatModule(cat)) continue;
+            // Bots erreicht man ueber die eigene Kachel auf dem Startbildschirm.
+            // Hier zusaetzlich aufgefuehrt, stand es doppelt da -- und das
+            // Mod-Menue soll nur die Kategorien zeigen, die nicht schon auf
+            // dem Start liegen.
+            if (nurVomStart(cat)) continue;
             int on = 0, total = 0;
             for (Module m : ModuleManager.INSTANCE.getByCategory(cat)) {
                 total++;
@@ -2147,22 +2170,10 @@ public class ClickGui extends Screen {
                     new Hit(ex, cy, ew, LEISTE_H, Act.CATEGORY, null, null, cat));
         }
 
-        // --- Trenner und uebrige Bereiche ------------------------------------
-        cy += 6;
-        trennlinie(ctx, ex, cy, ew);
-        cy += 10;
-        Object[][] bereiche = {
-            {"Waypoints", Section.WAYPOINTS}, {"Macros", Section.MACROS},
-            {"Skins", Section.SKINS}, {"Keys", Section.KEYS},
-            {"Theme", Section.DESIGN}
-        };
-        for (Object[] b : bereiche) {
-            String name = (String) b[0];
-            Section sec = (Section) b[1];
-            boolean sel = !searching && !favView && section == sec;
-            cy = leistenEintrag(ctx, ex, cy, ew, symbol(name), name, "", sel, t,
-                    new Hit(ex, cy, ew, LEISTE_H, Act.SECTION, null, null, sec));
-        }
+        // Waypoints, Macros, Wardrobe, Keys und Theme stehen jetzt auf dem
+        // STARTBILDSCHIRM, nicht mehr hier. Das ClickGUI zeigt nur noch
+        // Module -- so ist die Leiste kuerzer und eindeutig: hier stellt man
+        // Module ein, alles andere erreicht man vom Start aus.
 
         leisteHoehe = (cy - cyAnfang) + 12;
         ctx.disableScissor();
@@ -2218,8 +2229,15 @@ public class ClickGui extends Screen {
         }
         int txt = sel ? 0xFFFFFFFF : (hov ? C_TEXT : C_TEXT_DIM);
         int mitte = y + (LEISTE_H - 8) / 2;
-        ctx.text(this.font, Component.literal(sym), x + 10, mitte,
-                fade(sel ? 0xFFFFFFFF : akzent(0.3f), openAnim), false);
+        // Kennzeichen als gezeichnetes Quadrat statt als Sonderzeichen.
+        //
+        // Die Symbole waren Unicode-Zeichen, die Minecrafts Standardschrift
+        // nicht hat -- sie kamen aus einer Ersatzschrift und sahen unscharf
+        // und fremd aus. Ein gezeichnetes Quadrat ist pixelgenau und passt
+        // zur Kachel in den Modulzeilen.
+        int kq = y + LEISTE_H / 2 - 2;
+        ctx.fill(x + 12, kq, x + 16, kq + 4,
+                fade(sel ? 0xFFFFFFFF : akzent(0.3f), openAnim));
         ctx.text(this.font, Component.literal(name), x + 26, mitte, fade(txt, openAnim), false);
         if (!zahl.isEmpty()) {
             int zw = this.font.width(zahl);
@@ -2228,6 +2246,19 @@ public class ClickGui extends Screen {
         }
         hits.add(treffer);
         return y + LEISTE_H + 3;
+    }
+
+
+    /**
+     * Kategorien, die nur ueber den Startbildschirm erreichbar sind.
+     *
+     * Sie stehen NICHT in der Seitenleiste, bleiben aber voll nutzbar: die
+     * Kachel auf dem Start oeffnet das Mod-Menue direkt in dieser Kategorie,
+     * mit Detailfeld und allen Einstellungen. Auch die Suche findet ihre
+     * Module weiterhin.
+     */
+    private static boolean nurVomStart(Module.Category cat) {
+        return cat == Module.Category.BOTS;
     }
 
 }

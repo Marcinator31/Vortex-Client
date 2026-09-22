@@ -25,11 +25,11 @@ public class ColorPickerScreen extends Screen {
     private static final int WIN_W = 300;
     private static final int WIN_H = 250;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     /** Haeufig gebrauchte Farben als Schnellauswahl. */
     private static final int[] PRESETS = {
@@ -160,7 +160,15 @@ public class ColorPickerScreen extends Screen {
         int wy = (this.height - WIN_H) / 2 + (int) ((1f - openAnim) * 12f);
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, wx, wy, WIN_W, WIN_H, openAnim);
+
         roundRect(ctx, wx, wy, WIN_W, WIN_H, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, wx + 4, wy, WIN_W - 8, openAnim);
         ctx.fill(wx, wy, wx + WIN_W, wy + 1, fade(accent, openAnim));
 
         // Kopfzeile mit Titel und aktueller Farbe.

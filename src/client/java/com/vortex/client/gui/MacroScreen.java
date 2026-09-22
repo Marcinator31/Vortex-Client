@@ -29,13 +29,13 @@ public class MacroScreen extends Screen {
     /** Width of the macro list. Worked out from the window width. */
     private int listW = 210;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     private final Screen parent;
 
@@ -133,7 +133,15 @@ public class MacroScreen extends Screen {
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         drawHeader(ctx, accent);
@@ -164,7 +172,7 @@ public class MacroScreen extends Screen {
         String c = MacroManager.all().size() + " saved";
         int cw = this.font.width(c);
         ctx.text(this.font, Component.literal(c),
-                winX + winW - cw - 12, winY + 12, 0xFF74747F, false);
+                winX + winW - cw - 12, winY + 12, VortexStyle.TEXT_DIM, false);
 
         // The buttons wrap onto a second row when they do not fit.
         //
@@ -227,7 +235,7 @@ public class MacroScreen extends Screen {
         boolean hov = in(x, y, w, 20);
         int bg = active ? mix(C_INNER, accent, 0.5f) : (hov ? mix(C_INNER, accent, 0.3f) : C_INNER);
         roundRect(ctx, x, y, w, 20, bg);
-        ctx.text(this.font, Component.literal(label), x + 8, y + 6, 0xFFE6E6EC, false);
+        ctx.text(this.font, Component.literal(label), x + 8, y + 6, VortexStyle.TEXT, false);
         hits.add(new Hit(x, y, w, 20, act, data));
         return x + w + 6;
     }
@@ -253,7 +261,7 @@ public class MacroScreen extends Screen {
             String label = shorten(m.name, listW - 70);
             ctx.text(this.font, Component.literal(label), x + 8, y + 3, 0xFFFFFFFF, false);
             ctx.text(this.font, Component.literal(m.steps.size() + " steps"),
-                    x + 8, y + 12, 0xFF74747F, false);
+                    x + 8, y + 12, VortexStyle.TEXT_DIM, false);
 
             ctx.text(this.font, Component.literal("R"),
                     x + listW - 44, y + 7, 0xFF9AD8FF, false);
@@ -310,7 +318,7 @@ public class MacroScreen extends Screen {
                 ctx.text(this.font, Component.literal(String.valueOf(i)),
                         x + 7, y + 7, 0xFF5A5A66, false);
                 ctx.text(this.font, Component.literal(step.describe()),
-                        x + 26, y + 7, 0xFFE6E6EC, false);
+                        x + 26, y + 7, VortexStyle.TEXT, false);
 
                 // Delay as an editable number.
                 String d = step.delay + " ms";
@@ -318,7 +326,7 @@ public class MacroScreen extends Screen {
                 int dx = x + w - dw - 118;
                 roundRect(ctx, dx - 5, y + 4, dw + 10, 14,
                         editing == step ? mix(C_INNER, accent, 0.45f) : C_INNER);
-                ctx.text(this.font, Component.literal(d), dx, y + 7, 0xFFD0D0DA, false);
+                ctx.text(this.font, Component.literal(d), dx, y + 7, VortexStyle.TEXT, false);
                 hits.add(new Hit(dx - 5, y + 4, dw + 10, 14, Act.STEP_DELAY, step));
 
                 if (step.action == Macro.Action.KEY) {
@@ -326,7 +334,7 @@ public class MacroScreen extends Screen {
                     int hw = this.font.width(h);
                     int hx = x + w - hw - 62;
                     roundRect(ctx, hx - 5, y + 4, hw + 10, 14, C_INNER);
-                    ctx.text(this.font, Component.literal(h), hx, y + 7, 0xFFD0D0DA, false);
+                    ctx.text(this.font, Component.literal(h), hx, y + 7, VortexStyle.TEXT, false);
                     hits.add(new Hit(hx - 5, y + 4, hw + 10, 14, Act.STEP_HOLD, step));
                 }
 
@@ -358,7 +366,7 @@ public class MacroScreen extends Screen {
                     : (editingMacroField == Act.START_DELAY) ? "Start delay in ms:"
                     : "Milliseconds:";
             ctx.text(this.font, Component.literal(label),
-                    winX + 12, fy + 8, 0xFFD0D0DA, false);
+                    winX + 12, fy + 8, VortexStyle.TEXT, false);
             // The labels differ in length, so the box starts where the longest
             // one ends -- otherwise "Start delay in ms:" would run into it.
             int fieldX = winX + (renaming != null ? 86 : 140);
@@ -377,7 +385,7 @@ public class MacroScreen extends Screen {
                 ? "Record captures clicks, keys and hotbar switches with their timing"
                 : status;
         ctx.text(this.font, Component.literal(shorten(hint, winW - 24)),
-                winX + 12, fy + 8, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
+                winX + 12, fy + 8, status.isEmpty() ? VortexStyle.TEXT_DIM : VortexStyle.TEXT, false);
     }
 
     // ---------------------------------------------------------------- input

@@ -50,6 +50,7 @@ public class HomeScreen extends Screen {
     // Klickflaechen, im Zeichnen gesetzt -- so koennen sie nie von der
     // gezeichneten Flaeche abweichen.
     private int[] kMods, kGarderobe, kNeustart, kHud, kJa, kNein;
+    private int[] kWaypoints, kMacros, kKeys, kTheme, kBots;
 
     public HomeScreen() {
         super(Component.literal("Vortex Client"));
@@ -100,29 +101,50 @@ public class HomeScreen extends Screen {
         // --- Schriftzug ----------------------------------------------------
         // Buchstaben mit Abstand gesetzt -- wirkt kraeftiger als die
         // normale Laufweite, ohne die Schrift skalieren zu muessen.
-        String name = "V O R T E X";
-        int nw = this.font.width(name);
-        ctx.text(this.font, Component.literal(name),
-                cx - nw / 2, cy + logo / 2 + 12, fade(C_TEXT, a), false);
-        String zeile = "CLIENT";
+        // Schriftzug in der normalen Minecraft-Schrift.
+        //
+        // Vorher waren die Buchstaben mit Leerzeichen gesperrt, und auf den
+        // Knoepfen standen Sonderzeichen. Beides wirkte unruhig: die
+        // Sonderzeichen hat die Standardschrift nicht, sie kommen aus einer
+        // Ersatzschrift mit anderer Strichstaerke und sehen unscharf aus.
+        String zeile = "Vortex Client";
         int zw = this.font.width(zeile);
         ctx.text(this.font, Component.literal(zeile),
-                cx - zw / 2, cy + logo / 2 + 24, fade(C_DIMTXT, a), false);
+                cx - zw / 2, cy + logo / 2 + 14, fade(C_DIMTXT, a), false);
 
-        // --- Drei Hauptknoepfe --------------------------------------------
-        int by = cy + logo / 2 + 48;
-        int modsB = 120, seitB = 90, h = 30, luecke = 12;
+        // --- MODS: der Hauptweg, gross in der Mitte -------------------------
+        int by = cy + logo / 2 + 36;
+        int modsB = 220, modsH = 32;
+        kMods = knopf(ctx, cx - modsB / 2, by, modsB, modsH, "Mods", true, a);
 
-        kNeustart = knopf(ctx, cx - modsB / 2 - luecke - seitB, by, seitB, h,
-                "\u21BB  Restart", false, a);
-        kMods = knopf(ctx, cx - modsB / 2, by, modsB, h, "MODS", true, a);
-        kGarderobe = knopf(ctx, cx + modsB / 2 + luecke, by, seitB, h,
-                "Wardrobe  \u2692", false, a);
+        // --- Alle anderen Bereiche als Kacheln darunter --------------------
+        //
+        // Waypoints, Macros, Wardrobe, Keys, Theme und Bots standen frueher
+        // im ClickGUI zwischen den Modulen. Hier sind sie auf einen Blick
+        // erreichbar, und das ClickGUI zeigt nur noch Module.
+        //
+        // Zwei Reihen zu je vier Kacheln, gleich breit -- so bleibt das
+        // Raster ruhig, egal wie lang die Beschriftung ist.
+        int kB = 104, kH = 26, kL = 8;
+        int reiheB = 4 * kB + 3 * kL;
+        int kx0 = cx - reiheB / 2;
+        int ky = by + modsH + 14;
+        kWaypoints = knopf(ctx, kx0,                 ky, kB, kH, "Waypoints", false, a);
+        kMacros    = knopf(ctx, kx0 + (kB + kL),     ky, kB, kH, "Macros",    false, a);
+        kGarderobe = knopf(ctx, kx0 + (kB + kL) * 2, ky, kB, kH, "Wardrobe",  false, a);
+        kBots      = knopf(ctx, kx0 + (kB + kL) * 3, ky, kB, kH, "Bots",      false, a);
+        ky += kH + kL;
 
-        // --- HUD-Editor, kleiner darunter ---------------------------------
-        int hudB = 140;
-        kHud = knopf(ctx, cx - hudB / 2, by + h + 12, hudB, 22,
-                "Edit HUD layout", false, a);
+        // THEME ENTFERNT. Die Farben kommen jetzt fest aus der gemeinsamen
+        // Palette (VortexStyle) -- ein eigener Editor dafuer ergab keinen
+        // Sinn mehr, weil das neue Design auf genau diese Farben abgestimmt
+        // ist. Die zweite Reihe hat deshalb drei Kacheln, mittig gesetzt.
+        int reihe2X = cx - (3 * kB + 2 * kL) / 2;
+        kKeys      = knopf(ctx, reihe2X,                 ky, kB, kH, "Keys",     false, a);
+        kHud       = knopf(ctx, reihe2X + (kB + kL),     ky, kB, kH, "Edit HUD", false, a);
+        kNeustart  = knopfWarnung(ctx, reihe2X + (kB + kL) * 2, ky, kB, kH, "Restart", a);
+        kTheme     = null;
+        int h = kH;
 
         // --- Fusszeile -------------------------------------------------------
         // Nur ESC: Rechtsshift oeffnet den Bildschirm, schliesst ihn aber nicht.
@@ -134,7 +156,7 @@ public class HomeScreen extends Screen {
         if (fehler != null) {
             int fw = this.font.width(fehler);
             ctx.text(this.font, Component.literal(fehler),
-                    cx - fw / 2, by + h + 44, fade(0xFFF87171, a), false);
+                    cx - fw / 2, ky + kH + 14, fade(0xFFF87171, a), false);
         }
 
         // --- Rueckfrage ueber allem ----------------------------------------
@@ -239,6 +261,15 @@ public class HomeScreen extends Screen {
         }
 
         if (in(kMods)) { mc.gui.setScreen(new ClickGui()); return true; }
+        // Alle Unterseiten bekommen diesen Bildschirm als Eltern -- ESC fuehrt
+        // also hierher zurueck, nicht ins Spiel.
+        if (in(kWaypoints)) { mc.gui.setScreen(new WaypointScreen(this)); return true; }
+        if (in(kMacros))    { mc.gui.setScreen(new MacroScreen(this)); return true; }
+        if (in(kKeys))      { mc.gui.setScreen(new KeyListScreen(this)); return true; }
+        if (in(kBots)) {
+            mc.gui.setScreen(new ClickGui(com.vortex.client.module.Module.Category.BOTS));
+            return true;
+        }
         if (in(kGarderobe)) { mc.gui.setScreen(new SkinScreen(this)); return true; }
         if (in(kHud)) { mc.gui.setScreen(new HudEditorScreen()); return true; }
         if (in(kNeustart)) { frageNeustart = true; fehler = null; return true; }
@@ -276,4 +307,25 @@ public class HomeScreen extends Screen {
         return ((int) (aa + (ba - aa) * t) << 24) | ((int) (ar + (br - ar) * t) << 16)
                 | ((int) (ag + (bg - ag) * t) << 8) | (int) (ab + (bb - ab) * t);
     }
+
+    /**
+     * Knopf fuer den Neustart, farblich abgesetzt.
+     *
+     * Der einzige Knopf, der das Spiel beendet -- deshalb ein roetlicher
+     * Hauch beim Ueberfahren. Er sieht sonst aus wie die anderen, damit das
+     * Raster ruhig bleibt; die Warnung kommt erst, wenn man ihn ansteuert.
+     */
+    private int[] knopfWarnung(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+                               String text, float a) {
+        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
+        rund(ctx, x, y, w, h, fade(hov ? mix(C_CARD, 0xFFB91C1C, 0.30f) : C_CARD, a), 4);
+        ctx.fill(x + 4, y, x + w - 4, y + 1,
+                fade(mix(C_CARD, hov ? 0xFFF87171 : C_TEXT, hov ? 0.4f : 0.08f), a));
+        int tw = this.font.width(text);
+        ctx.text(this.font, Component.literal(text),
+                x + (w - tw) / 2, y + (h - 8) / 2,
+                fade(hov ? 0xFFFCA5A5 : C_TEXT, a), false);
+        return new int[]{x, y, w, h};
+    }
+
 }

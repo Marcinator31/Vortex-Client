@@ -22,13 +22,13 @@ public class ThemeScreen extends Screen {
     private static final int HEADER_H = 62;
     private static final int FOOTER_H = 26;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     /** Fertige Akzent-Stimmungen. */
     private static final int[] MOODS = {
@@ -39,7 +39,7 @@ public class ThemeScreen extends Screen {
         0xFFFFAA00, // orange
         0xFF22D3D3, // tuerkis
         0xFFFF66C4, // pink
-        0xFFE0E0E0  // weiss
+        VortexStyle.TEXT  // weiss
     };
 
     private final Screen parent;
@@ -88,7 +88,15 @@ public class ThemeScreen extends Screen {
 
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         // Kopfzeile
@@ -104,7 +112,7 @@ public class ThemeScreen extends Screen {
 
         // Farbstimmungen
         ctx.text(this.font, Component.literal("Accent"),
-                winX + 10, winY + 32, fade(0xFF74747F, openAnim), false);
+                winX + 10, winY + 32, fade(VortexStyle.TEXT_DIM, openAnim), false);
         moodCell = 16;
         moodX = winX + 52;
         moodY = winY + 29;
@@ -126,13 +134,13 @@ public class ThemeScreen extends Screen {
             boolean hov = inRect(mx, my, winX + 8, y, winW - 16, ROW_H);
             roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
             ctx.text(this.font, Component.literal(c.getName()),
-                    winX + 18, y + 8, 0xFFD0D0DA, false);
+                    winX + 18, y + 8, VortexStyle.TEXT, false);
 
             // Farbfeld + Hex-Wert
             String hx = String.format(java.util.Locale.ROOT, "#%08X", c.get());
             int hw = this.font.width(hx);
             ctx.text(this.font, Component.literal(hx),
-                    winX + winW - 34 - hw - 8, y + 8, 0xFF74747F, false);
+                    winX + winW - 34 - hw - 8, y + 8, VortexStyle.TEXT_DIM, false);
             roundRect(ctx, winX + winW - 34, y + 5, 26, 14, 0xFF000000);
             roundRect(ctx, winX + winW - 33, y + 6, 24, 12, c.get() | 0xFF000000);
 
@@ -148,7 +156,7 @@ public class ThemeScreen extends Screen {
         boolean rHov = inRect(mx, my, winX + 10, fy + 4, rw, 17);
         roundRect(ctx, winX + 10, fy + 4, rw, 17, rHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.text(this.font, Component.literal(reset),
-                winX + 18, fy + 9, 0xFFD0D0DA, false);
+                winX + 18, fy + 9, VortexStyle.TEXT, false);
 
         ctx.text(this.font, Component.literal("Click a row to open the colour picker"),
                 winX + 20 + rw, fy + 9, 0xFF5A5A66, false);

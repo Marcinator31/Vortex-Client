@@ -26,13 +26,13 @@ public class ItemCounterScreen extends Screen {
     private static final int FOOTER_H = 24;
     private static final int ROW_H = 26;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     private final Screen parent;
 
@@ -100,7 +100,15 @@ public class ItemCounterScreen extends Screen {
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         // Header
@@ -131,7 +139,7 @@ public class ItemCounterScreen extends Screen {
         String c = list.size() + " on screen";
         int cw = this.font.width(c);
         ctx.text(this.font, Component.literal(c),
-                winX + winW - cw - 12, winY + 12, 0xFF74747F, false);
+                winX + winW - cw - 12, winY + 12, VortexStyle.TEXT_DIM, false);
 
         // List
         ctx.enableScissor(winX, winY + HEADER_H, winX + winW, winY + HEADER_H + listH);
@@ -156,7 +164,7 @@ public class ItemCounterScreen extends Screen {
                         : ItemCounterRenderer.count(client, counter);
                 String sub = counter.items.size() + " items  ·  currently " + n;
                 ctx.text(this.font, Component.literal(sub),
-                        winX + 16, y + 14, 0xFF74747F, false);
+                        winX + 16, y + 14, VortexStyle.TEXT_DIM, false);
 
                 int bx = winX + winW - 24;
                 ctx.text(this.font, Component.literal("x"),
@@ -178,7 +186,7 @@ public class ItemCounterScreen extends Screen {
                 int pw = this.font.width(pick) + 14;
                 roundRect(ctx, bx - 94 - pw, y + 5, pw, 16, C_INNER);
                 ctx.text(this.font, Component.literal(pick),
-                        bx - 87 - pw, y + 9, 0xFFD0D0DA, false);
+                        bx - 87 - pw, y + 9, VortexStyle.TEXT, false);
 
                 hits.add(new Hit(bx - 94 - pw, y + 5, pw, 16, Act.PICK, counter));
                 hits.add(new Hit(swx, y + 6, 16, 14, Act.COLOR, counter));
@@ -198,7 +206,7 @@ public class ItemCounterScreen extends Screen {
 
         if (renaming != null) {
             ctx.text(this.font, Component.literal("Name:"),
-                    winX + 12, fy + 8, 0xFFD0D0DA, false);
+                    winX + 12, fy + 8, VortexStyle.TEXT, false);
             roundRect(ctx, winX + 86, fy + 4, 188, 16, C_INNER);
             String ok = "Apply";
             int okw = this.font.width(ok) + 14;
@@ -213,7 +221,7 @@ public class ItemCounterScreen extends Screen {
                     ? "Square = colour  ·  S style  ·  H hide at zero  ·  R rename  ·  position in the HUD editor"
                     : status;
             ctx.text(this.font, Component.literal(hint),
-                    winX + 12, fy + 8, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
+                    winX + 12, fy + 8, status.isEmpty() ? VortexStyle.TEXT_DIM : VortexStyle.TEXT, false);
         }
 
         if (nameField != null) { nameField.setX(winX + 90); nameField.setY(winY + winH - 18); }
@@ -226,7 +234,7 @@ public class ItemCounterScreen extends Screen {
         boolean hov = in(x, y, w, 20);
         roundRect(ctx, x, y, w, 20,
                 active ? mix(C_INNER, accent, 0.5f) : (hov ? mix(C_INNER, accent, 0.3f) : C_INNER));
-        ctx.text(this.font, Component.literal(label), x + 8, y + 6, 0xFFE6E6EC, false);
+        ctx.text(this.font, Component.literal(label), x + 8, y + 6, VortexStyle.TEXT, false);
         hits.add(new Hit(x, y, w, 20, act, data));
     }
 

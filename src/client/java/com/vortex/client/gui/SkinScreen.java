@@ -38,13 +38,13 @@ public class SkinScreen extends Screen {
     private static final int CELL_H = 104;
     private static final int PAD = 10;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     private final Screen parent;
 
@@ -136,7 +136,15 @@ addRenderableWidget(searchField);
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         drawHeader(ctx, accent);
@@ -170,7 +178,7 @@ addRenderableWidget(searchField);
         String c = count + (count == 1 ? " Skin" : " Skins");
         int cw = this.font.width(c);
         ctx.text(this.font, Component.literal(c),
-                winX + winW - cw - 12, winY + 12, 0xFF74747F, false);
+                winX + winW - cw - 12, winY + 12, VortexStyle.TEXT_DIM, false);
 
         // Suchfeld
         roundRect(ctx, winX + 14, winY + 34, 192, 20, C_INNER);
@@ -186,7 +194,7 @@ addRenderableWidget(searchField);
         roundRect(ctx, winX + 212, winY + 34, bw, 20,
                 hov && !busy ? mix(C_INNER, accent, 0.45f) : C_INNER);
         ctx.text(this.font, Component.literal(lbl),
-                winX + 221, winY + 40, busy ? 0xFF74747F : 0xFFFFFFFF, false);
+                winX + 221, winY + 40, busy ? VortexStyle.TEXT_DIM : 0xFFFFFFFF, false);
         if (!busy) hits.add(new Hit(winX + 212, winY + 34, bw, 20, Act.SEARCH, null));
 
         // Knopf: Ordner oeffnen
@@ -195,7 +203,7 @@ addRenderableWidget(searchField);
         int ox = winX + winW - ow - 12;
         boolean ohov = in(ox, winY + 34, ow, 20);
         roundRect(ctx, ox, winY + 34, ow, 20, ohov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-        ctx.text(this.font, Component.literal(ol), ox + 9, winY + 40, 0xFFD0D0DA, false);
+        ctx.text(this.font, Component.literal(ol), ox + 9, winY + 40, VortexStyle.TEXT, false);
         hits.add(new Hit(ox, winY + 34, ow, 20, Act.OPEN_FOLDER, null));
 
         // Knopf: Ordner einlesen
@@ -204,7 +212,7 @@ addRenderableWidget(searchField);
         int ix = ox - iw - 6;
         boolean ihov = in(ix, winY + 34, iw, 20);
         roundRect(ctx, ix, winY + 34, iw, 20, ihov ? mix(C_INNER, accent, 0.45f) : C_INNER);
-        ctx.text(this.font, Component.literal(il), ix + 9, winY + 40, 0xFFD0D0DA, false);
+        ctx.text(this.font, Component.literal(il), ix + 9, winY + 40, VortexStyle.TEXT, false);
         hits.add(new Hit(ix, winY + 34, iw, 20, Act.IMPORT, null));
     }
 
@@ -248,7 +256,7 @@ addRenderableWidget(searchField);
             String src = shorten(skin.source + (skin.slim ? "  schlank" : ""), CELL_W - 16);
             int sw = this.font.width(src);
             ctx.text(this.font, Component.literal(src),
-                    cx + (CELL_W - 6 - sw) / 2, cy + CELL_H - 44, 0xFF74747F, false);
+                    cx + (CELL_W - 6 - sw) / 2, cy + CELL_H - 44, VortexStyle.TEXT_DIM, false);
 
             // Werkzeuge nur unter der Maus einblenden, damit das Raster ruhig bleibt.
             if (hov) {
@@ -281,7 +289,7 @@ addRenderableWidget(searchField);
             int ubW = CELL_W - 18;
             boolean ubHov = can && in(ubX, ubY, ubW, 14);
             roundRect(ctx, ubX, ubY, ubW, 14,
-                    can ? (ubHov ? mix(C_INNER, 0xFF55FF7A, 0.5f) : C_INNER) : 0xFF202027);
+                    can ? (ubHov ? mix(C_INNER, 0xFF55FF7A, 0.5f) : C_INNER) : VortexStyle.INNER);
             String up = can ? "Visible to everyone" : "Anmeldung fehlt";
             String upShort = shorten(up, ubW - 8);
             int uw2 = this.font.width(upShort);
@@ -332,11 +340,11 @@ addRenderableWidget(searchField);
         int size = 8 * scale;
         if (tex == null) {
             // Platzhalter, wenn die Datei fehlt oder unlesbar ist.
-            roundRect(ctx, x, y, size, size, 0xFF3A3A45);
+            roundRect(ctx, x, y, size, size, VortexStyle.TRACK);
             String q = "?";
             ctx.text(this.font, Component.literal(q),
                     x + size / 2 - this.font.width(q) / 2, y + size / 2 - 4,
-                    0xFF74747F, false);
+                    VortexStyle.TEXT_DIM, false);
             return;
         }
         try {
@@ -358,7 +366,7 @@ addRenderableWidget(searchField);
 
         if (renaming != null) {
             ctx.text(this.font, Component.literal("New name:"),
-                    winX + 12, fy + 7, 0xFFD0D0DA, false);
+                    winX + 12, fy + 7, VortexStyle.TEXT, false);
             roundRect(ctx, winX + 72, fy + 3, 188, 16, C_INNER);
             String ok = "Save";
             int okw = this.font.width(ok) + 14;
@@ -382,7 +390,7 @@ addRenderableWidget(searchField);
             roundRect(ctx, vx, fy + 3, vw, 16,
                     vhov ? mix(C_INNER, accent, 0.45f) : C_INNER);
             ctx.text(this.font, Component.literal(vl),
-                    vx + 7, fy + 7, 0xFFD0D0DA, false);
+                    vx + 7, fy + 7, VortexStyle.TEXT, false);
             hits.add(new Hit(vx, fy + 3, vw, 16, Act.VARIANT, null));
         }
 
@@ -396,7 +404,7 @@ addRenderableWidget(searchField);
                     : ("Active: " + act.name + "  \u2014  click again for your own skin");
         }
         ctx.text(this.font, Component.literal(shorten(msg, winW - 24)),
-                winX + 12, fy + 7, status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
+                winX + 12, fy + 7, status.isEmpty() ? VortexStyle.TEXT_DIM : VortexStyle.TEXT, false);
     }
 
     // ---------------------------------------------------------------- Eingabe

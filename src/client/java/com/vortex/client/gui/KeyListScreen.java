@@ -30,13 +30,13 @@ public class KeyListScreen extends Screen {
     private static final int FOOTER_H = 22;
     private static final int ROW_H = 20;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     private final Screen parent;
     private EditBox search;
@@ -160,7 +160,15 @@ addRenderableWidget(search);
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         // Header
@@ -180,7 +188,7 @@ addRenderableWidget(search);
         int nw = this.font.width(note);
         ctx.text(this.font, Component.literal(note),
                 winX + winW - nw - 12, winY + 12,
-                conflicts == 0 ? 0xFF74747F : 0xFFFF7A7A, false);
+                conflicts == 0 ? VortexStyle.TEXT_DIM : 0xFFFF7A7A, false);
 
         roundRect(ctx, winX + 8, winY + 29, winW - 16, 20, C_INNER);
         if (search != null && search.getValue().isEmpty()) {
@@ -207,9 +215,9 @@ addRenderableWidget(search);
                 roundRect(ctx, winX + 8, y, winW - 16, ROW_H, hov ? C_HOV : C_CARD);
 
                 ctx.text(this.font, Component.literal(e.where()),
-                        winX + 16, y + 6, 0xFF74747F, false);
+                        winX + 16, y + 6, VortexStyle.TEXT_DIM, false);
                 ctx.text(this.font, Component.literal(e.what()),
-                        winX + 90, y + 6, 0xFFE6E6EC, false);
+                        winX + 90, y + 6, VortexStyle.TEXT, false);
 
                 boolean clash = sharing(e.keyCode()) > 1;
                 String kn = e.keyName();
@@ -218,7 +226,7 @@ addRenderableWidget(search);
                         clash ? 0x40FF5555 : C_INNER);
                 ctx.text(this.font, Component.literal(kn),
                         winX + winW - kw - 22, y + 6,
-                        clash ? 0xFFFF7A7A : 0xFFD0D0DA, false);
+                        clash ? 0xFFFF7A7A : VortexStyle.TEXT, false);
             }
             y += ROW_H + 2;
         }
@@ -236,7 +244,7 @@ addRenderableWidget(search);
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
         ctx.text(this.font,
                 Component.literal("Red means two things share that key"),
-                winX + 12, fy + 7, 0xFF74747F, false);
+                winX + 12, fy + 7, VortexStyle.TEXT_DIM, false);
 
         super.extractRenderState(ctx, mouseX, mouseY, delta);
     }

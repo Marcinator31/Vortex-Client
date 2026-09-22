@@ -48,7 +48,11 @@ public final class GameRestarter {
         // Java liest Argumente seit Version 9 auch aus einer Datei: "java
         // @datei". Dort gibt es keine Laengengrenze. Also wird alles ausser
         // dem Programmpfad in eine Datei geschrieben.
-        String java = command.get(0);
+        // NICHT "java" nennen: eine Variable dieses Namens verdeckt das
+        // Paket java. Dann liest der Compiler "java.nio.file.Files" weiter
+        // unten als Feld "nio" dieser Zeichenkette -- Build-Fehler. Genau das
+        // war der Fehler in 3.4.0. Gleicher Name wie in der reparierten JAR.
+        String javaExecutable = command.get(0);
         List<String> rest = command.subList(1, command.size());
         File argDatei = File.createTempFile("vortex-restart-", ".args");
         argDatei.deleteOnExit();
@@ -62,7 +66,7 @@ public final class GameRestarter {
         }
         java.nio.file.Files.writeString(argDatei.toPath(), b.toString());
 
-        ProcessBuilder pb = new ProcessBuilder(java, "@" + argDatei.getAbsolutePath());
+        ProcessBuilder pb = new ProcessBuilder(javaExecutable, "@" + argDatei.getAbsolutePath());
         String dir = System.getProperty("user.dir");
         if (dir != null) pb.directory(new File(dir));
         // Ausgabe des neuen Prozesses verwerfen, sonst blockiert er, sobald

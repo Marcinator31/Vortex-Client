@@ -29,13 +29,13 @@ public class CommunityScreen extends Screen {
     private static final int FOOTER_H = 24;
     private static final int ROW_H = 30;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     /** One shared entry. */
     private record Entry(String name, String author, String description,
@@ -200,7 +200,15 @@ public class CommunityScreen extends Screen {
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim));
 
         // Header
@@ -247,7 +255,7 @@ public class CommunityScreen extends Screen {
                     sub += "  ·  " + e.description();
                 }
                 ctx.text(this.font, Component.literal(shorten(sub, winW - 160)),
-                        winX + 16, y + 17, 0xFF74747F, false);
+                        winX + 16, y + 17, VortexStyle.TEXT_DIM, false);
 
                 String get = "Import";
                 int gw = this.font.width(get) + 14;
@@ -255,7 +263,7 @@ public class CommunityScreen extends Screen {
                 roundRect(ctx, winX + winW - gw - 16, y + 7, gw, 16,
                         gHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
                 ctx.text(this.font, Component.literal(get),
-                        winX + winW - gw - 9, y + 11, 0xFFD0D0DA, false);
+                        winX + winW - gw - 9, y + 11, VortexStyle.TEXT, false);
             }
             y += ROW_H + 3;
         }
@@ -270,7 +278,7 @@ public class CommunityScreen extends Screen {
 
             ctx.fill(winX, winY + HEADER_H, winX + winW,
                     winY + winH - FOOTER_H, 0xC0000000);
-            roundRect(ctx, bxx, byy, bw, bh, 0xFF24242B);
+            roundRect(ctx, bxx, byy, bw, bh, VortexStyle.CARD);
             ctx.fill(bxx, byy, bxx + bw, byy + 1, accent);
 
             ctx.text(this.font,
@@ -288,7 +296,7 @@ public class CommunityScreen extends Screen {
                 roundRect(ctx, sx, byy + 44, sw, 20,
                         sHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
                 ctx.text(this.font, Component.literal(label),
-                        sx + 6, byy + 50, active ? accent : 0xFFD0D0DA, false);
+                        sx + 6, byy + 50, active ? accent : VortexStyle.TEXT, false);
             }
 
             String cancel = "Cancel";
@@ -309,7 +317,7 @@ public class CommunityScreen extends Screen {
         ctx.fill(winX, fy, winX + winW, fy + 1, fade(C_LINE, openAnim));
         ctx.text(this.font,
                 Component.literal("Macros land in your list without a key. Presets ask which slot to replace."),
-                winX + 12, fy + 8, 0xFF74747F, false);
+                winX + 12, fy + 8, VortexStyle.TEXT_DIM, false);
 
         super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
@@ -320,7 +328,7 @@ public class CommunityScreen extends Screen {
         boolean hov = in(x, y, w, 18);
         roundRect(ctx, x, y, w, 18,
                 active ? mix(C_INNER, accent, 0.5f) : (hov ? C_HOV : C_INNER));
-        ctx.text(this.font, Component.literal(label), x + 8, y + 5, 0xFFE6E6EC, false);
+        ctx.text(this.font, Component.literal(label), x + 8, y + 5, VortexStyle.TEXT, false);
         return x + w + 4;
     }
 
@@ -328,7 +336,7 @@ public class CommunityScreen extends Screen {
         int w = this.font.width(label) + 16;
         boolean hov = in(x, y, w, 18);
         roundRect(ctx, x, y, w, 18, hov ? mix(C_INNER, accent, 0.35f) : C_INNER);
-        ctx.text(this.font, Component.literal(label), x + 8, y + 5, 0xFFD0D0DA, false);
+        ctx.text(this.font, Component.literal(label), x + 8, y + 5, VortexStyle.TEXT, false);
         return x + w + 6;
     }
 

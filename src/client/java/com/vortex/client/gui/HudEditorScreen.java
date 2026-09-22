@@ -34,8 +34,8 @@ public class HudEditorScreen extends Screen {
     /** Rasterweite in Pixeln. */
     private static final int GRID = 8;
 
-    private static final int C_BAR   = 0xF016161B;
-    private static final int C_INNER = 0xFF1C1C22;
+    private static final int C_BAR   = VortexStyle.BAR;
+    private static final int C_INNER = VortexStyle.INNER;
 
     // Einstellungen des Editors (bleiben waehrend der Sitzung erhalten).
     private static boolean showGrid = true;
@@ -164,13 +164,13 @@ public class HudEditorScreen extends Screen {
     private void drawToolbar(GuiGraphicsExtractor ctx, int accent) {
         int h = 26;
         ctx.fill(0, 0, this.width, h, C_BAR);
-        ctx.fill(0, h, this.width, h + 1, 0xFF31313A);
+        ctx.fill(0, h, this.width, h + 1, VortexStyle.LINE);
 
         ctx.text(this.font, Component.literal("HUD Editor"),
                 8, 9, 0xFFFFFFFF);
         ctx.text(this.font,
                 Component.literal("Drag to move  \u00B7  ESC saves and closes"),
-                74, 9, 0xFF74747F, false);
+                74, 9, VortexStyle.TEXT_DIM, false);
 
         // Umschalter rechts.
         drawToggle(ctx, toolbarX(0), 5, "Raster", showGrid, accent);
@@ -189,7 +189,7 @@ public class HudEditorScreen extends Screen {
                             boolean on, int accent) {
         int w = this.font.width(label) + 16;
         boolean hov = inside(mx, my, x, y, w, 16);
-        int bg = on ? mixColor(C_INNER, accent, 0.45f) : (hov ? 0xFF2E2E38 : C_INNER);
+        int bg = on ? mixColor(C_INNER, accent, 0.45f) : (hov ? VortexStyle.HOV : C_INNER);
         ctx.fill(x + 1, y, x + w - 1, y + 16, bg);
         ctx.fill(x, y + 1, x + 1, y + 15, bg);
         ctx.fill(x + w - 1, y + 1, x + w, y + 15, bg);

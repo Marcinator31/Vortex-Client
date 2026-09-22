@@ -50,13 +50,13 @@ public abstract class SelectionScreen extends Screen {
     private static final int PAD = 8;
 
     // ---- Farben (wie im ClickGUI) ----
-    private static final int C_DIM      = 0xB4000000;
-    private static final int C_WINDOW   = 0xF21B1B21;
-    private static final int C_BAR      = 0xFF16161B;
-    private static final int C_CARD     = 0xFF24242B;
-    private static final int C_CARD_HOV = 0xFF2E2E38;
-    private static final int C_INNER    = 0xFF1C1C22;
-    private static final int C_LINE     = 0xFF31313A;
+    private static final int C_DIM      = VortexStyle.DIM;
+    private static final int C_WINDOW   = VortexStyle.WINDOW;
+    private static final int C_BAR      = VortexStyle.BAR;
+    private static final int C_CARD     = VortexStyle.CARD;
+    private static final int C_CARD_HOV = VortexStyle.HOV;
+    private static final int C_INNER    = VortexStyle.INNER;
+    private static final int C_LINE     = VortexStyle.LINE;
 
     private final Screen parent;
     private final String title;
@@ -176,7 +176,15 @@ public abstract class SelectionScreen extends Screen {
         Theme t = Theme.INSTANCE;
         int accent = t.accent.get() | 0xFF000000;
 
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+
+        // Bildschirme optisch zusammen.
+
+        VortexStyle.schatten(ctx, winX, winY, winW, winH, openAnim);
+
         roundRect(ctx, winX, winY, winW, winH, fade(C_WINDOW, openAnim));
+
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, winW - 8, openAnim);
         ctx.fill(winX, winY, winX + winW, winY + 1, fade(accent, openAnim * 0.9f));
 
         drawHeader(ctx, winX, winY, winW, accent, t);
@@ -321,7 +329,7 @@ public abstract class SelectionScreen extends Screen {
         ctx.fill(x, y, x + w, y + 1, fade(C_LINE, openAnim));
         ctx.text(this.font,
                 Component.literal("Click to toggle   ·   Type to search   ·   ESC to go back"),
-                x + PAD, y + 6, fade(0xFF74747F, openAnim), false);
+                x + PAD, y + 6, fade(VortexStyle.TEXT_DIM, openAnim), false);
     }
 
     // ---------------------------------------------------------------- Eingabe

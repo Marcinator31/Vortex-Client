@@ -28,13 +28,13 @@ public class WaypointScreen extends Screen {
     private static final int FOOTER_H = 20;
     private static final int ROW_H = 24;
 
-    private static final int C_DIM    = 0xB4000000;
-    private static final int C_WINDOW = 0xF21B1B21;
-    private static final int C_BAR    = 0xFF16161B;
-    private static final int C_CARD   = 0xFF24242B;
-    private static final int C_HOV    = 0xFF2E2E38;
-    private static final int C_INNER  = 0xFF1C1C22;
-    private static final int C_LINE   = 0xFF31313A;
+    private static final int C_DIM    = VortexStyle.DIM;
+    private static final int C_WINDOW = VortexStyle.WINDOW;
+    private static final int C_BAR    = VortexStyle.BAR;
+    private static final int C_CARD   = VortexStyle.CARD;
+    private static final int C_HOV    = VortexStyle.HOV;
+    private static final int C_INNER  = VortexStyle.INNER;
+    private static final int C_LINE   = VortexStyle.LINE;
 
     private final Screen parent;
     private EditBox nameField;
@@ -128,7 +128,11 @@ public class WaypointScreen extends Screen {
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
 
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
+        // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
+        // Bildschirme optisch zusammen.
+        VortexStyle.schatten(ctx, winX, winY, WIN_W, winH, openAnim);
         roundRect(ctx, winX, winY, WIN_W, winH, fade(C_WINDOW, openAnim));
+        VortexStyle.akzentLinie(ctx, winX + 4, winY, WIN_W - 8, openAnim);
         ctx.fill(winX, winY, winX + WIN_W, winY + 1, fade(accent, openAnim));
 
         // Kopfzeile
@@ -151,7 +155,7 @@ public class WaypointScreen extends Screen {
         roundRect(ctx, wlx, winY + 56, wlw, 20,
                 wlHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.text(this.font, Component.literal(wl),
-                wlx + 8, winY + 62, 0xFFD0D0DA, false);
+                wlx + 8, winY + 62, VortexStyle.TEXT, false);
 
         // Dimensions-Umschalter links neben dem Welt-Umschalter.
         String dl = dimLabel(dimFilter);
@@ -161,7 +165,7 @@ public class WaypointScreen extends Screen {
         roundRect(ctx, dlx, winY + 56, dlw, 20,
                 dlHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.text(this.font, Component.literal(dl),
-                dlx + 8, winY + 62, 0xFFD0D0DA, false);
+                dlx + 8, winY + 62, VortexStyle.TEXT, false);
 
         // Profil-Umschalter -- entscheidend auf Netzwerken, wo alle Server
         // dieselbe Adresse haben und sich sonst nicht unterscheiden lassen.
@@ -173,7 +177,7 @@ public class WaypointScreen extends Screen {
         roundRect(ctx, plx, winY + 56, plw, 20,
                 plHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
         ctx.text(this.font, Component.literal(pl),
-                plx + 8, winY + 62, 0xFFD0D0DA, false);
+                plx + 8, winY + 62, VortexStyle.TEXT, false);
 
         // Paste button, next to the world and dimension filters.
         String pl3 = "Paste";
@@ -186,7 +190,7 @@ public class WaypointScreen extends Screen {
             roundRect(ctx, plx3, winY + 56, plw3, 20,
                     pHov ? mix(C_INNER, accent, 0.4f) : C_INNER);
             ctx.text(this.font, Component.literal(pl3),
-                    plx3 + 8, winY + 62, 0xFFD0D0DA, false);
+                    plx3 + 8, winY + 62, VortexStyle.TEXT, false);
         }
 
         // Pin-all button, only while there is something to pin.
@@ -209,7 +213,7 @@ public class WaypointScreen extends Screen {
         String count = list.size() + " Marker";
         int cw = this.font.width(count);
         ctx.text(this.font, Component.literal(count),
-                winX + WIN_W - cw - 12, winY + 12, 0xFF74747F, false);
+                winX + WIN_W - cw - 12, winY + 12, VortexStyle.TEXT_DIM, false);
 
         // Eingabefeld-Rahmen + Knopf "Add here"
         roundRect(ctx, winX + 8, winY + 30, 208, 20, C_INNER);
@@ -274,7 +278,7 @@ public class WaypointScreen extends Screen {
                     pos += "   " + (int) Math.sqrt(dx * dx + dz * dz) + "m";
                 }
                 ctx.text(this.font, Component.literal(pos),
-                        winX + 18, y + 14, 0xFF74747F, false);
+                        winX + 18, y + 14, VortexStyle.TEXT_DIM, false);
 
                 // Farbfeld / Auge / Kreuz rechts
                 int bx = winX + WIN_W - 26;
@@ -329,17 +333,17 @@ public class WaypointScreen extends Screen {
         ctx.fill(winX, fy, winX + WIN_W, fy + 1, fade(C_LINE, openAnim));
         if (renaming != null) {
             ctx.text(this.font, Component.literal("Name:"),
-                    winX + 12, fy + 6, 0xFFD0D0DA, false);
+                    winX + 12, fy + 6, VortexStyle.TEXT, false);
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
             drawApply(ctx, fy, accent);
         } else if (profileField != null && profileField.isVisible()) {
             ctx.text(this.font, Component.literal("Profile:"),
-                    winX + 12, fy + 6, 0xFFD0D0DA, false);
+                    winX + 12, fy + 6, VortexStyle.TEXT, false);
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
             drawApply(ctx, fy, accent);
         } else if (editing != null) {
             ctx.text(this.font, Component.literal("X Y Z:"),
-                    winX + 12, fy + 6, 0xFFD0D0DA, false);
+                    winX + 12, fy + 6, VortexStyle.TEXT, false);
             roundRect(ctx, winX + 86, fy + 2, 158, 16, C_INNER);
             String ok = "Apply";
             int okw = this.font.width(ok) + 14;
@@ -354,7 +358,7 @@ public class WaypointScreen extends Screen {
                     : status;
             ctx.text(this.font, Component.literal(hint),
                     winX + 10, fy + 6,
-                    status.isEmpty() ? 0xFF74747F : 0xFFD0D0DA, false);
+                    status.isEmpty() ? VortexStyle.TEXT_DIM : VortexStyle.TEXT, false);
         }
 
         if (nameField != null) {
