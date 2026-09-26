@@ -40,9 +40,12 @@ public class PanelGui extends Screen {
 
     // --- Masse ------------------------------------------------------------
     private static final int SPALTE_B = 118;   // Breite einer Spalte
+    private static final int SPALTE_MIN = 92;  // schmaler wird keine Spalte
     private static final int KOPF_H   = 20;    // Kopf mit Kategorienamen
     private static final int ZEILE_H  = 16;    // eine Modulzeile
     private static final int EINST_H  = 14;    // eine Einstellungszeile
+    private static final int INNEN_RAND = 4;   // Luft oben/unten im Einstellungsfeld
+    private static final int AUSWAHL_H = 15;   // Knopf fuer die Auswahlliste
     private static final int ABSTAND  = 8;     // zwischen den Spalten
     private static final int OBEN     = 34;    // Platz fuer das Suchfeld
 
@@ -73,12 +76,14 @@ public class PanelGui extends Screen {
     // Schieberegler, der gerade gezogen wird
     /** Tatsaechliche Spaltenbreite dieses Bildes (<= SPALTE_B). */
     private int spalteB = SPALTE_B;
+    /** Unterkante der aktuellen Spalte (Ende ihrer Reihe). */
+    private int spalteBoden = 0;
 
     private NumberSetting zieht = null;
     private int ziehX, ziehB;
 
     // --- Klickflaechen ------------------------------------------------------
-    private enum Art { MODUL, BOOL, NUM, MODUS, FARBE, TASTE }
+    private enum Art { MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL }
 
     private static final class Treffer {
         final int x, y, w, h;
@@ -107,11 +112,16 @@ public class PanelGui extends Screen {
 
     @Override
     protected void init() {
+        // init() laeuft erneut, wenn man aus einer Auswahlliste zurueckkommt
+        // oder das Fenster in der Groesse aendert. Der Suchbegriff wird dabei
+        // uebernommen -- sonst waere er nach jedem Zurueckkommen weg.
+        String bisher = (this.search != null) ? this.search.getValue() : "";
         int sw = 180;
         this.search = new EditBox(this.font, this.width / 2 - sw / 2 + 8, 11, sw - 16, 12,
                 Component.literal(""));
         this.search.setBordered(false);
         this.search.setMaxLength(32);
+        this.search.setValue(bisher);
         // Beim Tippen alle Spalten an den Anfang -- sonst liegen die Treffer
         // oberhalb des sichtbaren Bereichs.
         this.search.setResponder(text -> lauf.clear());
@@ -170,29 +180,40 @@ public class PanelGui extends Screen {
             if (!module(c).isEmpty()) kats.add(c);
         }
 
-        // IMMER EINE REIHE. Passen nicht alle Spalten in voller Breite, werden
-        // sie schmaler -- statt in eine zweite Reihe umzubrechen. Jede Spalte
-        // reicht bis zum unteren Rand; eine zweite Reihe laege darueber.
+        // --- PASST SICH DER FENSTERGROESSE AN ------------------------------
+        //
+        // Vorher: immer eine Reihe, Spalten hoechstens bis 80 Pixel schmal.
+        // Bei kleinem Fenster (Minecraft verkleinert die Oberflaeche bis auf
+        // 320 x 240) brauchten fuenf Spalten aber 432 Pixel -- die rechten
+        // hingen aus dem Bild.
+        //
+        // Jetzt: so viele Spalten pro Reihe, wie in Mindestbreite passen.
+        // Reichen die nicht fuer alle, gibt es eine zweite Reihe, und jede
+        // Reihe bekommt ihren Anteil der Hoehe. Den Rest erledigt der
+        // Bildlauf jeder Spalte.
         int n = Math.max(1, kats.size());
-        spalteB = Math.min(SPALTE_B, (this.width - 20 - (n - 1) * ABSTAND) / n);
-        spalteB = Math.max(80, spalteB);
-        int reiheB = n * spalteB + (n - 1) * ABSTAND;
-        int x0 = Math.max(4, (this.width - reiheB) / 2);
+        int verfuegbar = this.width - 12;
+        int proReihe = Math.max(1, Math.min(n, (verfuegbar + ABSTAND) / (SPALTE_MIN + ABSTAND)));
+        int reihen = (n + proReihe - 1) / proReihe;
+        spalteB = Math.min(SPALTE_B, (verfuegbar - (proReihe - 1) * ABSTAND) / proReihe);
+        int reiheB = proReihe * spalteB + (proReihe - 1) * ABSTAND;
+        int x0 = Math.max(6, (this.width - reiheB) / 2);
+        int reiheH = (this.height - OBEN - 6) / reihen;
+
         // GESTAFFELTES ERSCHEINEN.
         //
         // Jede Spalte startet 45 Millisekunden nach der vorigen und gleitet
-        // von oben herein. Alle gleichzeitig wirkt wie ein Schnitt; nacheinander
-        // fuehrt es den Blick von links nach rechts ueber das Menue.
-        //
-        // Die Kurve ist ein weiches Auslaufen (1 - (1-t)^3): schnell am
-        // Anfang, sanft am Ende -- so bremst die Spalte ab, statt hart
-        // anzuhalten.
+        // von oben herein. Die Kurve ist ein weiches Auslaufen (1 - (1-t)^3):
+        // schnell am Anfang, sanft am Ende.
         for (int i = 0; i < kats.size(); i++) {
             float t = Math.max(0f, Math.min(1f, (seit - i * 0.045f) / 0.32f));
             float e = 1f - (1f - t) * (1f - t) * (1f - t);
-            int sx = x0 + i * (spalteB + ABSTAND);
+            int sx = x0 + (i % proReihe) * (spalteB + ABSTAND);
+            int sy = OBEN + (i / proReihe) * reiheH;
             int gleiten = (int) ((1f - e) * -16f);
-            zeichneSpalte(ctx, kats.get(i), sx, OBEN + gleiten, a * e, dt);
+            // Hoehenbegrenzung: bis zur naechsten Reihe, nicht bis zum Rand
+            spalteBoden = sy + reiheH - 6;
+            zeichneSpalte(ctx, kats.get(i), sx, sy + gleiten, a * e, dt);
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta);
@@ -233,7 +254,7 @@ public class PanelGui extends Screen {
                 y + 6, VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
 
         // --- Inhalt ----------------------------------------------------------
-        int maxH = this.height - y - KOPF_H - 10;
+        int maxH = Math.max(ZEILE_H, spalteBoden - y - KOPF_H);
         int inhaltH = inhaltHoehe(liste);
         int sichtbar = Math.min(inhaltH, maxH);
         float[] l = lauf.computeIfAbsent(kat, k -> new float[2]);   // [ist, ziel]
@@ -296,6 +317,18 @@ public class PanelGui extends Screen {
                     m.isEnabled() ? 1f : 0f, 12f, dt);
             anAnim.put(m, an);
 
+            // Ist das Modul aufgeklappt, bekommt seine Zeile dieselbe dunkle
+            // Flaeche wie das Feld darunter. Zeile und Einstellungen lesen
+            // sich dadurch als EIN Block -- vorher sah das Feld aus, als
+            // gehoere es zu keinem Modul.
+            float offenAnim = klapp.getOrDefault(m, 0f);
+            if (offenAnim > 0.01f) {
+                ctx.fill(x + 3, y, x + spalteB - 3, y + ZEILE_H,
+                        VortexStyle.fade(VortexStyle.BAR, a * offenAnim));
+                ctx.fill(x + 3, y, x + 4, y + ZEILE_H,
+                        VortexStyle.fade(VortexStyle.akzent(0.4f), a * 0.8f * offenAnim));
+            }
+
             // Ueberfahren: eine zarte Flaeche, auch bei eingeschalteten
             if (hv > 0.01f) {
                 ctx.fill(x + 2, y, x + spalteB - 2, y + ZEILE_H,
@@ -328,7 +361,7 @@ public class PanelGui extends Screen {
                 boolean auf = offen.getOrDefault(m, false);
                 ctx.text(this.font, Component.literal(auf ? "-" : "+"),
                         x + spalteB - 12, y + 4,
-                        VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
+                        VortexStyle.fade(auf ? VortexStyle.akzent(0.5f) : VortexStyle.TEXT_DIM, a), false);
             }
             treffer.add(new Treffer(x, Math.max(y, clipOben), spalteB,
                     Math.min(y + ZEILE_H, clipUnten) - Math.max(y, clipOben),
@@ -348,11 +381,40 @@ public class PanelGui extends Screen {
             // negative Hoehe.
             if (unten > oben) {
                 ctx.enableScissor(x, oben, x + spalteB, unten);
-                int sy = y;
+
+                // EINGELASSENES FELD.
+                //
+                // Vorher standen die Einstellungen ohne Rahmen direkt unter
+                // dem Modul -- man sah nicht, wo sie anfangen und wo das
+                // naechste Modul beginnt. Jetzt liegen sie in einem dunkleren,
+                // leicht eingerueckten Feld mit einer Akzentlinie links, die
+                // den ganzen Block zusammenhaelt, und einer Kante unten.
+                ctx.fill(x + 3, y, x + spalteB - 3, y + h,
+                        VortexStyle.fade(VortexStyle.BAR, a));
+                ctx.fill(x + 3, y, x + 4, y + h,
+                        VortexStyle.fade(VortexStyle.akzent(0.4f), a * 0.8f));
+                ctx.fill(x + 3, y + h - 1, x + spalteB - 3, y + h,
+                        VortexStyle.fade(VortexStyle.LINE, a));
+
+                int sy = y + INNEN_RAND;
+
+                // Auswahlliste des Moduls (Bloecke, Mobs, Items ...).
+                //
+                // FEHLTE im Spaltenmenue: Block ESP, Mob ESP, Item Counter,
+                // No Render Blocks und Anti Render oeffnen darueber ihre
+                // Auswahl. Ohne den Knopf liess sich dort nichts auswaehlen.
+                if (m instanceof com.vortex.client.module.HasOwnScreen hos) {
+                    if (sy + AUSWAHL_H > oben && sy < unten) {
+                        zeichneAuswahlKnopf(ctx, m, hos.screenButtonLabel(),
+                                x + 7, sy, spalteB - 14, a);
+                    }
+                    sy += AUSWAHL_H + 2;
+                }
+
                 for (Setting s : m.getSettings()) {
                     if (s == m.getEnabledSetting()) continue;
                     if (sy + EINST_H > oben && sy < unten) {
-                        zeichneEinstellung(ctx, m, s, x + 6, sy, spalteB - 10, a);
+                        zeichneEinstellung(ctx, m, s, x + 8, sy, spalteB - 14, a);
                     }
                     sy += EINST_H;
                 }
@@ -471,6 +533,13 @@ public class PanelGui extends Screen {
                     return true;
                 case FARBE:
                     farbe(t.modul, (ColorSetting) t.einst);
+                    return true;
+                case AUSWAHL:
+                    // Das Modul erzeugt seinen Bildschirm selbst -- genau wie
+                    // im bisherigen Menue. ESC fuehrt hierher zurueck.
+                    if (t.modul instanceof com.vortex.client.module.HasOwnScreen hos) {
+                        Minecraft.getInstance().gui.setScreen(hos.createScreen(this));
+                    }
                     return true;
                 case TASTE:
                     ((KeySetting) t.einst).setListening(true);
@@ -616,6 +685,10 @@ public class PanelGui extends Screen {
     }
 
     private boolean hatEinstellungen(Module m) {
+        // Ein Modul mit eigener Auswahlliste ist IMMER aufklappbar -- auch
+        // wenn es sonst keine Einstellungen hat. Vorher fehlte dann sogar das
+        // Plus, und man kam an die Auswahl gar nicht heran.
+        if (m instanceof com.vortex.client.module.HasOwnScreen) return true;
         for (Setting s : m.getSettings()) if (s != m.getEnabledSetting()) return true;
         return false;
     }
@@ -623,7 +696,9 @@ public class PanelGui extends Screen {
     private int einstellungsHoehe(Module m) {
         int n = 0;
         for (Setting s : m.getSettings()) if (s != m.getEnabledSetting()) n++;
-        return n * EINST_H;
+        int h = n * EINST_H + 2 * INNEN_RAND;
+        if (m instanceof com.vortex.client.module.HasOwnScreen) h += AUSWAHL_H + 2;
+        return h;
     }
 
     private int inhaltHoehe(List<Module> liste) {
@@ -686,6 +761,27 @@ public class PanelGui extends Screen {
             if (bx <= ax) continue;
             ctx.fill(ax, y, bx, y + h, VortexStyle.mix(von, bis, (b + 0.5f) / baender));
         }
+    }
+
+
+    /**
+     * Knopf, der die Auswahlliste eines Moduls oeffnet ("Select blocks" ...).
+     *
+     * Hebt sich deutlich von den Einstellungen ab: eigene Flaeche, Pfeil
+     * rechts, heller beim Ueberfahren. Es ist der wichtigste Eintrag dieser
+     * Module, deshalb steht er ganz oben im Feld.
+     */
+    private void zeichneAuswahlKnopf(GuiGraphicsExtractor ctx, Module m, String text,
+                                     int x, int y, int w, float a) {
+        boolean hov = mx >= x && mx < x + w && my >= y && my < y + AUSWAHL_H;
+        roundRect(ctx, x, y, w, AUSWAHL_H, VortexStyle.fade(
+                hov ? VortexStyle.mix(VortexStyle.CARD, VortexStyle.akzent(0.5f), 0.35f)
+                    : VortexStyle.CARD, a));
+        ctx.text(this.font, Component.literal(kuerzen(text, w - 20)), x + 6, y + 4,
+                VortexStyle.fade(hov ? 0xFFFFFFFF : VortexStyle.TEXT, a), false);
+        ctx.text(this.font, Component.literal(">"), x + w - 9, y + 4,
+                VortexStyle.fade(VortexStyle.akzent(0.5f), a), false);
+        treffer.add(new Treffer(x, y, w, AUSWAHL_H, Art.AUSWAHL, m, null));
     }
 
 }

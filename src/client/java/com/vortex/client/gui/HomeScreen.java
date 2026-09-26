@@ -1,5 +1,7 @@
 package com.vortex.client.gui;
 
+import com.vortex.client.module.Module;
+import com.vortex.client.module.ModuleManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -7,50 +9,86 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
- * Startbildschirm des Clients.
+ * Startbildschirm des Clients (Rechtsshift).
  *
- * Oeffnet sich mit Rechtsshift VOR der Moduluebersicht -- wie bei grossen
- * PvP-Clients. In der Mitte das Logo, darunter die drei Hauptwege:
+ * AUFBAU
+ *   Ein zentriertes Glasfeld: oben Logo und Name, darunter die Eintraege
+ *   in zwei Gruppen -- "Main" (Mods, Bots) und "Tools" (Waypoints, Macros,
+ *   Wardrobe, Keybinds, HUD Editor) --, ganz unten abgesetzt der Neustart.
+ *   Hinter dem Feld schweben zwei weiche Lichtflecken in Violett und Blau.
  *
- *   links   Spiel neu starten (mit Rueckfrage)
- *   Mitte   Mods -- oeffnet das ClickGUI
- *   rechts  Skin-Garderobe
+ * BEWEGUNG
+ *   - Die Eintraege erscheinen beim Oeffnen nacheinander und gleiten von
+ *     links herein.
+ *   - Die Hervorhebung GLEITET zum Eintrag unter dem Zeiger, statt von
+ *     Zeile zu Zeile zu springen.
+ *   - Die Lichtflecken bewegen sich langsam -- kaum merklich, aber das Bild
+ *     wirkt dadurch lebendig statt eingefroren.
  *
- * Darunter der HUD-Editor, um die Anzeigen am Bildschirmrand zu verschieben.
+ * GROESSE
+ *   Alles wird jedes Bild aus der aktuellen Fenstergroesse berechnet. Bei
+ *   kleinem Fenster (Minecraft verkleinert bis auf 320 x 240) wechselt das
+ *   Feld in eine kompakte Form: Logo neben dem Namen, keine
+ *   Gruppenueberschriften, niedrigere Zeilen.
  *
- * ZUR BEDIENUNG: Nichts hiervon ist neu. Mods, Garderobe, HUD-Editor und
- * Neustart gab es schon; dieser Bildschirm ordnet sie nur an einer Stelle an,
- * statt direkt in die lange Modulliste zu springen.
+ * SYMBOLE
+ *   Gezeichnet aus 7x7-Punktmustern, nicht aus Sonderzeichen. Sonderzeichen
+ *   hat Minecrafts Schrift nicht; sie kamen aus einer Ersatzschrift und
+ *   sahen unscharf aus. Gezeichnete Punkte sind pixelgenau.
  */
 public class HomeScreen extends Screen {
-
-    // --- Farben: dieselbe Welt wie im ClickGUI ------------------------------
-    private static final int C_DIM     = 0xD2060409;
-    private static final int C_CARD    = 0xFF15111F;
-    private static final int C_CARD_HV = 0xFF1E1930;
-    private static final int C_LINE    = 0xFF241E36;
-    private static final int C_TEXT    = 0xFFF2F0F8;
-    private static final int C_DIMTXT  = 0xFF7F7896;
-    private static final int VIOLETT   = 0xFF8B5CF6;
-    private static final int BLAU      = 0xFF3B82F6;
 
     private static final Identifier LOGO =
             Identifier.fromNamespaceAndPath("vortexclient", "logo");
 
-    private int mx, my;
-    private float dtLetzt = 0.016f;
-    private float oeffnen = 0f;
-    private long letzteZeit = 0;
+    // --- Eintraege ------------------------------------------------------------
+    private static final int MODS = 0, BOTS = 1, WAYPOINTS = 2, MACROS = 3,
+            WARDROBE = 4, KEYS = 5, HUD = 6, RESTART = 7;
+    private static final String[] NAMEN = {
+        "Mods", "Bots", "Waypoints", "Macros", "Wardrobe", "Keybinds", "HUD Editor", "Restart Game"
+    };
 
-    /** Laeuft gerade die Rueckfrage zum Neustart? */
+    /**
+     * Symbole als 7x7-Punktmuster, eines je Eintrag, in derselben Reihenfolge.
+     * '1' = Punkt, '.' = leer.
+     */
+    private static final String[][] SYMBOLE = {
+        { // Mods: vier Kacheln
+            "111.111", "111.111", "111.111", ".......", "111.111", "111.111", "111.111" },
+        { // Bots: Roboterkopf
+            "...1...", ".11111.", ".1.1.1.", ".11111.", ".11111.", ".11111.", ".1...1." },
+        { // Waypoints: Kartennadel
+            "..111..", ".11111.", "11...11", "11...11", ".11111.", "..111..", "...1..." },
+        { // Macros: Abspielen
+            ".1.....", ".11....", ".111...", ".1111..", ".111...", ".11....", ".1....." },
+        { // Wardrobe: Kleiderbuegel
+            "..11...", ".1..1..", "....1..", "...1...", ".11.11.", "1.....1", "1111111" },
+        { // Keybinds: Schluessel
+            ".......", ".......", "111....", "1.11111", "111.1.1", ".......", "......." },
+        { // HUD Editor: Fenster
+            "1111111", "1111111", "1.....1", "1.11..1", "1.....1", "1....11", "1111111" },
+        { // Restart: Kreispfeil
+            "..111.1", ".1...11", "1...111", "1......", "1.....1", ".1...1.", "..111.." },
+    };
+
+    // --- Zustand --------------------------------------------------------------
+    private int mx, my;
+    private long letzteZeit = 0;
+    private float oeffnen = 0f;
+    private float seit = 0f;
+
+    /** Gleitende Hervorhebung: Lage, Deckkraft, ob schon einmal gesetzt. */
+    private float hlY = 0f, hlA = 0f;
+    private boolean hlGesetzt = false;
+    private int hlZiel = -1;
+
     private boolean frageNeustart = false;
-    /** Fehlertext, falls der Neustart scheiterte. */
+    private float frageA = 0f;
     private String fehler = null;
 
-    // Klickflaechen, im Zeichnen gesetzt -- so koennen sie nie von der
-    // gezeichneten Flaeche abweichen.
-    private int[] kMods, kGarderobe, kNeustart, kHud, kJa, kNein;
-    private int[] kWaypoints, kMacros, kKeys, kTheme, kBots;
+    /** Klickflaechen je Eintrag, jedes Bild neu gesetzt. */
+    private final int[][] flaeche = new int[8][];
+    private int[] kJa, kNein;
 
     public HomeScreen() {
         super(Component.literal("Vortex Client"));
@@ -61,103 +99,164 @@ public class HomeScreen extends Screen {
         return false;
     }
 
+    // ======================================================================
+    // Zeichnen
+    // ======================================================================
+
     @Override
     public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         this.mx = mouseX;
         this.my = mouseY;
-
         long jetzt = System.nanoTime();
-        float dt = letzteZeit == 0 ? 0f : Math.min(0.1f, (jetzt - letzteZeit) / 1e9f);
+        float dt = letzteZeit == 0 ? 0.016f : Math.min(0.1f, (jetzt - letzteZeit) / 1e9f);
         letzteZeit = jetzt;
-        dtLetzt = dt;
-        // Weiches Einblenden mit exponentieller Annaeherung -- dieselbe Form
-        // wie im ClickGUI, damit beide Bildschirme gleich wirken.
-        oeffnen += (1f - oeffnen) * (1f - (float) Math.exp(-9f * dt));
-        if (1f - oeffnen < 0.005f) oeffnen = 1f;
+        oeffnen = weich(oeffnen, 1f, 9f, dt);
+        seit += dt;
         float a = oeffnen;
-        // Inhalt gleitet beim Oeffnen von unten herein. Die Strecke schrumpft
-        // mit dem Einblenden, endet also sanft statt abrupt.
-        int gleiten = (int) ((1f - a) * 18f);
 
-        ctx.fill(0, 0, this.width, this.height, fade(C_DIM, a));
+        // --- Hintergrund ---------------------------------------------------
+        ctx.fill(0, 0, this.width, this.height, VortexStyle.fade(0xB0060409, a));
+        // Zwei weiche Lichtflecken, die sich langsam bewegen.
+        float t = seit * 0.35f;
+        licht(ctx, (int) (this.width * 0.30f + Math.sin(t) * 18f),
+                (int) (this.height * 0.32f + Math.cos(t * 0.8f) * 12f),
+                Math.max(60, this.height / 3), VortexStyle.VIOLETT, a);
+        licht(ctx, (int) (this.width * 0.70f + Math.cos(t * 0.9f) * 18f),
+                (int) (this.height * 0.70f + Math.sin(t * 0.7f) * 12f),
+                Math.max(60, this.height / 3), VortexStyle.BLAU, a);
 
-        // --- Aufbau: Logo links, Menue rechts daneben ----------------------
-        //
-        // VOELLIG ANDERS ALS VORHER. Das Kachelraster wirkte wie eine
-        // Webseite: alles gleich gross, alles gleich wichtig, nichts fuehrte
-        // den Blick.
-        //
-        // Jetzt steht links gross das Logo mit dem Namen, rechts daneben eine
-        // ruhige Liste. Der Blick geht von links nach rechts, und die
-        // Reihenfolge der Eintraege sagt, was wichtig ist -- Mods oben.
-        int logo = 84;
-        int spalte = 220;                       // Breite der Menueliste
-        int block = logo + 36 + spalte;         // Logo + Abstand + Liste
-        int bx = this.width / 2 - block / 2;
-        int by = this.height / 2 - 92 + gleiten;
+        // --- Masse aus der Fenstergroesse ----------------------------------
+        int verfuegbar = this.height - 16;
+        boolean kompakt = this.height < 330;
+        int logo = kompakt ? 18 : clamp((int) (this.height * 0.12f), 36, 56);
+        int kopfH = kompakt ? 24 : logo + 28;
+        int gruppenH = kompakt ? 0 : 2 * 14;
+        int rest = verfuegbar - 10 - kopfH - 8 - gruppenH - 6 - 10;
+        int zeileH = clamp(rest / 8 - 2, 16, 24);
+        int feldB = Math.min(250, this.width - 16);
+        int feldH = 10 + kopfH + 8 + gruppenH + 8 * (zeileH + 2) + 6 + 10;
+        int fx = (this.width - feldB) / 2;
+        // Beim Oeffnen gleitet das Feld sanft von unten in seine Lage.
+        int fy = (this.height - feldH) / 2 + (int) ((1f - a) * 14f);
 
-        // Logo mit Schein
-        int ly = by + 20;
-        for (int i = 1; i <= 4; i++) {
-            int al = (int) (20f / i * a);
-            rund(ctx, bx - i * 3, ly - i * 3, logo + i * 6, logo + i * 6,
-                    (al << 24) | (VIOLETT & 0x00FFFFFF), 14);
+        // --- Glasfeld ------------------------------------------------------
+        VortexStyle.schatten(ctx, fx, fy, feldB, feldH, a);
+        rund(ctx, fx, fy, feldB, feldH, VortexStyle.fade(0xF20E0B16, a), 6);
+        VortexStyle.akzentLinie(ctx, fx + 6, fy, feldB - 12, a);
+        // Lichtkante direkt unter der Akzentlinie
+        ctx.fill(fx + 6, fy + 2, fx + feldB - 6, fy + 3,
+                VortexStyle.fade(VortexStyle.mix(0xFF0E0B16, VortexStyle.TEXT, 0.06f), a));
+
+        // --- Kopf ------------------------------------------------------------
+        int cy = fy + 10;
+        String name = "Vortex Client";
+        if (kompakt) {
+            int nw = logo + 6 + this.font.width(name);
+            int lx = fx + (feldB - nw) / 2;
+            zeichneLogo(ctx, lx, cy + (kopfH - logo) / 2 - 2, logo, a);
+            ctx.text(this.font, Component.literal(name), lx + logo + 6, cy + (kopfH - 8) / 2 - 2,
+                    VortexStyle.fade(VortexStyle.TEXT, a), false);
+        } else {
+            zeichneLogo(ctx, fx + (feldB - logo) / 2, cy, logo, a);
+            ctx.text(this.font, Component.literal(name),
+                    fx + (feldB - this.font.width(name)) / 2, cy + logo + 8,
+                    VortexStyle.fade(VortexStyle.TEXT, a), false);
         }
-        try {
-            ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                    LOGO, bx, ly, logo, logo);
-        } catch (Throwable ignored) { }
+        cy += kopfH + 8;
 
-        String zeile = "Vortex Client";
-        ctx.text(this.font, Component.literal(zeile),
-                bx, ly + logo + 12, fade(C_TEXT, a), false);
-        String unter = "Right Shift";
-        ctx.text(this.font, Component.literal(unter),
-                bx, ly + logo + 24, fade(C_DIMTXT, a * 0.8f), false);
+        // --- Eintraege -------------------------------------------------------
+        int ex = fx + 10, ew = feldB - 20;
+        int[] ypos = new int[8];
+        for (int i = 0; i < 8; i++) {
+            if (!kompakt && i == MODS) {
+                gruppe(ctx, "MAIN", ex, cy, ew, a);
+                cy += 14;
+            }
+            if (!kompakt && i == WAYPOINTS) {
+                gruppe(ctx, "TOOLS", ex, cy, ew, a);
+                cy += 14;
+            }
+            if (i == RESTART) cy += 6;
+            ypos[i] = cy;
+            flaeche[i] = new int[]{ex, cy, ew, zeileH};
+            cy += zeileH + 2;
+        }
 
-        // --- Menueliste rechts ---------------------------------------------
-        //
-        // Eintraege statt Kacheln: eine Zeile je Bereich, mit einem Balken
-        // links, der beim Ueberfahren erscheint. Das ist ruhiger als acht
-        // gleich grosse Kaesten und laesst sich mit einem Blick lesen.
-        int lx = bx + logo + 36;
-        int ly2 = by;
-        int zh = 26;
+        // Welcher Eintrag liegt unter dem Zeiger?
+        int ziel = -1;
+        if (!frageNeustart) {
+            for (int i = 0; i < 8; i++) {
+                if (in(flaeche[i])) { ziel = i; break; }
+            }
+        }
 
-        kMods      = eintrag(ctx, lx, ly2, spalte, zh, "Mods", true, a);  ly2 += zh + 4;
-        kBots      = eintrag(ctx, lx, ly2, spalte, zh, "Bots", false, a); ly2 += zh + 4;
-        ly2 += 6;
-        trenner(ctx, lx, ly2, spalte, a); ly2 += 10;
+        // Gleitende Hervorhebung
+        if (ziel >= 0) {
+            if (!hlGesetzt) { hlY = ypos[ziel]; hlGesetzt = true; }
+            hlZiel = ziel;
+            hlY = weich(hlY, ypos[ziel], 22f, dt);
+        }
+        hlA = weich(hlA, ziel >= 0 ? 1f : 0f, 16f, dt);
+        if (hlA > 0.01f && hlZiel >= 0) {
+            boolean rot = hlZiel == RESTART;
+            int grund = rot ? VortexStyle.mix(VortexStyle.CARD, 0xFFB91C1C, 0.30f)
+                            : VortexStyle.mix(VortexStyle.CARD, VortexStyle.akzent(0.3f), 0.28f);
+            rund(ctx, ex, (int) hlY, ew, zeileH, VortexStyle.fade(grund, a * hlA), 3);
+            // Balken links im Akzentverlauf
+            int bar = rot ? 0xFFF87171 : VortexStyle.akzent(0.2f);
+            ctx.fill(ex, (int) hlY + 4, ex + 2, (int) hlY + zeileH - 4, VortexStyle.fade(bar, a * hlA));
+        }
 
-        kWaypoints = eintrag(ctx, lx, ly2, spalte, zh, "Waypoints", false, a); ly2 += zh + 4;
-        kMacros    = eintrag(ctx, lx, ly2, spalte, zh, "Macros", false, a);    ly2 += zh + 4;
-        kGarderobe = eintrag(ctx, lx, ly2, spalte, zh, "Wardrobe", false, a);  ly2 += zh + 4;
-        kKeys      = eintrag(ctx, lx, ly2, spalte, zh, "Keybinds", false, a);  ly2 += zh + 4;
-        kHud       = eintrag(ctx, lx, ly2, spalte, zh, "HUD Editor", false, a);ly2 += zh + 4;
-        ly2 += 6;
-        trenner(ctx, lx, ly2, spalte, a); ly2 += 10;
+        // Zeilen selbst -- gestaffelt hereingleitend
+        int aktiv = 0, alle = 0;
+        for (Module m : ModuleManager.INSTANCE.getModules()) {
+            if (m.getCategory() == Module.Category.BOTS) continue;
+            alle++;
+            if (m.isEnabled()) aktiv++;
+        }
+        for (int i = 0; i < 8; i++) {
+            float st = clamp01((seit - 0.08f - i * 0.035f) / 0.28f);
+            float e = 1f - (1f - st) * (1f - st) * (1f - st);
+            int dx = (int) ((1f - e) * -10f);
+            float al = a * e;
+            boolean hov = i == ziel;
+            boolean rot = i == RESTART;
 
-        kNeustart  = eintragWarnung(ctx, lx, ly2, spalte, zh, "Restart Game", a);
-        kTheme     = null;
+            int y = ypos[i];
+            int symFarbe = rot ? (hov ? 0xFFFCA5A5 : 0xFF9E6B7A)
+                               : (hov ? 0xFFFFFFFF : VortexStyle.akzent(0.35f));
+            symbol(ctx, SYMBOLE[i], ex + 9 + dx, y + (zeileH - 7) / 2, VortexStyle.fade(symFarbe, al));
 
-        int cx = this.width / 2;
-        int ky = ly2, kH = zh;
+            int txt = rot ? (hov ? 0xFFFCA5A5 : VortexStyle.TEXT_DIM)
+                          : (hov ? 0xFFFFFFFF : (i == MODS ? VortexStyle.TEXT : VortexStyle.mix(VortexStyle.TEXT_DIM, VortexStyle.TEXT, 0.45f)));
+            ctx.text(this.font, Component.literal(NAMEN[i]), ex + 24 + dx, y + (zeileH - 8) / 2,
+                    VortexStyle.fade(txt, al), false);
 
-        // --- Fusszeile -------------------------------------------------------
-        // Nur ESC: Rechtsshift oeffnet den Bildschirm, schliesst ihn aber nicht.
-        String hinweis = "ESC to close";
-        int hw = this.font.width(hinweis);
-        ctx.text(this.font, Component.literal(hinweis),
-                cx - hw / 2, this.height - 20, fade(C_DIMTXT, a * 0.7f), false);
+            // Rechts: bei Mods die Zahl aktiver Module, sonst ein Pfeil beim
+            // Ueberfahren.
+            if (i == MODS) {
+                String z = aktiv + "/" + alle;
+                ctx.text(this.font, Component.literal(z), ex + ew - 8 - this.font.width(z) + dx,
+                        y + (zeileH - 8) / 2, VortexStyle.fade(VortexStyle.akzent(0.5f), al), false);
+            } else if (hov && !rot) {
+                ctx.text(this.font, Component.literal(">"), ex + ew - 12, y + (zeileH - 8) / 2,
+                        VortexStyle.fade(VortexStyle.akzent(0.5f), al * hlA), false);
+            }
+        }
 
+        // --- Unter dem Feld ------------------------------------------------
         if (fehler != null) {
-            int fw = this.font.width(fehler);
-            ctx.text(this.font, Component.literal(fehler),
-                    cx - fw / 2, ky + kH + 14, fade(0xFFF87171, a), false);
+            String f = fehler;
+            ctx.text(this.font, Component.literal(f), (this.width - this.font.width(f)) / 2,
+                    Math.min(this.height - 22, fy + feldH + 8), VortexStyle.fade(0xFFF87171, a), false);
         }
+        String hinweis = "ESC to close";
+        ctx.text(this.font, Component.literal(hinweis), (this.width - this.font.width(hinweis)) / 2,
+                this.height - 11, VortexStyle.fade(VortexStyle.TEXT_DIM, a * 0.6f), false);
 
-        // --- Rueckfrage ueber allem ----------------------------------------
-        if (frageNeustart) zeichneRueckfrage(ctx, a);
+        // --- Rueckfrage ueber allem ------------------------------------------
+        frageA = weich(frageA, frageNeustart ? 1f : 0f, 14f, dt);
+        if (frageA > 0.01f) zeichneRueckfrage(ctx, a * frageA);
         else { kJa = null; kNein = null; }
     }
 
@@ -165,69 +264,44 @@ public class HomeScreen extends Screen {
      * Rueckfrage vor dem Neustart.
      *
      * Ein Neustart schliesst das Spiel -- ein versehentlicher Klick darf das
-     * nicht ausloesen. Deshalb diese zweite Stufe.
+     * nicht ausloesen. Sie blendet weich ein, statt aufzuploppen.
      */
     private void zeichneRueckfrage(GuiGraphicsExtractor ctx, float a) {
-        ctx.fill(0, 0, this.width, this.height, fade(0xB0000000, a));
-        int w = 260, h = 96;
-        int x = this.width / 2 - w / 2, y = this.height / 2 - h / 2;
-        rund(ctx, x, y, w, h, fade(C_CARD, a), 6);
-        ctx.fill(x + 6, y, x + w - 6, y + 1, fade(mix(C_CARD, C_TEXT, 0.1f), a));
+        ctx.fill(0, 0, this.width, this.height, VortexStyle.fade(0xB0000000, a));
+        int w = Math.min(250, this.width - 20), h = 92;
+        int x = (this.width - w) / 2, y = (this.height - h) / 2 + (int) ((1f - a) * 10f);
+        VortexStyle.schatten(ctx, x, y, w, h, a);
+        rund(ctx, x, y, w, h, VortexStyle.fade(0xF20E0B16, a), 6);
+        ctx.fill(x + 6, y, x + w - 6, y + 2, VortexStyle.fade(0xFFF87171, a * 0.8f));
 
         String t1 = "Restart your game?";
-        ctx.text(this.font, Component.literal(t1),
-                this.width / 2 - this.font.width(t1) / 2, y + 16, fade(C_TEXT, a), false);
+        ctx.text(this.font, Component.literal(t1), (this.width - this.font.width(t1)) / 2, y + 16,
+                VortexStyle.fade(VortexStyle.TEXT, a), false);
         String t2 = "Minecraft closes and starts again.";
-        ctx.text(this.font, Component.literal(t2),
-                this.width / 2 - this.font.width(t2) / 2, y + 30, fade(C_DIMTXT, a), false);
+        ctx.text(this.font, Component.literal(t2), (this.width - this.font.width(t2)) / 2, y + 30,
+                VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
 
-        kNein = knopf(ctx, x + 16, y + h - 36, 104, 24, "Cancel", false, a);
-        kJa = knopf(ctx, x + w - 120, y + h - 36, 104, 24, "Restart", true, a);
+        int kb = (w - 16 * 2 - 10) / 2;
+        kNein = knopf(ctx, x + 16, y + h - 34, kb, 22, "Cancel", false, a);
+        kJa = knopf(ctx, x + w - 16 - kb, y + h - 34, kb, 22, "Restart", true, a);
     }
 
-    /** Zeichnet einen Knopf und liefert seine Klickflaeche. */
     private int[] knopf(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
-                        String text, boolean haupt, float a) {
+                        String text, boolean warnung, float a) {
         boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
-        if (haupt) {
-            // Hauptknopf im Verlauf, mit Schein.
-            for (int i = 1; i <= 3; i++) {
-                int al = (int) ((hov ? 40f : 24f) / i * a);
-                rund(ctx, x - i, y - i, w + i * 2, h + i * 2,
-                        (al << 24) | (mix(VIOLETT, BLAU, 0.5f) & 0x00FFFFFF), 4);
-            }
-            // Ecken einzeln (wegen der Rundung), die Mitte in Baendern --
-            // pixelweise waeren das ueber hundert Aufrufe je Bild.
-            for (int i = 0; i < 3; i++) {
-                int ein = 3 - i;
-                int c1 = mix(VIOLETT, BLAU, i / (float) w);
-                int c2 = mix(VIOLETT, BLAU, (w - 1 - i) / (float) w);
-                if (hov) { c1 = mix(c1, 0xFFFFFFFF, 0.12f); c2 = mix(c2, 0xFFFFFFFF, 0.12f); }
-                ctx.fill(x + i, y + ein, x + i + 1, y + h - ein, fade(c1, a));
-                ctx.fill(x + w - 1 - i, y + ein, x + w - i, y + h - ein, fade(c2, a));
-            }
-            int mw = w - 6, baender = Math.max(1, (mw + 7) / 8);
-            for (int b = 0; b < baender; b++) {
-                int ax = x + 3 + mw * b / baender, bx = x + 3 + mw * (b + 1) / baender;
-                int c = mix(VIOLETT, BLAU, ((ax + bx) / 2f - x) / w);
-                if (hov) c = mix(c, 0xFFFFFFFF, 0.12f);
-                ctx.fill(ax, y, bx, y + h, fade(c, a));
-            }
-        } else {
-            rund(ctx, x, y, w, h, fade(hov ? C_CARD_HV : C_CARD, a), 4);
-            ctx.fill(x + 4, y, x + w - 4, y + 1,
-                    fade(mix(C_CARD, C_TEXT, hov ? 0.16f : 0.08f), a));
-        }
+        int grund = warnung
+                ? VortexStyle.mix(0xFF3A1418, 0xFFB91C1C, hov ? 0.55f : 0.30f)
+                : (hov ? VortexStyle.HOV : VortexStyle.CARD);
+        rund(ctx, x, y, w, h, VortexStyle.fade(grund, a), 4);
         int tw = this.font.width(text);
-        ctx.text(this.font, Component.literal(text),
-                x + (w - tw) / 2, y + (h - 8) / 2,
-                fade(haupt || hov ? 0xFFFFFFFF : C_TEXT, a), false);
+        ctx.text(this.font, Component.literal(text), x + (w - tw) / 2, y + (h - 8) / 2,
+                VortexStyle.fade(warnung || hov ? 0xFFFFFFFF : VortexStyle.TEXT, a), false);
         return new int[]{x, y, w, h};
     }
 
-    private boolean in(int[] k) {
-        return k != null && mx >= k[0] && mx < k[0] + k[2] && my >= k[1] && my < k[1] + k[3];
-    }
+    // ======================================================================
+    // Bedienung
+    // ======================================================================
 
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
@@ -243,9 +317,8 @@ public class HomeScreen extends Screen {
                 try {
                     com.vortex.client.util.GameRestarter.restart();
                 } catch (Throwable pvpErr) {
-                    // Der Neustart prueft jetzt selbst, ob der neue Prozess
-                    // ueberlebt. Scheitert er, bleibt das Spiel offen und wir
-                    // zeigen den Grund -- statt abzustuerzen.
+                    // Der Neustart prueft selbst, ob der neue Prozess ueberlebt.
+                    // Scheitert er, bleibt das Spiel offen und zeigt den Grund.
                     fehler = "Restart failed: "
                             + (pvpErr.getMessage() == null ? pvpErr.getClass().getSimpleName()
                                                            : pvpErr.getMessage());
@@ -257,26 +330,92 @@ public class HomeScreen extends Screen {
             return true;
         }
 
-        // Das klassische Spaltenmenue: jede Kategorie eine Spalte, alles
-        // auf einen Blick. Das bisherige Menue (ClickGui) bleibt im Code
-        // erhalten, wird hier aber nicht mehr geoeffnet.
-        if (in(kMods)) { mc.gui.setScreen(new PanelGui()); return true; }
         // Alle Unterseiten bekommen diesen Bildschirm als Eltern -- ESC fuehrt
         // also hierher zurueck, nicht ins Spiel.
-        if (in(kWaypoints)) { mc.gui.setScreen(new WaypointScreen(this)); return true; }
-        if (in(kMacros))    { mc.gui.setScreen(new MacroScreen(this)); return true; }
-        if (in(kKeys))      { mc.gui.setScreen(new KeyListScreen(this)); return true; }
-        if (in(kBots)) {
-            mc.gui.setScreen(new PanelGui(com.vortex.client.module.Module.Category.BOTS));
-            return true;
-        }
-        if (in(kGarderobe)) { mc.gui.setScreen(new SkinScreen(this)); return true; }
-        if (in(kHud)) { mc.gui.setScreen(new HudEditorScreen()); return true; }
-        if (in(kNeustart)) { frageNeustart = true; fehler = null; return true; }
+        if (in(flaeche[MODS]))      { mc.gui.setScreen(new PanelGui()); return true; }
+        if (in(flaeche[BOTS]))      { mc.gui.setScreen(new PanelGui(Module.Category.BOTS)); return true; }
+        if (in(flaeche[WAYPOINTS])) { mc.gui.setScreen(new WaypointScreen(this)); return true; }
+        if (in(flaeche[MACROS]))    { mc.gui.setScreen(new MacroScreen(this)); return true; }
+        if (in(flaeche[WARDROBE]))  { mc.gui.setScreen(new SkinScreen(this)); return true; }
+        if (in(flaeche[KEYS]))      { mc.gui.setScreen(new KeyListScreen(this)); return true; }
+        if (in(flaeche[HUD]))       { mc.gui.setScreen(new HudEditorScreen()); return true; }
+        if (in(flaeche[RESTART]))   { frageNeustart = true; fehler = null; return true; }
         return false;
     }
 
-    // --- Hilfen --------------------------------------------------------------
+    // ======================================================================
+    // Hilfen
+    // ======================================================================
+
+    private boolean in(int[] k) {
+        return k != null && mx >= k[0] && mx < k[0] + k[2] && my >= k[1] && my < k[1] + k[3];
+    }
+
+    private void zeichneLogo(GuiGraphicsExtractor ctx, int x, int y, int g, float a) {
+        // Schein hinter dem Logo
+        for (int i = 1; i <= 3; i++) {
+            int al = (int) (18f / i * a);
+            rund(ctx, x - i * 2, y - i * 2, g + i * 4, g + i * 4,
+                    (al << 24) | (VortexStyle.VIOLETT & 0x00FFFFFF), Math.max(2, g / 5));
+        }
+        try {
+            ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+                    LOGO, x, y, g, g);
+        } catch (Throwable ignored) {
+            // Sprite nicht ladbar -- dann bleibt der Schein allein.
+        }
+    }
+
+    /** Gruppenueberschrift mit einer duennen Linie bis zum rechten Rand. */
+    private void gruppe(GuiGraphicsExtractor ctx, String name, int x, int y, int w, float a) {
+        ctx.text(this.font, Component.literal(name), x + 2, y + 3,
+                VortexStyle.fade(VortexStyle.mix(VortexStyle.TEXT_DIM, VortexStyle.LINE, 0.25f), a), false);
+        int lx = x + 8 + this.font.width(name);
+        if (x + w > lx) {
+            ctx.fill(lx, y + 7, x + w, y + 8, VortexStyle.fade(VortexStyle.LINE, a * 0.8f));
+        }
+    }
+
+    /**
+     * Zeichnet ein 7x7-Punktmuster.
+     *
+     * Aufeinanderfolgende Punkte einer Zeile werden zu EINEM Rechteck
+     * zusammengefasst -- so sind es je Symbol rund zehn Aufrufe statt bis zu
+     * 49.
+     */
+    private static void symbol(GuiGraphicsExtractor ctx, String[] muster, int x, int y, int farbe) {
+        for (int r = 0; r < muster.length; r++) {
+            String z = muster[r];
+            int c = 0;
+            while (c < z.length()) {
+                if (z.charAt(c) != '1') { c++; continue; }
+                int start = c;
+                while (c < z.length() && z.charAt(c) == '1') c++;
+                ctx.fill(x + start, y + r, x + c, y + r + 1, farbe);
+            }
+        }
+    }
+
+    /**
+     * Weicher Lichtfleck: drei Kreisschichten, jede aus 12 waagerechten
+     * Streifen -- 36 Aufrufe, fuer das Auge ein runder, weicher Schein.
+     */
+    private static void licht(GuiGraphicsExtractor ctx, int cx, int cy, int radius, int farbe, float a) {
+        float[] schichten = {1.0f, 0.68f, 0.40f};
+        for (float s : schichten) {
+            int r = Math.max(4, (int) (radius * s));
+            int al = (int) (14 * a);
+            int c = (al << 24) | (farbe & 0x00FFFFFF);
+            int streifen = 12;
+            for (int b = 0; b < streifen; b++) {
+                int y0 = cy - r + (2 * r) * b / streifen;
+                int y1 = cy - r + (2 * r) * (b + 1) / streifen;
+                float ym = (y0 + y1) / 2f - cy;
+                int halb = (int) Math.sqrt(Math.max(0f, r * r - ym * ym));
+                if (halb > 0 && y1 > y0) ctx.fill(cx - halb, y0, cx + halb, y1, c);
+            }
+        }
+    }
 
     private static void rund(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int c, int r) {
         if (w <= 0 || h <= 0) return;
@@ -293,94 +432,18 @@ public class HomeScreen extends Screen {
         }
     }
 
-    private static int fade(int argb, float f) {
-        if (f >= 1f) return argb;
-        if (f <= 0f) return argb & 0x00FFFFFF;
-        int al = (int) (((argb >>> 24) & 0xFF) * f);
-        return (al << 24) | (argb & 0x00FFFFFF);
+    /** Weiche, bildratenunabhaengige Annaeherung -- wie ueberall im Client. */
+    private static float weich(float ist, float ziel, float tempo, float dt) {
+        float f = 1f - (float) Math.exp(-tempo * dt);
+        float neu = ist + (ziel - ist) * f;
+        return Math.abs(ziel - neu) < 0.002f ? ziel : neu;
     }
 
-    private static int mix(int a, int b, float t) {
-        t = Math.max(0f, Math.min(1f, t));
-        int aa = (a >>> 24) & 0xFF, ar = (a >> 16) & 0xFF, ag = (a >> 8) & 0xFF, ab = a & 0xFF;
-        int ba = (b >>> 24) & 0xFF, br = (b >> 16) & 0xFF, bg = (b >> 8) & 0xFF, bb = b & 0xFF;
-        return ((int) (aa + (ba - aa) * t) << 24) | ((int) (ar + (br - ar) * t) << 16)
-                | ((int) (ag + (bg - ag) * t) << 8) | (int) (ab + (bb - ab) * t);
+    private static int clamp(int v, int lo, int hi) {
+        return Math.max(lo, Math.min(hi, v));
     }
 
-    /**
-     * Knopf fuer den Neustart, farblich abgesetzt.
-     *
-     * Der einzige Knopf, der das Spiel beendet -- deshalb ein roetlicher
-     * Hauch beim Ueberfahren. Er sieht sonst aus wie die anderen, damit das
-     * Raster ruhig bleibt; die Warnung kommt erst, wenn man ihn ansteuert.
-     */
-    private int[] knopfWarnung(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
-                               String text, float a) {
-        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
-        rund(ctx, x, y, w, h, fade(hov ? mix(C_CARD, 0xFFB91C1C, 0.30f) : C_CARD, a), 4);
-        ctx.fill(x + 4, y, x + w - 4, y + 1,
-                fade(mix(C_CARD, hov ? 0xFFF87171 : C_TEXT, hov ? 0.4f : 0.08f), a));
-        int tw = this.font.width(text);
-        ctx.text(this.font, Component.literal(text),
-                x + (w - tw) / 2, y + (h - 8) / 2,
-                fade(hov ? 0xFFFCA5A5 : C_TEXT, a), false);
-        return new int[]{x, y, w, h};
+    private static float clamp01(float v) {
+        return Math.max(0f, Math.min(1f, v));
     }
-
-
-    /**
-     * Eine Menuezeile.
-     *
-     * Links ein Balken, der beim Ueberfahren einblendet und beim Hauptweg
-     * dauerhaft leuchtet. Das fuehrt den Blick die Liste entlang, ohne dass
-     * jede Zeile einen Kasten braucht.
-     */
-    private int[] eintrag(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
-                          String text, boolean haupt, float a) {
-        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
-        if (hov || haupt) {
-            rund(ctx, x, y, w, h, fade(hov ? C_CARD_HV : C_CARD, a), 4);
-        }
-        // Balken links
-        if (haupt) {
-            for (int i = 0; i < 3; i++) {
-                ctx.fill(x, y + 4 + i, x + 3, y + h - 4 - i,
-                        fade(mix(VIOLETT, BLAU, i / 3f), a));
-            }
-        } else if (hov) {
-            ctx.fill(x, y + 6, x + 2, y + h - 6, fade(mix(VIOLETT, BLAU, 0.5f), a * 0.8f));
-        }
-        ctx.text(this.font, Component.literal(text), x + 14, y + (h - 8) / 2,
-                fade(haupt ? 0xFFFFFFFF : (hov ? C_TEXT : C_DIMTXT), a), false);
-        // Pfeil rechts, nur beim Ueberfahren
-        if (hov || haupt) {
-            ctx.text(this.font, Component.literal(">"), x + w - 14, y + (h - 8) / 2,
-                    fade(haupt ? 0xFFFFFFFF : mix(VIOLETT, BLAU, 0.5f), a), false);
-        }
-        return new int[]{x, y, w, h};
-    }
-
-    /** Wie eintrag, aber roetlich -- der einzige Weg, der das Spiel beendet. */
-    private int[] eintragWarnung(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
-                                 String text, float a) {
-        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
-        if (hov) {
-            rund(ctx, x, y, w, h, fade(mix(C_CARD, 0xFFB91C1C, 0.28f), a), 4);
-            ctx.fill(x, y + 6, x + 2, y + h - 6, fade(0xFFF87171, a));
-        }
-        ctx.text(this.font, Component.literal(text), x + 14, y + (h - 8) / 2,
-                fade(hov ? 0xFFFCA5A5 : C_DIMTXT, a), false);
-        return new int[]{x, y, w, h};
-    }
-
-    /** Duenne Trennlinie, zu den Raendern hin auslaufend. */
-    private void trenner(GuiGraphicsExtractor ctx, int x, int y, int w, float a) {
-        int halb = w / 2;
-        for (int i = 0; i < halb; i += 4) {
-            ctx.fill(x + i, y, x + i + 4, y + 1, fade(C_LINE, a * (i / (float) halb)));
-            ctx.fill(x + w - i - 4, y, x + w - i, y + 1, fade(C_LINE, a * (i / (float) halb)));
-        }
-    }
-
 }

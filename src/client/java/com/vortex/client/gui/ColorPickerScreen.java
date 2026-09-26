@@ -23,7 +23,20 @@ import net.minecraft.network.chat.Component;
 public class ColorPickerScreen extends Screen {
 
     private static final int WIN_W = 300;
-    private static final int WIN_H = 250;
+    private static final int WIN_H_MAX = 250;
+
+    /**
+     * Hoehe des Fensters -- hoechstens 250, sonst so viel, wie das Fenster
+     * hergibt.
+     *
+     * Vorher fest 250. Minecraft verkleinert die Oberflaeche aber bis auf
+     * 240 Pixel Hoehe -- dann ragte der Farbwaehler oben und unten heraus,
+     * und der Knopf "Fertig" war nicht mehr zu erreichen. Was fehlt, wird
+     * vom Farbfeld abgezogen; alles darunter rueckt entsprechend nach.
+     */
+    private int winH() {
+        return Math.max(170, Math.min(WIN_H_MAX, this.height - 8));
+    }
 
     private static final int C_DIM    = VortexStyle.DIM;
     private static final int C_WINDOW = VortexStyle.WINDOW;
@@ -111,10 +124,10 @@ public class ColorPickerScreen extends Screen {
     @Override
     protected void init() {
         int wx = (this.width - WIN_W) / 2;
-        int wy = (this.height - WIN_H) / 2;
+        int wy = (this.height - winH()) / 2;
 
         this.hexField = new EditBox(this.font,
-                wx + 60, wy + WIN_H - 30, 100, 14, Component.literal(""));
+                wx + 60, wy + winH() - 30, 100, 14, Component.literal(""));
         this.hexField.setBordered(false);
         this.hexField.setMaxLength(9);
         this.hexField.setValue(hex(currentArgb()));
@@ -157,16 +170,16 @@ public class ColorPickerScreen extends Screen {
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
 
         int wx = (this.width - WIN_W) / 2;
-        int wy = (this.height - WIN_H) / 2 + (int) ((1f - openAnim) * 12f);
+        int wy = (this.height - winH()) / 2 + (int) ((1f - openAnim) * 12f);
         int accent = Theme.INSTANCE.accent.get() | 0xFF000000;
 
         // Schatten und Akzentlinie wie im ClickGUI -- das haelt alle
 
         // Bildschirme optisch zusammen.
 
-        VortexStyle.schatten(ctx, wx, wy, WIN_W, WIN_H, openAnim);
+        VortexStyle.schatten(ctx, wx, wy, WIN_W, winH(), openAnim);
 
-        roundRect(ctx, wx, wy, WIN_W, WIN_H, fade(C_WINDOW, openAnim));
+        roundRect(ctx, wx, wy, WIN_W, winH(), fade(C_WINDOW, openAnim));
 
         VortexStyle.akzentLinie(ctx, wx + 4, wy, WIN_W - 8, openAnim);
         ctx.fill(wx, wy, wx + WIN_W, wy + 1, fade(accent, openAnim));
@@ -183,7 +196,8 @@ public class ColorPickerScreen extends Screen {
         fieldX = wx + 10;
         fieldY = wy + 34;
         fieldW = WIN_W - 20;
-        fieldH = 110;
+        // Farbfeld gibt nach, wenn das Fenster kleiner als 250 ist.
+        fieldH = Math.max(50, 110 - (WIN_H_MAX - winH()));
         drawSatBriField(ctx, fieldX, fieldY, fieldW, fieldH);
         // Markierung der aktuellen Position.
         int selX = fieldX + (int) (sat * fieldW);
@@ -198,9 +212,11 @@ public class ColorPickerScreen extends Screen {
         hueY = fieldY + fieldH + 8;
         hueW = WIN_W - 20;
         hueH = 12;
-        for (int i = 0; i < hueW; i++) {
-            int c = hsbToRgb(i / (float) hueW, 1f, 1f) | 0xFF000000;
-            ctx.fill(hueX + i, hueY, hueX + i + 1, hueY + hueH, c);
+        // In Streifen von 3 Pixeln statt pixelweise -- vorher 280 Aufrufe
+        // je Bild allein fuer diese Leiste. Fuer das Auge gleich.
+        for (int i = 0; i < hueW; i += 3) {
+            int c = hsbToRgb((i + 1.5f) / (float) hueW, 1f, 1f) | 0xFF000000;
+            ctx.fill(hueX + i, hueY, hueX + Math.min(i + 3, hueW), hueY + hueH, c);
         }
         int hx = hueX + (int) (hue * hueW);
         ctx.fill(hx - 1, hueY - 2, hx + 2, hueY + hueH + 2, 0xFFFFFFFF);
@@ -213,9 +229,10 @@ public class ColorPickerScreen extends Screen {
         alphaH = 12;
         drawChecker(ctx, alphaX, alphaY, alphaW, alphaH);
         int solid = hsbToRgb(hue, sat, bri) & 0x00FFFFFF;
-        for (int i = 0; i < alphaW; i++) {
-            int a = (int) (255f * i / (float) alphaW);
-            ctx.fill(alphaX + i, alphaY, alphaX + i + 1, alphaY + alphaH, (a << 24) | solid);
+        for (int i = 0; i < alphaW; i += 4) {
+            int a = (int) (255f * (i + 2f) / (float) alphaW);
+            ctx.fill(alphaX + i, alphaY, alphaX + Math.min(i + 4, alphaW), alphaY + alphaH,
+                    (Math.min(255, a) << 24) | solid);
         }
         int ax = alphaX + (int) (alpha / 255f * alphaW);
         ctx.fill(ax - 1, alphaY - 2, ax + 2, alphaY + alphaH + 2, 0xFFFFFFFF);
@@ -236,7 +253,7 @@ public class ColorPickerScreen extends Screen {
         }
 
         // --- Hex-Eingabe ---
-        int hy = wy + WIN_H - 33;
+        int hy = wy + winH() - 33;
         ctx.text(this.font, Component.literal("Hex"),
                 wx + 10, hy + 6, 0xFFB4B4C0, false);
         roundRect(ctx, wx + 50, hy, 120, 20, C_INNER);
@@ -318,8 +335,8 @@ public class ColorPickerScreen extends Screen {
         }
         // Fertig-Knopf / ausserhalb -> schliessen
         int wx = (this.width - WIN_W) / 2;
-        int wy = (this.height - WIN_H) / 2;
-        int hy = wy + WIN_H - 33;
+        int wy = (this.height - winH()) / 2;
+        int hy = wy + winH() - 33;
         String done = "Fertig";
         int dw = this.font.width(done) + 20;
         int dx = wx + WIN_W - dw - 10;
