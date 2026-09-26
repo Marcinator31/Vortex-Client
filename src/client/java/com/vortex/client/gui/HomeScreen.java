@@ -81,70 +81,67 @@ public class HomeScreen extends Screen {
 
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, a));
 
-        int cx = this.width / 2;
-        int cy = this.height / 2 - 40 + gleiten;
+        // --- Aufbau: Logo links, Menue rechts daneben ----------------------
+        //
+        // VOELLIG ANDERS ALS VORHER. Das Kachelraster wirkte wie eine
+        // Webseite: alles gleich gross, alles gleich wichtig, nichts fuehrte
+        // den Blick.
+        //
+        // Jetzt steht links gross das Logo mit dem Namen, rechts daneben eine
+        // ruhige Liste. Der Blick geht von links nach rechts, und die
+        // Reihenfolge der Eintraege sagt, was wichtig ist -- Mods oben.
+        int logo = 84;
+        int spalte = 220;                       // Breite der Menueliste
+        int block = logo + 36 + spalte;         // Logo + Abstand + Liste
+        int bx = this.width / 2 - block / 2;
+        int by = this.height / 2 - 92 + gleiten;
 
-        // --- Logo mit Schein ----------------------------------------------
-        int logo = 72;
+        // Logo mit Schein
+        int ly = by + 20;
         for (int i = 1; i <= 4; i++) {
-            int al = (int) (22f / i * a);
-            rund(ctx, cx - logo / 2 - i * 3, cy - logo / 2 - i * 3,
-                    logo + i * 6, logo + i * 6, (al << 24) | (VIOLETT & 0x00FFFFFF), 12);
+            int al = (int) (20f / i * a);
+            rund(ctx, bx - i * 3, ly - i * 3, logo + i * 6, logo + i * 6,
+                    (al << 24) | (VIOLETT & 0x00FFFFFF), 14);
         }
         try {
             ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                    LOGO, cx - logo / 2, cy - logo / 2, logo, logo);
-        } catch (Throwable ignored) {
-            // Sprite fehlt: dann wenigstens der Schriftzug.
-        }
+                    LOGO, bx, ly, logo, logo);
+        } catch (Throwable ignored) { }
 
-        // --- Schriftzug ----------------------------------------------------
-        // Buchstaben mit Abstand gesetzt -- wirkt kraeftiger als die
-        // normale Laufweite, ohne die Schrift skalieren zu muessen.
-        // Schriftzug in der normalen Minecraft-Schrift.
-        //
-        // Vorher waren die Buchstaben mit Leerzeichen gesperrt, und auf den
-        // Knoepfen standen Sonderzeichen. Beides wirkte unruhig: die
-        // Sonderzeichen hat die Standardschrift nicht, sie kommen aus einer
-        // Ersatzschrift mit anderer Strichstaerke und sehen unscharf aus.
         String zeile = "Vortex Client";
-        int zw = this.font.width(zeile);
         ctx.text(this.font, Component.literal(zeile),
-                cx - zw / 2, cy + logo / 2 + 14, fade(C_DIMTXT, a), false);
+                bx, ly + logo + 12, fade(C_TEXT, a), false);
+        String unter = "Right Shift";
+        ctx.text(this.font, Component.literal(unter),
+                bx, ly + logo + 24, fade(C_DIMTXT, a * 0.8f), false);
 
-        // --- MODS: der Hauptweg, gross in der Mitte -------------------------
-        int by = cy + logo / 2 + 36;
-        int modsB = 220, modsH = 32;
-        kMods = knopf(ctx, cx - modsB / 2, by, modsB, modsH, "Mods", true, a);
-
-        // --- Alle anderen Bereiche als Kacheln darunter --------------------
+        // --- Menueliste rechts ---------------------------------------------
         //
-        // Waypoints, Macros, Wardrobe, Keys, Theme und Bots standen frueher
-        // im ClickGUI zwischen den Modulen. Hier sind sie auf einen Blick
-        // erreichbar, und das ClickGUI zeigt nur noch Module.
-        //
-        // Zwei Reihen zu je vier Kacheln, gleich breit -- so bleibt das
-        // Raster ruhig, egal wie lang die Beschriftung ist.
-        int kB = 104, kH = 26, kL = 8;
-        int reiheB = 4 * kB + 3 * kL;
-        int kx0 = cx - reiheB / 2;
-        int ky = by + modsH + 14;
-        kWaypoints = knopf(ctx, kx0,                 ky, kB, kH, "Waypoints", false, a);
-        kMacros    = knopf(ctx, kx0 + (kB + kL),     ky, kB, kH, "Macros",    false, a);
-        kGarderobe = knopf(ctx, kx0 + (kB + kL) * 2, ky, kB, kH, "Wardrobe",  false, a);
-        kBots      = knopf(ctx, kx0 + (kB + kL) * 3, ky, kB, kH, "Bots",      false, a);
-        ky += kH + kL;
+        // Eintraege statt Kacheln: eine Zeile je Bereich, mit einem Balken
+        // links, der beim Ueberfahren erscheint. Das ist ruhiger als acht
+        // gleich grosse Kaesten und laesst sich mit einem Blick lesen.
+        int lx = bx + logo + 36;
+        int ly2 = by;
+        int zh = 26;
 
-        // THEME ENTFERNT. Die Farben kommen jetzt fest aus der gemeinsamen
-        // Palette (VortexStyle) -- ein eigener Editor dafuer ergab keinen
-        // Sinn mehr, weil das neue Design auf genau diese Farben abgestimmt
-        // ist. Die zweite Reihe hat deshalb drei Kacheln, mittig gesetzt.
-        int reihe2X = cx - (3 * kB + 2 * kL) / 2;
-        kKeys      = knopf(ctx, reihe2X,                 ky, kB, kH, "Keys",     false, a);
-        kHud       = knopf(ctx, reihe2X + (kB + kL),     ky, kB, kH, "Edit HUD", false, a);
-        kNeustart  = knopfWarnung(ctx, reihe2X + (kB + kL) * 2, ky, kB, kH, "Restart", a);
+        kMods      = eintrag(ctx, lx, ly2, spalte, zh, "Mods", true, a);  ly2 += zh + 4;
+        kBots      = eintrag(ctx, lx, ly2, spalte, zh, "Bots", false, a); ly2 += zh + 4;
+        ly2 += 6;
+        trenner(ctx, lx, ly2, spalte, a); ly2 += 10;
+
+        kWaypoints = eintrag(ctx, lx, ly2, spalte, zh, "Waypoints", false, a); ly2 += zh + 4;
+        kMacros    = eintrag(ctx, lx, ly2, spalte, zh, "Macros", false, a);    ly2 += zh + 4;
+        kGarderobe = eintrag(ctx, lx, ly2, spalte, zh, "Wardrobe", false, a);  ly2 += zh + 4;
+        kKeys      = eintrag(ctx, lx, ly2, spalte, zh, "Keybinds", false, a);  ly2 += zh + 4;
+        kHud       = eintrag(ctx, lx, ly2, spalte, zh, "HUD Editor", false, a);ly2 += zh + 4;
+        ly2 += 6;
+        trenner(ctx, lx, ly2, spalte, a); ly2 += 10;
+
+        kNeustart  = eintragWarnung(ctx, lx, ly2, spalte, zh, "Restart Game", a);
         kTheme     = null;
-        int h = kH;
+
+        int cx = this.width / 2;
+        int ky = ly2, kH = zh;
 
         // --- Fusszeile -------------------------------------------------------
         // Nur ESC: Rechtsshift oeffnet den Bildschirm, schliesst ihn aber nicht.
@@ -260,14 +257,17 @@ public class HomeScreen extends Screen {
             return true;
         }
 
-        if (in(kMods)) { mc.gui.setScreen(new ClickGui()); return true; }
+        // Das klassische Spaltenmenue: jede Kategorie eine Spalte, alles
+        // auf einen Blick. Das bisherige Menue (ClickGui) bleibt im Code
+        // erhalten, wird hier aber nicht mehr geoeffnet.
+        if (in(kMods)) { mc.gui.setScreen(new PanelGui()); return true; }
         // Alle Unterseiten bekommen diesen Bildschirm als Eltern -- ESC fuehrt
         // also hierher zurueck, nicht ins Spiel.
         if (in(kWaypoints)) { mc.gui.setScreen(new WaypointScreen(this)); return true; }
         if (in(kMacros))    { mc.gui.setScreen(new MacroScreen(this)); return true; }
         if (in(kKeys))      { mc.gui.setScreen(new KeyListScreen(this)); return true; }
         if (in(kBots)) {
-            mc.gui.setScreen(new ClickGui(com.vortex.client.module.Module.Category.BOTS));
+            mc.gui.setScreen(new PanelGui(com.vortex.client.module.Module.Category.BOTS));
             return true;
         }
         if (in(kGarderobe)) { mc.gui.setScreen(new SkinScreen(this)); return true; }
@@ -326,6 +326,61 @@ public class HomeScreen extends Screen {
                 x + (w - tw) / 2, y + (h - 8) / 2,
                 fade(hov ? 0xFFFCA5A5 : C_TEXT, a), false);
         return new int[]{x, y, w, h};
+    }
+
+
+    /**
+     * Eine Menuezeile.
+     *
+     * Links ein Balken, der beim Ueberfahren einblendet und beim Hauptweg
+     * dauerhaft leuchtet. Das fuehrt den Blick die Liste entlang, ohne dass
+     * jede Zeile einen Kasten braucht.
+     */
+    private int[] eintrag(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+                          String text, boolean haupt, float a) {
+        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
+        if (hov || haupt) {
+            rund(ctx, x, y, w, h, fade(hov ? C_CARD_HV : C_CARD, a), 4);
+        }
+        // Balken links
+        if (haupt) {
+            for (int i = 0; i < 3; i++) {
+                ctx.fill(x, y + 4 + i, x + 3, y + h - 4 - i,
+                        fade(mix(VIOLETT, BLAU, i / 3f), a));
+            }
+        } else if (hov) {
+            ctx.fill(x, y + 6, x + 2, y + h - 6, fade(mix(VIOLETT, BLAU, 0.5f), a * 0.8f));
+        }
+        ctx.text(this.font, Component.literal(text), x + 14, y + (h - 8) / 2,
+                fade(haupt ? 0xFFFFFFFF : (hov ? C_TEXT : C_DIMTXT), a), false);
+        // Pfeil rechts, nur beim Ueberfahren
+        if (hov || haupt) {
+            ctx.text(this.font, Component.literal(">"), x + w - 14, y + (h - 8) / 2,
+                    fade(haupt ? 0xFFFFFFFF : mix(VIOLETT, BLAU, 0.5f), a), false);
+        }
+        return new int[]{x, y, w, h};
+    }
+
+    /** Wie eintrag, aber roetlich -- der einzige Weg, der das Spiel beendet. */
+    private int[] eintragWarnung(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
+                                 String text, float a) {
+        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h;
+        if (hov) {
+            rund(ctx, x, y, w, h, fade(mix(C_CARD, 0xFFB91C1C, 0.28f), a), 4);
+            ctx.fill(x, y + 6, x + 2, y + h - 6, fade(0xFFF87171, a));
+        }
+        ctx.text(this.font, Component.literal(text), x + 14, y + (h - 8) / 2,
+                fade(hov ? 0xFFFCA5A5 : C_DIMTXT, a), false);
+        return new int[]{x, y, w, h};
+    }
+
+    /** Duenne Trennlinie, zu den Raendern hin auslaufend. */
+    private void trenner(GuiGraphicsExtractor ctx, int x, int y, int w, float a) {
+        int halb = w / 2;
+        for (int i = 0; i < halb; i += 4) {
+            ctx.fill(x + i, y, x + i + 4, y + 1, fade(C_LINE, a * (i / (float) halb)));
+            ctx.fill(x + w - i - 4, y, x + w - i, y + 1, fade(C_LINE, a * (i / (float) halb)));
+        }
     }
 
 }

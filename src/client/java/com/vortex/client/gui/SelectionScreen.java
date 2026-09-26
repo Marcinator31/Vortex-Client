@@ -392,10 +392,19 @@ public abstract class SelectionScreen extends Screen {
         return px >= x && px < x + w && py >= y && py < y + h;
     }
 
+    /**
+     * Weiche Annaeherung, bildratenunabhaengig.
+     *
+     * Vorher: speed * dt, gekappt bei 1 -- bei niedriger Bildrate sprang die
+     * Bewegung in einem Schritt ans Ziel. Jetzt die exakte Form, die bei 30
+     * und bei 240 Bildern pro Sekunde gleich schnell ist und nie springt.
+     * Dieselbe Rechnung wie im ClickGUI.
+     */
     private static float anim(float cur, float target, float speed, float dt) {
-        float f = speed * dt;
-        if (f > 1f) f = 1f;
-        return cur + (target - cur) * f;
+        float f = 1f - (float) Math.exp(-speed * dt);
+        float neu = cur + (target - cur) * f;
+        if (Math.abs(target - neu) < 0.01f) return target;
+        return neu;
     }
 
     private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {

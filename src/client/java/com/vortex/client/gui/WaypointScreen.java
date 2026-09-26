@@ -122,8 +122,8 @@ public class WaypointScreen extends Screen {
         float dt = (lastNano == 0L) ? 0.016f : (now - lastNano) / 1_000_000_000.0f;
         lastNano = now;
         if (dt > 0.1f) dt = 0.1f;
-        openAnim += (1f - openAnim) * Math.min(1f, 14f * dt);
-        scroll += (scrollTarget - scroll) * Math.min(1f, 18f * dt);
+        openAnim += (1f - openAnim) * (1f - (float) Math.exp(-14f * dt));
+        scroll += (scrollTarget - scroll) * (1f - (float) Math.exp(-18f * dt));
 
         ctx.fill(0, 0, this.width, this.height, fade(C_DIM, openAnim));
 

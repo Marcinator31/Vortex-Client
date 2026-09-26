@@ -335,7 +335,8 @@ public final class WaypointHud {
                 boolean aimed = (dxc * dxc + dyc * dyc) < (aimRadius * aimRadius);
 
                 float a = AIM_ANIM.getOrDefault(wp, 0f);
-                a = a + ((aimed ? 1f : 0f) - a) * Math.min(1f, 10f * dt);
+                // Bildratenunabhaengig wie ueberall sonst -- sprang vorher unter 10 FPS.
+                a = a + ((aimed ? 1f : 0f) - a) * (1f - (float) Math.exp(-10f * dt));
                 AIM_ANIM.put(wp, a);
 
                 // Position EINMAL auf ganze Pixel runden -- sonst zittert alles,

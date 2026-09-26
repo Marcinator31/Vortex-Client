@@ -163,14 +163,26 @@ public class HudEditorScreen extends Screen {
 
     private void drawToolbar(GuiGraphicsExtractor ctx, int accent) {
         int h = 26;
-        ctx.fill(0, 0, this.width, h, C_BAR);
-        ctx.fill(0, h, this.width, h + 1, VortexStyle.LINE);
 
-        ctx.text(this.font, Component.literal("HUD Editor"),
-                8, 9, 0xFFFFFFFF);
-        ctx.text(this.font,
-                Component.literal("Drag to move  \u00B7  ESC saves and closes"),
-                74, 9, VortexStyle.TEXT_DIM, false);
+        // KEIN DURCHGEHENDER BALKEN MEHR.
+        //
+        // Vorher lag ueber der gesamten Bildbreite eine deckende Leiste. HUD
+        // Elemente am oberen Rand -- Koordinaten, Uhrzeit, FPS -- verschwanden
+        // darunter und liessen sich weder sehen noch greifen.
+        //
+        // Jetzt zwei schmale Felder: links die Beschriftung, rechts die
+        // Schalter. Dazwischen ist der Bildrand frei.
+        String titel = "HUD Editor";
+        String hinweis = "Drag to move  \u00B7  ESC saves and closes";
+        int linksB = 16 + this.font.width(titel) + 10 + this.font.width(hinweis);
+        roundRect(ctx, 6, 4, linksB, h - 8, C_BAR);
+
+        int rechtsAb = toolbarX(1) - 8;
+        roundRect(ctx, rechtsAb, 4, this.width - rechtsAb - 6, h - 8, C_BAR);
+
+        ctx.text(this.font, Component.literal(titel), 14, 9, 0xFFFFFFFF);
+        ctx.text(this.font, Component.literal(hinweis),
+                14 + this.font.width(titel) + 10, 9, VortexStyle.TEXT_DIM, false);
 
         // Umschalter rechts.
         drawToggle(ctx, toolbarX(0), 5, "Raster", showGrid, accent);
@@ -213,7 +225,14 @@ public class HudEditorScreen extends Screen {
                 snapping = !snapping;
                 return true;
             }
-            if (my < 26) return true; // restliche Leiste schluckt Klicks
+            // FRUEHER: "if (my < 26) return true;" -- die ganze obere Leiste
+            // schluckte jeden Klick. Damit liess sich kein HUD-Element im
+            // oberen Bildrand anfassen und keines dorthin ziehen, obwohl
+            // genau dort viele Anzeigen sitzen (Koordinaten, Uhrzeit, FPS).
+            //
+            // Jetzt schlucken nur die beiden Schalter selbst -- die sind oben
+            // schon geprueft. Der Rest der Leiste ist durchlaessig: die
+            // Elemente darunter lassen sich normal greifen.
 
             // ArmorHUD-Teile (liegen oft ueber anderen Elementen).
             ArmorHudModule a = armor();
@@ -418,4 +437,21 @@ public class HudEditorScreen extends Screen {
                 | (((int) (ag + (bg - ag) * t)) << 8)
                 | ((int) (ab + (bb - ab) * t));
     }
+
+    /** Rechteck mit leicht abgerundeten Ecken -- wie im uebrigen Client. */
+    private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int color) {
+        if (w <= 0 || h <= 0) return;
+        int r = Math.min(3, Math.min(w / 2, h / 2));
+        ctx.fill(x, y + r, x + w, y + h - r, color);
+        ctx.fill(x + r, y, x + w - r, y + r, color);
+        ctx.fill(x + r, y + h - r, x + w - r, y + h, color);
+        for (int i = 0; i < r; i++) {
+            int ein = r - i - 1;
+            ctx.fill(x + ein, y + i, x + r, y + i + 1, color);
+            ctx.fill(x + w - r, y + i, x + w - ein, y + i + 1, color);
+            ctx.fill(x + ein, y + h - i - 1, x + r, y + h - i, color);
+            ctx.fill(x + w - r, y + h - i - 1, x + w - ein, y + h - i, color);
+        }
+    }
+
 }
