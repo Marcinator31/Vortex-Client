@@ -29,6 +29,7 @@ import net.minecraft.network.chat.Component;
  * BEDIENUNG
  *   Linksklick auf ein Modul     ein- und ausschalten
  *   Rechtsklick auf ein Modul    Einstellungen darunter auf- und zuklappen
+ *   Klick auf das Plus rechts    ebenfalls auf- und zuklappen
  *   Mausrad ueber einer Spalte   diese Spalte scrollen
  *   Suchfeld oben                filtert alle Spalten gleichzeitig
  *   Klick auf einen Spaltenkopf  Kategorie ein- und ausklappen
@@ -49,6 +50,7 @@ public class PanelGui extends Screen {
     private static final int AUSWAHL_H = 15;   // Knopf fuer die Auswahlliste
     private static final int ABSTAND  = 8;     // zwischen den Spalten
     private static final int OBEN     = 34;    // Platz fuer das Suchfeld
+    private static final int PLUS_B   = 16;    // Klickflaeche des Plus rechts
 
     /** Nur diese Kategorie zeigen (fuer die Bots-Kachel), sonst null. */
     private final Module.Category nur;
@@ -94,7 +96,7 @@ public class PanelGui extends Screen {
     private int ziehX, ziehB;
 
     // --- Klickflaechen ------------------------------------------------------
-    private enum Art { KOPF, MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL }
+    private enum Art { KOPF, MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL, RESET }
 
     private static final class Treffer {
         final int x, y, w, h;
@@ -413,9 +415,17 @@ public class PanelGui extends Screen {
             // Hinweis, dass es Einstellungen gibt
             if (hatEinstellungen(m)) {
                 boolean auf = offen.getOrDefault(m, false);
+                // Das Plus ist ein Knopf: beim Ueberfahren bekommt es eine
+                // eigene kleine Flaeche, damit man sieht, dass man es
+                // anklicken kann.
+                boolean plusHov = hov && mx >= x + spalteB - PLUS_B;
+                if (plusHov) {
+                    ctx.fill(x + spalteB - PLUS_B + 1, y + 2, x + spalteB - 3, y + ZEILE_H - 2,
+                            VortexStyle.fade(VortexStyle.mix(VortexStyle.HOV, VortexStyle.akzent(0.5f), 0.35f), a));
+                }
                 ctx.text(this.font, Component.literal(auf ? "-" : "+"),
                         x + spalteB - 12, y + 4,
-                        VortexStyle.fade(auf ? VortexStyle.akzent(0.5f) : VortexStyle.TEXT_DIM, a), false);
+                        VortexStyle.fade(auf || plusHov ? VortexStyle.akzent(0.5f) : VortexStyle.TEXT_DIM, a), false);
             }
             treffer.add(new Treffer(x, Math.max(y, clipOben), spalteB,
                     Math.min(y + ZEILE_H, clipUnten) - Math.max(y, clipOben),
@@ -471,6 +481,9 @@ public class PanelGui extends Screen {
                         zeichneEinstellung(ctx, m, s, x + 8, sy, spalteB - 14, a);
                     }
                     sy += EINST_H;
+                }
+                if (hatZuruecksetzbare(m) && sy + EINST_H > oben && sy < unten) {
+                    zeichneReset(ctx, m, x + 8, sy, spalteB - 14, a);
                 }
                 // Schliessen kehrt von selbst zum aeusseren Bereich zurueck --
                 // Minecraft verwaltet die Bereiche als Stapel.
@@ -595,7 +608,11 @@ public class PanelGui extends Screen {
                     katZu.put(t.kat, !katZu.getOrDefault(t.kat, false));
                     return true;
                 case MODUL:
-                    if (knopf == 1) {
+                    // Rechtsklick irgendwo auf der Zeile ODER Linksklick auf
+                    // das Plus rechts: Einstellungen auf- und zuklappen.
+                    // Vorher war das Plus nur Anzeige.
+                    boolean aufsPlus = mx >= t.x + t.w - PLUS_B;
+                    if (knopf == 1 || (aufsPlus && hatEinstellungen(t.modul))) {
                         if (hatEinstellungen(t.modul)) {
                             offen.put(t.modul, !offen.getOrDefault(t.modul, false));
                         }
@@ -628,6 +645,18 @@ public class PanelGui extends Screen {
                     return true;
                 case TASTE:
                     ((KeySetting) t.einst).setListening(true);
+                    return true;
+                case RESET:
+                    // Zwei Klicks: der erste fragt nach, der zweite setzt
+                    // zurueck. Ein versehentlicher Klick kostet so nichts.
+                    long jetztMs = System.currentTimeMillis();
+                    if (resetFrage == t.modul && jetztMs - resetFrageZeit < 3000) {
+                        zuruecksetzen(t.modul);
+                        resetFrage = null;
+                    } else {
+                        resetFrage = t.modul;
+                        resetFrageZeit = jetztMs;
+                    }
                     return true;
             }
         }
@@ -781,9 +810,57 @@ public class PanelGui extends Screen {
     private int einstellungsHoehe(Module m) {
         int n = 0;
         for (Setting s : m.getSettings()) if (s != m.getEnabledSetting()) n++;
+        if (hatZuruecksetzbare(m)) n++;   // Zeile "Reset"
         int h = n * EINST_H + 2 * INNEN_RAND;
         if (m instanceof com.vortex.client.module.HasOwnScreen) h += AUSWAHL_H + 2;
         return h;
+    }
+
+    // ------------------------------------------------------------------
+    // Zuruecksetzen
+    // ------------------------------------------------------------------
+
+    /** Modul, bei dem "Reset" einmal angeklickt wurde und auf Bestaetigung wartet. */
+    private Module resetFrage = null;
+    private long resetFrageZeit = 0;
+
+    /** Gibt es ausser An/Aus und Taste etwas zum Zuruecksetzen? */
+    private boolean hatZuruecksetzbare(Module m) {
+        for (Setting s : m.getSettings()) {
+            if (s != m.getEnabledSetting() && s != m.getToggleKey()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Alle Einstellungen des Moduls auf Werkseinstellung. An/Aus und die
+     * Tastenbelegung bleiben -- die hat man bewusst gesetzt, und wer z. B.
+     * das Scoreboard verschoben hat, will die Position zurueck, nicht seine
+     * Taste verlieren.
+     */
+    private void zuruecksetzen(Module m) {
+        for (Setting s : m.getSettings()) {
+            if (s == m.getEnabledSetting() || s == m.getToggleKey()) continue;
+            s.resetToDefault();
+            einstAnim.remove(s);
+        }
+        com.vortex.client.core.ConfigManager.save();
+    }
+
+    /** Kleine Zeile "Reset" rechtsbuendig unter den Einstellungen. */
+    private void zeichneReset(GuiGraphicsExtractor ctx, Module m, int x, int y, int w, float a) {
+        boolean frage = resetFrage == m && System.currentTimeMillis() - resetFrageZeit < 3000;
+        String text = frage ? "Click again to reset" : "Reset to default";
+        int tw = this.font.width(text);
+        int bx = x + w - tw - 6;
+        boolean hov = mx >= bx && mx < x + w && my >= y && my < y + EINST_H;
+        if (hov || frage) {
+            ctx.fill(bx, y + 1, x + w, y + EINST_H - 1, VortexStyle.fade(
+                    frage ? VortexStyle.mix(VortexStyle.CARD, 0xFFEF4444, 0.35f) : VortexStyle.HOV, a));
+        }
+        ctx.text(this.font, Component.literal(text), bx + 3, y + 3,
+                VortexStyle.fade(frage ? 0xFFFF8A8A : (hov ? VortexStyle.TEXT : VortexStyle.TEXT_DIM), a), false);
+        treffer.add(new Treffer(bx, y, x + w - bx, EINST_H, Art.RESET, m, null));
     }
 
     private int inhaltHoehe(List<Module> liste) {

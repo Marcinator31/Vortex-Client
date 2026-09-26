@@ -132,6 +132,8 @@ public final class ModuleManager {
         register(new com.vortex.client.module.modules.StreamerModeModule());
         register(new com.vortex.client.module.modules.FriendsModule());
         register(new com.vortex.client.module.modules.SlotLockModule());
+        // --- 4.5.0 ---
+        register(new com.vortex.client.module.modules.ItemSizeModule());
         // Weitere kommen einfach hier dazu.
     }
 
@@ -167,6 +169,10 @@ public final class ModuleManager {
         for (Module m : modules) {
             if (m.getCategory() == category) result.add(m);
         }
+        // Alphabetisch (Gross/klein egal) -- sonst stehen sie in der
+        // Reihenfolge der Anmeldung, und Addon-Module haengen hinten dran.
+        result.sort(java.util.Comparator.comparing(
+                (Module m) -> m.getName().toLowerCase(java.util.Locale.ROOT)));
         return result;
     }
 }

@@ -1,49 +1,42 @@
 package com.vortex.client.mixin.client;
 
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Hides chests, signs, beds and the like.
+ * No Render Blocks fuer Kisten, Schilder, Betten und Co.
  *
- * These are the gap No Render Blocks could not close. They are blocks, but they
- * are drawn by a renderer of their own rather than from the block model, so
- * reporting them as invisible had no effect on them -- a hidden chest stayed
- * exactly where it was.
+ * Diese Bloecke zeichnet ein eigener Renderer, nicht das Blockmodell --
+ * deshalb reichte es nicht, sie beim Blockmodell auszublenden.
  *
- * The hook is the distance check: a plain yes-or-no question asked once per
- * block entity. Answering no simply leaves it out, which is precisely what
- * happens for anything too far away -- a path the game takes constantly and
- * handles without complaint.
+ * DAS ALTE WAR TOT: Es hing an "method_33892", einem Namen aus 1.21, den es in
+ * 26.2 nicht gibt -- Kisten blieben immer sichtbar. Jetzt: der zentrale
+ * Verteiler BlockEntityRenderDispatcher.submit, dieselbe Stelle und Signatur
+ * wie Meteor fuer 26.2 (NoRender, Xray).
  */
-@Mixin(BlockEntityRenderer.class)
-/*
- * An interface, because the target is one -- a mixin has to match. Private
- * methods inside an interface are allowed from Java 9 onwards, and this runs
- * on 21.
- */
-public interface BlockEntityHideMixin {
+@Mixin(BlockEntityRenderDispatcher.class)
+public abstract class BlockEntityHideMixin {
 
-    @Inject(method = "method_33892", at = @At("HEAD"), cancellable = true, require = 0)
-    private void vortex$hideBlockEntity(BlockEntity blockEntity, Vec3 cameraPos,
-                                        CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "submit", at = @At("HEAD"), cancellable = true, require = 0)
+    private <S extends BlockEntityRenderState> void vortex$hideBlockEntity(S state, PoseStack poseStack,
+            SubmitNodeCollector collector, CameraRenderState camera, CallbackInfo ci) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
                     com.vortex.client.module.modules.NoRenderBlocksModule.class);
             if (mod == null || !mod.isEnabled()) return;
             if (mod.getHiddenBlocks().isEmpty()) return;
-            if (blockEntity == null) return;
-
-            var id = BuiltInRegistries.BLOCK.getKey(blockEntity.getBlockState().getBlock());
-            if (id != null && mod.isHidden(id.toString())) {
-                cir.setReturnValue(false);
-            }
+            var bs = ((BlockEntityStateAccessor) state).vortex$getBlockState();
+            if (bs == null) return;
+            var id = BuiltInRegistries.BLOCK.getKey(bs.getBlock());
+            if (id != null && mod.isHidden(id.toString())) ci.cancel();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("BlockEntityHideMixin", pvpErr);
         }

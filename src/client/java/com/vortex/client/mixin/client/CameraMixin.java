@@ -39,15 +39,16 @@ public abstract class CameraMixin {
      * hinten rechnet Minecraft danach aus genau dieser Drehung, samt Abstand
      * zu Waenden.
      */
-    @org.spongepowered.asm.mixin.injection.Redirect(method = "alignWithEntity",
+    @org.spongepowered.asm.mixin.injection.ModifyArgs(method = "alignWithEntity",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 0),
             require = 0)
-    private void vortex$freelook(net.minecraft.client.Camera kamera, float yaw, float pitch) {
+    private void vortex$freelook(org.spongepowered.asm.mixin.injection.invoke.arg.Args args) {
+        // Gleiche Form wie Meteor fuer 26.2 (ModifyArgs statt Redirect):
+        // vertraegt sich mit anderen Mods, die denselben Aufruf anfassen.
         if (com.vortex.client.hud.Freelook.aktiv()) {
-            yaw = com.vortex.client.hud.Freelook.yaw();
-            pitch = com.vortex.client.hud.Freelook.pitch();
+            args.set(0, com.vortex.client.hud.Freelook.yaw());
+            args.set(1, com.vortex.client.hud.Freelook.pitch());
         }
-        setRotation(yaw, pitch);
     }
 
     @Inject(method = "update", at = @At("TAIL"))

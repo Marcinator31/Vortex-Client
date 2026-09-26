@@ -54,7 +54,13 @@ public final class ItemPhysics {
 
     /** Vom Mixin: welcher Gegenstand zu welchem Renderzustand gehoert. */
     public static void merke(Entity e, EntityRenderState state) {
-        if (e instanceof ItemEntity ie && state != null && aktiv()) ZUORDNUNG.put(state, ie);
+        // Auch fuer Item Size ("nur Wertvolles" braucht den Gegenstand selbst)
+        if (e instanceof ItemEntity ie && state != null && (aktiv() || ItemSize.aktiv())) ZUORDNUNG.put(state, ie);
+    }
+
+    /** Gegenstand zu einem Renderzustand, oder null. */
+    public static ItemEntity wesen(EntityRenderState state) {
+        return ZUORDNUNG.get(state);
     }
 
     /**
@@ -94,15 +100,18 @@ public final class ItemPhysics {
             int anzahl = Math.max(1, state.count);
             for (int i = 0; i < anzahl; i++) {
                 ps.pushPose();
-                if (i > 0) {
-                    float dx = (zufall.nextFloat() * 2f - 1f) * 0.15f;
-                    float dz = (zufall.nextFloat() * 2f - 1f) * 0.15f;
-                    // Gestapelt: jede Kopie liegt etwas hoeher auf der vorigen
-                    if (flach) ps.translate(dx, dz, -i * PIXEL * 0.6f);
-                    else ps.translate(dx, i * PIXEL, dz);
+                try {
+                    if (i > 0) {
+                        float dx = (zufall.nextFloat() * 2f - 1f) * 0.15f;
+                        float dz = (zufall.nextFloat() * 2f - 1f) * 0.15f;
+                        // Gestapelt: jede Kopie liegt etwas hoeher auf der vorigen
+                        if (flach) ps.translate(dx, dz, -i * PIXEL * 0.6f);
+                        else ps.translate(dx, i * PIXEL, dz);
+                    }
+                    state.item.submit(ps, col, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor);
+                } finally {
+                    ps.popPose();
                 }
-                state.item.submit(ps, col, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor);
-                ps.popPose();
             }
         } finally {
             ps.popPose();

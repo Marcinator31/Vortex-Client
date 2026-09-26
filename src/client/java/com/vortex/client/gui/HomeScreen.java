@@ -42,11 +42,14 @@ public class HomeScreen extends Screen {
             Identifier.fromNamespaceAndPath("vortexclient", "logo");
 
     // --- Eintraege ------------------------------------------------------------
-    private static final int MODS = 0, BOTS = 1, WAYPOINTS = 2, MACROS = 3,
-            WARDROBE = 4, KEYS = 5, HUD = 6, RESTART = 7;
+    private static final int MODS = 0, BOTS = 1, PRESETS = 2, WAYPOINTS = 3, MACROS = 4,
+            WARDROBE = 5, KEYS = 6, HUD = 7, COMMUNITY = 8, RESTART = 9;
     private static final String[] NAMEN = {
-        "Mods", "Bots", "Waypoints", "Macros", "Wardrobe", "Keybinds", "HUD Editor", "Restart Game"
+        "Mods", "Bots", "Presets", "Waypoints", "Macros", "Wardrobe", "Keybinds", "HUD Editor",
+        "Community", "Restart Game"
     };
+    /** Anzahl der Eintraege -- ueberall statt einer festen Zahl benutzt. */
+    private static final int N = NAMEN.length;
 
     /**
      * Symbole als 7x7-Punktmuster, eines je Eintrag, in derselben Reihenfolge.
@@ -57,6 +60,8 @@ public class HomeScreen extends Screen {
             "111.111", "111.111", "111.111", ".......", "111.111", "111.111", "111.111" },
         { // Bots: Roboterkopf
             "...1...", ".11111.", ".1.1.1.", ".11111.", ".11111.", ".11111.", ".1...1." },
+        { // Presets: drei Schieberegler
+            "1......", "1111111", "......1", "...1...", "1111111", ".1.....", "1111111" },
         { // Waypoints: Kartennadel
             "..111..", ".11111.", "11...11", "11...11", ".11111.", "..111..", "...1..." },
         { // Macros: Abspielen
@@ -67,6 +72,8 @@ public class HomeScreen extends Screen {
             ".......", ".......", "111....", "1.11111", "111.1.1", ".......", "......." },
         { // HUD Editor: Fenster
             "1111111", "1111111", "1.....1", "1.11..1", "1.....1", "1....11", "1111111" },
+        { // Community: zwei Personen
+            ".1...1.", "111.111", ".1...1.", ".......", "111.111", "1111111", "1111111" },
         { // Restart: Kreispfeil
             "..111.1", ".1...11", "1...111", "1......", "1.....1", ".1...1.", "..111.." },
     };
@@ -87,7 +94,7 @@ public class HomeScreen extends Screen {
     private String fehler = null;
 
     /** Klickflaechen je Eintrag, jedes Bild neu gesetzt. */
-    private final int[][] flaeche = new int[8][];
+    private final int[][] flaeche = new int[N][];
     private int[] kJa, kNein;
 
     public HomeScreen() {
@@ -132,9 +139,11 @@ public class HomeScreen extends Screen {
         int kopfH = kompakt ? 24 : logo + 28;
         int gruppenH = kompakt ? 0 : 2 * 14;
         int rest = verfuegbar - 10 - kopfH - 8 - gruppenH - 6 - 10;
-        int zeileH = clamp(rest / 8 - 2, 16, 24);
+        // Bei kleinem Fenster duerfen die Zeilen enger werden -- sonst passen
+        // zehn Eintraege nicht mehr in 240 Pixel Hoehe.
+        int zeileH = clamp(rest / N - 2, kompakt ? 14 : 16, 24);
         int feldB = Math.min(250, this.width - 16);
-        int feldH = 10 + kopfH + 8 + gruppenH + 8 * (zeileH + 2) + 6 + 10;
+        int feldH = 10 + kopfH + 8 + gruppenH + N * (zeileH + 2) + 6 + 10;
         int fx = (this.width - feldB) / 2;
         // Beim Oeffnen gleitet das Feld sanft von unten in seine Lage.
         int fy = (this.height - feldH) / 2 + (int) ((1f - a) * 14f);
@@ -166,8 +175,8 @@ public class HomeScreen extends Screen {
 
         // --- Eintraege -------------------------------------------------------
         int ex = fx + 10, ew = feldB - 20;
-        int[] ypos = new int[8];
-        for (int i = 0; i < 8; i++) {
+        int[] ypos = new int[N];
+        for (int i = 0; i < N; i++) {
             if (!kompakt && i == MODS) {
                 gruppe(ctx, "MAIN", ex, cy, ew, a);
                 cy += 14;
@@ -185,7 +194,7 @@ public class HomeScreen extends Screen {
         // Welcher Eintrag liegt unter dem Zeiger?
         int ziel = -1;
         if (!frageNeustart) {
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < N; i++) {
                 if (in(flaeche[i])) { ziel = i; break; }
             }
         }
@@ -214,7 +223,7 @@ public class HomeScreen extends Screen {
             alle++;
             if (m.isEnabled()) aktiv++;
         }
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < N; i++) {
             float st = clamp01((seit - 0.08f - i * 0.035f) / 0.28f);
             float e = 1f - (1f - st) * (1f - st) * (1f - st);
             int dx = (int) ((1f - e) * -10f);
@@ -339,6 +348,8 @@ public class HomeScreen extends Screen {
         if (in(flaeche[WARDROBE]))  { mc.gui.setScreen(new SkinScreen(this)); return true; }
         if (in(flaeche[KEYS]))      { mc.gui.setScreen(new KeyListScreen(this)); return true; }
         if (in(flaeche[HUD]))       { mc.gui.setScreen(new HudEditorScreen()); return true; }
+        if (in(flaeche[PRESETS]))   { mc.gui.setScreen(new PresetScreen(this)); return true; }
+        if (in(flaeche[COMMUNITY])) { mc.gui.setScreen(new CommunityScreen(this)); return true; }
         if (in(flaeche[RESTART]))   { frageNeustart = true; fehler = null; return true; }
         return false;
     }

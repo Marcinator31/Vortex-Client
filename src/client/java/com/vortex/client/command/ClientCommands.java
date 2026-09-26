@@ -72,7 +72,7 @@ public final class ClientCommands {
                                 com.vortex.client.core.ConfigManager.exportPreset(name);
                         if (p != null) {
                             ctx.getSource().sendFeedback(
-                                    Component.literal("Saved: " + p));
+                                    Component.literal("Mod settings saved (no macros, waypoints or friends): " + p));
                         } else {
                             ctx.getSource().sendError(
                                     Component.literal("Export failed."));
@@ -89,7 +89,7 @@ public final class ClientCommands {
                                 .getString(ctx, "name");
                         if (com.vortex.client.core.ConfigManager.importPreset(name)) {
                             ctx.getSource().sendFeedback(
-                                    Component.literal("Loaded: " + name));
+                                    Component.literal("Mod settings loaded: " + name));
                         } else {
                             ctx.getSource().sendError(
                                     Component.literal("Not found. Available: "

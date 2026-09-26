@@ -70,6 +70,7 @@ public final class CombatTracker {
             if (h > zielHurtVorher) {
                 combo++;
                 comboZeit = jetzt;
+                trefferZeit = jetzt;
                 ziel = null;   // pro Schlag hoechstens einmal zaehlen
             } else {
                 zielHurtVorher = h;
@@ -95,6 +96,14 @@ public final class CombatTracker {
     public static int combo(long ablaufMs) {
         if (combo > 0 && System.currentTimeMillis() - comboZeit > ablaufMs) combo = 0;
         return combo;
+    }
+
+    /** Zeitpunkt des letzten BESTAETIGTEN Treffers (Gegner zuckt). */
+    private static long trefferZeit = 0;
+
+    /** Millisekunden seit dem letzten bestaetigten Treffer -- fuer den Hitmarker. */
+    public static long trefferAlter() {
+        return System.currentTimeMillis() - trefferZeit;
     }
 
     public static long comboAlter() {

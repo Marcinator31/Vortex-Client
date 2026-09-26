@@ -23,7 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * getCameraPlayer = method_1737 (gibt Player zurueck).
  */
-@Mixin(Gui.class)
+// In 26.2 ist das HUD in die Klasse Hud gewandert. Beide Ziele: wo die
+// Methode existiert, greift der Eingriff; wo nicht, bleibt er still (require = 0).
+@Mixin({Gui.class, net.minecraft.client.gui.Hud.class})
 public abstract class HudCameraPlayerMixin {
 
     @Inject(method = "getCameraPlayer", at = @At("HEAD"), cancellable = true, require = 0)

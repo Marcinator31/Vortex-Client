@@ -51,7 +51,8 @@ public final class ModuleInfo {
         put("Item Counter", "Counts chosen items. Several displays, each with its own place and items.");
         put("Armor Warning", "Says something before a piece of armour breaks, with a sound.");
         put("Toggle Sneak", "Keeps you crouching without holding the key.");
-        put("Crosshair", "Your own crosshair: shape, size, colour, and a gap in the middle.");
+        put("Item Size", "Bigger dropped items on the ground -- all, or only valuables like totems, gapples and pearls. Works with Item Physics.");
+        put("Crosshair", "Your own crosshair: 9 styles, colour or rainbow, target colour, dynamic gap, hit marker and attack indicator (bar, ring or percent).");
         put("Chat", "Timestamps, a much longer history, and a key to copy it all.");
         put("Nametags", "Size, transparency and range of the names above players.");
         put("Zoom", "Hold a key and zoom with the wheel. The hotbar stays put while you do.");
@@ -85,7 +86,7 @@ public final class ModuleInfo {
         put("Scoreboard", "Move and resize the scoreboard, hide the red numbers.");
         put("Boss Bar", "Move, resize and recolour boss bars, or draw slim bars of your own.");
         put("Titles", "Move, shrink, recolour or hide the big titles in the middle of the screen.");
-        put("Time Changer", "Your own time of day and weather. Only you see it.");
+        put("Time Changer", "Your own time of day and weather, only for you. Time of Day: fixed time, Custom Hour or your PC clock. Weather: clear, rain or thunder.");
         put("Item Physics", "Dropped items lie flat on the ground instead of floating and spinning.");
         put("Freelook", "Look around without changing where you walk. Some servers forbid it.");
         put("Streamer Mode", "Hides your name, the server address and your coordinates on screen.");

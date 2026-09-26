@@ -2,51 +2,40 @@ package com.vortex.client.mixin.client;
 
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.NoPumpkinBlurModule;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.client.gui.Hud;
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
- * No Pumpkin Blur -- nach dem Vorbild von BactroMod.
+ * No Pumpkin Blur: das Kuerbis-Overlay wird unsichtbar gezeichnet.
  *
- * Mechanismus: Im InGameHud wird beim Rendern des Kuerbis-Overlays
- * getEquippedStack(HEAD) abgefragt. Wir leiten genau diesen Aufruf um:
- * Ist das No-Pumpkin-Blur-Modul an UND der Spieler traegt einen
- * geschnitzten Kuerbis, geben wir stattdessen ItemStack.EMPTY zurueck.
- * Dann denkt der Renderer "kein Kuerbis auf dem Kopf" und zeichnet das
- * verschwommene Overlay nicht.
- *
- * Ziel verifiziert aus BactroMod-Bytecode:
- *   class_329 (InGameHud) -> method_55798, Redirect auf
- *   class_746.method_6118 (getEquippedStack).
+ * DAS ALTE WAR TOT: Es zielte auf Gui.renderEffects mit einem Namen aus 1.21
+ * (class_746.method_6118). Beides gibt es in 26.2 nicht -- das Modul tat nie
+ * etwas. Jetzt: Hud.extractCameraOverlays -> extractTextureOverlay(..., alpha),
+ * dieselbe Stelle wie Meteor fuer 26.2 (HudMixin). Die Deckkraft wird auf 0
+ * gesetzt, aber NUR fuer die Kuerbis-Textur (am Namen erkannt) -- nicht fuer
+ * Pulverschnee oder anderes, egal in welcher Reihenfolge Minecraft sie zeichnet.
  */
-@Mixin(net.minecraft.client.gui.Gui.class)
-public class NoPumpkinBlurMixin {
+@Mixin(Hud.class)
+public abstract class NoPumpkinBlurMixin {
 
-    @Redirect(
-        method = "renderEffects", require = 0,
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/class_746;method_6118(Lnet/minecraft/class_1304;)Lnet/minecraft/class_1799;"
-        )
-    )
-    private ItemStack pvpclient$noPumpkinBlur(LocalPlayer player, EquipmentSlot slot) {
-        ItemStack real = player.getItemBySlot(slot);
-
-        NoPumpkinBlurModule mod = find();
-        if (mod != null && mod.isEnabled() && real.is(Items.CARVED_PUMPKIN)) {
-            return ItemStack.EMPTY;
+    @ModifyArgs(method = "extractCameraOverlays",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/Hud;extractTextureOverlay(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/resources/Identifier;F)V"),
+            require = 0)
+    private void vortex$noPumpkinBlur(Args args) {
+        try {
+            NoPumpkinBlurModule mod = ModuleManager.INSTANCE.get(NoPumpkinBlurModule.class);
+            if (mod == null || !mod.isEnabled()) return;
+            Object tex = args.get(1);
+            if (tex instanceof Identifier id && id.getPath().contains("pumpkin")) {
+                args.set(2, 0f);
+            }
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("NoPumpkinBlurMixin", pvpErr);
         }
-        return real;
-    }
-
-    private static NoPumpkinBlurModule find() {
-        // Konstante Laufzeit statt die ganze Modul-Liste zu durchlaufen --
-        // diese Methode wird in Render-Pfaden sehr haeufig aufgerufen.
-        return ModuleManager.INSTANCE.get(NoPumpkinBlurModule.class);
     }
 }

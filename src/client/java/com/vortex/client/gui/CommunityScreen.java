@@ -13,8 +13,10 @@ import net.minecraft.network.chat.Component;
  * Macros and presets shared by other people.
  *
  * The list is fetched from the website, and a click imports an entry straight
- * into your own macros. Nothing is uploaded from here: sharing happens on the
- * site, where you are signed in and can put a name to what you post.
+ * into your own macros or one of your three presets. Presets bring ONLY mod
+ * settings -- never someone else's macros, waypoints, friends or keybinds.
+ * Uploading your own preset happens in the Presets screen ("Upload preset"),
+ * after logging in with your website account.
  *
  * Fetching runs on a thread of its own. On the game thread a slow reply would
  * freeze the whole client, and a website that is briefly unreachable would look
@@ -221,6 +223,13 @@ public class CommunityScreen extends Screen {
         ctx.text(this.font, Component.literal("Community"),
                 winX + 30, winY + 11, 0xFFFFFFFF);
 
+        // Eigenes Preset hochladen -- fuehrt zu den Presets, dort "Upload".
+        int uw = this.font.width("Upload preset") + 16;
+        int ux = winX + winW - uw - 10;
+        boolean uHov = in(ux, winY + 6, uw, 18);
+        roundRect(ctx, ux, winY + 6, uw, 18, mix(C_INNER, accent, uHov ? 0.7f : 0.45f));
+        ctx.text(this.font, Component.literal("Upload preset"), ux + 8, winY + 11, 0xFFFFFFFF, false);
+
         int bx = winX + 12;
         bx = tab(ctx, bx, winY + 30, "All", "all", accent);
         bx = tab(ctx, bx, winY + 30, "Macros", "macro", accent);
@@ -250,9 +259,19 @@ public class CommunityScreen extends Screen {
                 ctx.text(this.font, Component.literal(e.name()),
                         winX + 68, y + 5, 0xFFFFFFFF, false);
 
+                // Empfohlene Aufloesung steht als "[1920x1080] " vorne in der
+                // Beschreibung -- hier als eigenes Abzeichen hinter dem Namen.
+                String[] teile = aufloesung(e.description());
+                if (!teile[0].isEmpty()) {
+                    int rx = winX + 68 + this.font.width(e.name()) + 8;
+                    int rw2 = this.font.width(teile[0]) + 8;
+                    roundRect(ctx, rx, y + 3, rw2, 11, mix(C_INNER, 0xFF3B82F6, 0.35f));
+                    ctx.text(this.font, Component.literal(teile[0]), rx + 4, y + 5, 0xFFBFD7FF, false);
+                }
+
                 String sub = "by " + e.author();
-                if (e.description() != null && !e.description().isEmpty()) {
-                    sub += "  ·  " + e.description();
+                if (!teile[1].isEmpty()) {
+                    sub += "  ·  " + teile[1];
                 }
                 ctx.text(this.font, Component.literal(shorten(sub, winW - 160)),
                         winX + 16, y + 17, VortexStyle.TEXT_DIM, false);
@@ -284,11 +303,11 @@ public class CommunityScreen extends Screen {
             ctx.text(this.font,
                     Component.literal("Import into which preset?"), bxx + 12, byy + 10, 0xFFFFFFFF);
             ctx.text(this.font,
-                    Component.literal(shorten("\"" + pendingPreset.name() + "\" replaces that slot.", bw - 24)),
+                    Component.literal(shorten("Only mod settings of \"" + pendingPreset.name() + "\" are taken over.", bw - 24)),
                     bxx + 12, byy + 24, 0xFF9A9AA6, false);
 
             for (int i = 0; i < 3; i++) {
-                String label = "Preset " + (i + 1);
+                String label = shorten(com.vortex.client.core.ConfigManager.presetName(i), (bw - 36) / 3 - 10);
                 boolean active = com.vortex.client.core.ConfigManager.getActivePreset() == i;
                 int sw = (bw - 36) / 3;
                 int sx = bxx + 12 + i * (sw + 6);
@@ -372,6 +391,12 @@ public class CommunityScreen extends Screen {
 
         if (in(winX + 8, winY + 8, 16, 16)) {
             this.onClose();
+            return true;
+        }
+
+        int uw = this.font.width("Upload preset") + 16;
+        if (in(winX + winW - uw - 10, winY + 6, uw, 18)) {
+            Minecraft.getInstance().gui.setScreen(new PresetScreen(this));
             return true;
         }
 
@@ -460,7 +485,7 @@ public class CommunityScreen extends Screen {
                 Minecraft.getInstance().execute(() -> {
                     boolean ok = com.vortex.client.core.ConfigManager.importInto(slot, content);
                     status = ok
-                            ? "Imported into preset " + (slot + 1) + " and selected."
+                            ? "Mod settings imported into " + com.vortex.client.core.ConfigManager.presetName(slot) + " and selected."
                             : "Could not write that preset.";
                 });
             } catch (Throwable pvpErr) {
@@ -481,6 +506,17 @@ public class CommunityScreen extends Screen {
         if (scrollTarget < 0f) scrollTarget = 0f;
         if (scrollTarget > max) scrollTarget = max;
         return true;
+    }
+
+    /** "[1920x1080] Text" -> {"1920x1080", "Text"}; ohne Klammer {"", Text}. */
+    private static String[] aufloesung(String beschreibung) {
+        if (beschreibung == null) return new String[]{"", ""};
+        String b = beschreibung.trim();
+        int zu = b.indexOf(']');
+        if (b.startsWith("[") && zu > 1 && zu <= 24) {
+            return new String[]{b.substring(1, zu).trim(), b.substring(zu + 1).trim()};
+        }
+        return new String[]{"", b};
     }
 
     private String shorten(String s, int maxW) {

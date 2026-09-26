@@ -32,6 +32,17 @@ public class FreelookModule extends Module {
         addSetting(sensitivity);
     }
 
+    /** Beim Einschalten kurz sagen, wie es geht -- sonst sucht man die Taste. */
+    @Override
+    protected void onEnable() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc == null || mc.player == null) return;
+        String taste = key.isBound() ? key.getKeyName() : "(set a Look Key first)";
+        String wie = mode.getIndex() == 1 ? "Press " + taste + " to start and stop looking around."
+                                          : "Hold " + taste + " to look around while you keep walking.";
+        mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7b[Freelook] \u00a77" + wie));
+    }
+
     @Override
     protected void onDisable() {
         com.vortex.client.hud.Freelook.beenden();
