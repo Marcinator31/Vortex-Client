@@ -33,9 +33,8 @@ public final class Freelook {
     private static CameraType vorher = null;
     private static boolean tasteVorher = false;
 
-    /** Kamera folgt nicht -- fuer diese Sitzung abgeschaltet. */
+    /** Kamera folgt nicht -- abgeschaltet, bis das Modul neu eingeschaltet wird. */
     private static boolean kaputt = false;
-    private static int abweichendeTicks = 0;
     private static float gedreht = 0f;
 
     public static boolean aktiv() {
@@ -52,6 +51,11 @@ public final class Freelook {
         yaw += (float) (dx * f);
         pitch = Math.max(-90f, Math.min(90f, pitch + (float) (dy * f)));
         gedreht += (float) (Math.abs(dx) + Math.abs(dy)) * f;
+    }
+
+    /** Beim Einschalten des Moduls: neuer Versuch, auch nach einem Fehlschlag. */
+    public static void zuruecksetzen() {
+        kaputt = false;
     }
 
     public static void register() {
@@ -84,7 +88,7 @@ public final class Freelook {
             yaw = mc.player.getYRot();
             pitch = mc.player.getXRot();
             gedreht = 0f;
-            abweichendeTicks = 0;
+            aktivSeit = System.currentTimeMillis();
             if (m.thirdPerson.get()) {
                 vorher = mc.options.getCameraType();
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -97,25 +101,35 @@ public final class Freelook {
         if (aktiv) pruefeKamera(mc);
     }
 
-    /** Folgt die Kamera der Freelook-Drehung? Sonst abbrechen statt festhaengen. */
+    /** Zuletzt, als der Kamera-Eingriff (CameraMixin) die Drehung gesetzt hat. */
+    private static volatile long kameraZuletzt = 0;
+    private static long aktivSeit = 0;
+
+    /** Vom CameraMixin: die Kamera hat gerade unsere Drehung bekommen. */
+    public static void kameraGreift() {
+        kameraZuletzt = System.currentTimeMillis();
+    }
+
+    /**
+     * SELBSTPRUEFUNG, NEU (4.5.2): Laeuft der Kamera-Eingriff ueberhaupt?
+     *
+     * Die alte Pruefung verglich Winkel -- bei schnellem Umsehen hinkt die
+     * Kamera aber ein Bild hinterher, der Unterschied war dann groesser als
+     * erlaubt, und Freelook schaltete sich bis zum Neustart ab. Genau das war
+     * "oeffnet sich gar nicht mehr". Jetzt wird nur noch gefragt, ob der
+     * Eingriff in der letzten Sekunde ueberhaupt einmal gelaufen ist. Tut er
+     * das nie, ist die Stelle wirklich nicht erreichbar.
+     */
     private static void pruefeKamera(Minecraft mc) {
-        try {
-            var kamera = mc.gameRenderer.mainCamera();
-            float diff = Math.abs(winkel(kamera.yRot() - yaw)) + Math.abs(kamera.xRot() - pitch);
-            // Erst pruefen, wenn die Maus schon ein Stueck bewegt wurde --
-            // sonst stimmen Kamera und Spieler ohnehin ueberein.
-            if (gedreht > 10f && diff > 5f) abweichendeTicks++;
-            else abweichendeTicks = 0;
-            if (abweichendeTicks > 10) {
-                kaputt = true;
-                beenden();
-                if (mc.player != null) {
-                    mc.player.sendSystemMessage(Component.literal(
-                            "§c[Freelook] The camera does not follow -- another mod probably uses the same spot. Freelook is off until restart."));
-                }
-            }
-        } catch (Throwable pvpErr) {
-            com.vortex.client.core.Errors.report("Freelook.pruefe", pvpErr);
+        long jetzt = System.currentTimeMillis();
+        if (jetzt - aktivSeit < 1500) return;          // erst nach 1,5 s urteilen
+        if (jetzt - kameraZuletzt < 1000) return;      // Eingriff laeuft
+        kaputt = true;
+        beenden();
+        if (mc.player != null) {
+            mc.player.sendSystemMessage(Component.literal(
+                    "\u00a7c[Freelook] The camera hook did not run -- another mod probably changes the camera. "
+                    + "Turn Freelook off and on to try again."));
         }
     }
 

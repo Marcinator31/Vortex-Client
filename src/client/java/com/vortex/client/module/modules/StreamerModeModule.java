@@ -22,6 +22,8 @@ public class StreamerModeModule extends Module {
     public final ModeSetting alias = new ModeSetting("Show Name As", 0, "You", "Player", "Streamer", "*****");
     public final BooleanSetting hideServer = new BooleanSetting("Hide Server Address", true);
     public final BooleanSetting hideCoords = new BooleanSetting("Hide Coordinates", true);
+    /** Eigenen Skin durch den Standard-Skin ersetzen -- am Skin erkennt man dich sonst sofort. */
+    public final BooleanSetting hideSkin = new BooleanSetting("Hide Skin", true);
 
     public StreamerModeModule() {
         super("Streamer Mode", Category.MISC);
@@ -29,6 +31,13 @@ public class StreamerModeModule extends Module {
         addSetting(alias);
         addSetting(hideServer);
         addSetting(hideCoords);
+        addSetting(hideSkin);
+    }
+
+    /** Eigenen Skin verstecken? */
+    public static boolean skinVerstecken() {
+        StreamerModeModule m = com.vortex.client.module.ModuleManager.INSTANCE.get(StreamerModeModule.class);
+        return m != null && m.isEnabled() && m.hideSkin.get();
     }
 
     /** Koordinaten in Vortex-Anzeigen verstecken? */

@@ -48,6 +48,7 @@ public abstract class CameraMixin {
         if (com.vortex.client.hud.Freelook.aktiv()) {
             args.set(0, com.vortex.client.hud.Freelook.yaw());
             args.set(1, com.vortex.client.hud.Freelook.pitch());
+            com.vortex.client.hud.Freelook.kameraGreift();
         }
     }
 

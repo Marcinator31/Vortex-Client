@@ -35,6 +35,7 @@ public class FreelookModule extends Module {
     /** Beim Einschalten kurz sagen, wie es geht -- sonst sucht man die Taste. */
     @Override
     protected void onEnable() {
+        com.vortex.client.hud.Freelook.zuruecksetzen();
         var mc = net.minecraft.client.Minecraft.getInstance();
         if (mc == null || mc.player == null) return;
         String taste = key.isBound() ? key.getKeyName() : "(set a Look Key first)";

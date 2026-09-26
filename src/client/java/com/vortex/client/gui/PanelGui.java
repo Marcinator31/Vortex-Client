@@ -65,6 +65,12 @@ public class PanelGui extends Screen {
     /** Aufgeklappte Module und ihr Klappzustand 0..1. */
     private final Map<Module, Float> klapp = new HashMap<>();
     private final Map<Module, Boolean> offen = new HashMap<>();
+    /** Modul unter dem Zeiger (fuer die Beschreibung) und seit wann. */
+    private Module tipModul = null;
+    private long tipSeit = 0;
+    private float tipA = 0f;
+    private Module tipZuletzt = null;
+
     /** Hervorhebung je Modul beim Ueberfahren, 0..1. */
     private final Map<Module, Float> hover = new HashMap<>();
     /** Ein/Aus je Modul, gleitend 0..1. */
@@ -167,6 +173,7 @@ public class PanelGui extends Screen {
         spaltenFlaeche.clear();
         spaltenKat.clear();
         tasteAufnehmen();
+        tipKandidat = null;
 
         // Leicht abdunkeln -- das Spiel soll dahinter sichtbar bleiben, das
         // ist der Charakter dieser Menueform.
@@ -231,6 +238,72 @@ public class PanelGui extends Screen {
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta);
+        zeichneBeschreibung(ctx, dt);
+    }
+
+    /** Modul, ueber dem der Zeiger in diesem Bild steht. */
+    private Module tipKandidat = null;
+
+    /**
+     * BESCHREIBUNG BEIM UEBERFAHREN.
+     *
+     * Bleibt der Zeiger kurz (0,45 s) auf einem Modul, blendet ein kleines
+     * Feld mit der Beschreibung ein (ModuleInfo -- dieselben Texte fuer
+     * Client und Addon). Nicht sofort: sonst flackert beim Ueberfahren der
+     * Liste staendig etwas auf.
+     */
+    private void zeichneBeschreibung(GuiGraphicsExtractor ctx, float dt) {
+        long jetzt = System.currentTimeMillis();
+        if (tipKandidat != tipModul) {
+            tipModul = tipKandidat;
+            tipSeit = jetzt;
+        }
+        boolean zeigen = tipModul != null && jetzt - tipSeit > 450;
+        if (zeigen) tipZuletzt = tipModul;
+        tipA = weich(tipA, zeigen ? 1f : 0f, zeigen ? 14f : 22f, dt);
+        if (tipA < 0.02f || tipZuletzt == null) return;
+
+        String text = ModuleInfo.get(tipZuletzt.getName());
+        if (text == null || text.isBlank()) return;
+
+        // In Zeilen umbrechen, hoechstens 200 Pixel breit
+        int maxB = Math.min(200, this.width - 20);
+        List<String> zeilen = new ArrayList<>();
+        StringBuilder z = new StringBuilder();
+        for (String wort : text.split(" ")) {
+            String probe = z.length() == 0 ? wort : z + " " + wort;
+            if (this.font.width(probe) > maxB && z.length() > 0) {
+                zeilen.add(z.toString());
+                z = new StringBuilder(wort);
+            } else {
+                z = new StringBuilder(probe);
+            }
+        }
+        if (z.length() > 0) zeilen.add(z.toString());
+
+        int b = 0;
+        for (String l : zeilen) b = Math.max(b, this.font.width(l));
+        int kopf = 12;
+        int w = Math.max(b, this.font.width(tipZuletzt.getName())) + 12;
+        int h = kopf + zeilen.size() * 10 + 8;
+        // Rechts unten neben dem Zeiger, aber immer im Bild
+        int x = mx + 12, y = my + 10;
+        if (x + w > this.width - 4) x = mx - w - 8;
+        if (y + h > this.height - 4) y = this.height - 4 - h;
+        if (x < 4) x = 4;
+        if (y < 4) y = 4;
+
+        float a = tipA;
+        VortexStyle.schatten(ctx, x, y, w, h, a * 0.8f);
+        roundRect(ctx, x, y, w, h, VortexStyle.fade(0xF5120E1B, a));
+        ctx.fill(x + 2, y, x + w - 2, y + 1, VortexStyle.fade(VortexStyle.akzent(0.4f), a));
+        ctx.text(this.font, Component.literal(tipZuletzt.getName()), x + 6, y + 5,
+                VortexStyle.fade(0xFFFFFFFF, a), false);
+        int ty = y + 5 + kopf;
+        for (String l : zeilen) {
+            ctx.text(this.font, Component.literal(l), x + 6, ty, VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
+            ty += 10;
+        }
     }
 
     private void zeichneSuche(GuiGraphicsExtractor ctx, float a) {
@@ -430,6 +503,7 @@ public class PanelGui extends Screen {
             treffer.add(new Treffer(x, Math.max(y, clipOben), spalteB,
                     Math.min(y + ZEILE_H, clipUnten) - Math.max(y, clipOben),
                     Art.MODUL, m, null));
+            if (hov) tipKandidat = m;
         }
         y += ZEILE_H;
 

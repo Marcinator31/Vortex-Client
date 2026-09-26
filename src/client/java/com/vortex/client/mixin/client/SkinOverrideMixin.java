@@ -23,6 +23,19 @@ public abstract class SkinOverrideMixin {
     @Inject(method = "getSkin", at = @At("RETURN"), cancellable = true, require = 0)
     private void vortex$applyCustomSkin(CallbackInfoReturnable<PlayerSkin> cir) {
         try {
+            // Streamer Mode "Hide Skin": der eigene Spieler bekommt den
+            // Standard-Skin (Steve/Alex nach Profil) -- auch statt eines
+            // Garderoben-Skins. Wie Meteors "Skin Protect" fuer 26.2.
+            if (com.vortex.client.module.modules.StreamerModeModule.skinVerstecken()) {
+                Minecraft mc = Minecraft.getInstance();
+                var profil = ((PlayerInfo) (Object) this).getProfile();
+                if (mc != null && mc.getUser() != null && profil != null
+                        && profil.name().equals(mc.getUser().getName())) {
+                    cir.setReturnValue(net.minecraft.client.resources.DefaultPlayerSkin.get(profil));
+                    return;
+                }
+            }
+
             Identifier textureId = ActiveSkin.textureId();
             if (textureId == null) return;
 

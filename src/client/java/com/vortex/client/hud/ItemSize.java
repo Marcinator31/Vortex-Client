@@ -22,11 +22,24 @@ public final class ItemSize {
         if (m == null || !m.isEnabled()) return 1f;
         float f = m.scale.getFloat();
         if (Math.abs(f - 1f) < 0.01f) return 1f;
-        if (m.items.getIndex() == 1) {
+        int modus = m.items.getIndex();
+        if (modus == 1 || modus == 2) {
             ItemEntity e = ItemPhysics.wesen(state);
-            if (e == null || !wertvoll(e)) return 1f;
+            if (e == null) return 1f;
+            if (modus == 1 && !wertvoll(e)) return 1f;
+            if (modus == 2 && !ausgewaehlt(m, e)) return 1f;
         }
         return f;
+    }
+
+    /** Steht der Gegenstand in der eigenen Auswahl? */
+    private static boolean ausgewaehlt(ItemSizeModule m, ItemEntity e) {
+        try {
+            var id = BuiltInRegistries.ITEM.getKey(e.getItem().getItem());
+            return id != null && m.ausgewaehlt().contains(id.toString());
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /** Wertvolles, das man nach einem Kampf sofort sehen will. */
