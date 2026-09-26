@@ -31,6 +31,7 @@ import net.minecraft.network.chat.Component;
  *   Rechtsklick auf ein Modul    Einstellungen darunter auf- und zuklappen
  *   Mausrad ueber einer Spalte   diese Spalte scrollen
  *   Suchfeld oben                filtert alle Spalten gleichzeitig
+ *   Klick auf einen Spaltenkopf  Kategorie ein- und ausklappen
  *
  * Die Einstellungen werden ueber genau dieselben Aufrufe geaendert wie im
  * bisherigen Menue (ClickGui) -- dort sind sie erprobt. Gespeichert wird beim
@@ -72,6 +73,16 @@ public class PanelGui extends Screen {
     private float letzteDt = 0.016f;
     /** Bildlauf je Spalte. */
     private final Map<Module.Category, float[]> lauf = new HashMap<>();
+    /**
+     * Eingeklappte Kategorien. Beim Oeffnen des Menues ist alles aufgeklappt;
+     * der Zustand bleibt erhalten, solange das Menue offen ist (auch beim
+     * Zurueckkommen aus Farbwaehler oder Auswahlliste).
+     */
+    private final Map<Module.Category, Boolean> katZu = new HashMap<>();
+    /** Klappzustand je Kategorie, gleitend: 1 = offen, 0 = zu. */
+    private final Map<Module.Category, Float> katAnim = new HashMap<>();
+    /** Hervorhebung des Kopfes beim Ueberfahren, 0..1. */
+    private final Map<Module.Category, Float> kopfHover = new HashMap<>();
 
     // Schieberegler, der gerade gezogen wird
     /** Tatsaechliche Spaltenbreite dieses Bildes (<= SPALTE_B). */
@@ -83,13 +94,14 @@ public class PanelGui extends Screen {
     private int ziehX, ziehB;
 
     // --- Klickflaechen ------------------------------------------------------
-    private enum Art { MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL }
+    private enum Art { KOPF, MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL }
 
     private static final class Treffer {
         final int x, y, w, h;
         final Art art;
         final Module modul;
         final Setting einst;
+        Module.Category kat;
         Treffer(int x, int y, int w, int h, Art art, Module m, Setting s) {
             this.x = x; this.y = y; this.w = w; this.h = h;
             this.art = art; this.modul = m; this.einst = s;
@@ -241,17 +253,46 @@ public class PanelGui extends Screen {
         for (Module m : module(kat)) if (m.isEnabled()) an++;
         // Kopf: dunkle Flaeche mit einem Hauch Violett links, nach rechts
         // auslaufend. Hebt ihn vom Inhalt ab, ohne einen harten Rand.
-        roundRect(ctx, x, y, spalteB, KOPF_H, VortexStyle.fade(VortexStyle.BAR, a));
+        // EIN- UND AUSKLAPPEN.
+        //
+        // Klick auf den Kopf klappt die Kategorie zu oder auf. Der Inhalt
+        // faehrt dabei weich ein und aus (gleiche Kurve wie ueberall), der
+        // Pfeil rechts blendet von "unten" nach "rechts" ueber.
+        // Waehrend der Suche ist alles offen -- sonst laegen Treffer
+        // unsichtbar in einer eingeklappten Kategorie. Nach dem Leeren des
+        // Suchfelds gilt wieder der eigene Zustand.
+        boolean sucht = search != null && !search.getValue().trim().isEmpty();
+        boolean zu = katZu.getOrDefault(kat, false) && !sucht;
+        float ka = weich(katAnim.getOrDefault(kat, zu ? 0f : 1f), zu ? 0f : 1f, 13f, dt);
+        katAnim.put(kat, ka);
+        boolean kopfHov = mx >= x && mx < x + spalteB && my >= y && my < y + KOPF_H;
+        float kh = weich(kopfHover.getOrDefault(kat, 0f), kopfHov ? 1f : 0f, 18f, dt);
+        kopfHover.put(kat, kh);
+
+        roundRect(ctx, x, y, spalteB, KOPF_H, VortexStyle.fade(
+                VortexStyle.mix(VortexStyle.BAR, VortexStyle.HOV, kh * 0.8f), a));
         verlaufBand(ctx, x + 2, y + 1, spalteB - 4, KOPF_H - 3,
-                VortexStyle.fade(VortexStyle.VIOLETT, a * 0.16f),
+                VortexStyle.fade(VortexStyle.VIOLETT, a * (0.16f + 0.10f * kh)),
                 VortexStyle.fade(VortexStyle.BLAU, 0));
-        // Akzentlinie unter dem Namen: das Erkennungszeichen jeder Spalte
-        VortexStyle.akzentLinie(ctx, x + 3, y + KOPF_H - 2, spalteB - 6, a);
+        // Akzentlinie unter dem Namen: das Erkennungszeichen jeder Spalte.
+        // Eingeklappt wird sie schwaecher -- die Spalte "ruht".
+        VortexStyle.akzentLinie(ctx, x + 3, y + KOPF_H - 2, spalteB - 6, a * (0.45f + 0.55f * ka));
         ctx.text(this.font, Component.literal(schoen(kat.name())), x + 8, y + 6,
                 VortexStyle.fade(VortexStyle.TEXT, a), false);
+        // Pfeil ganz rechts, die Zahl links daneben
+        pfeil(ctx, x + spalteB - 12, y + 7, ka,
+                VortexStyle.fade(VortexStyle.mix(VortexStyle.TEXT_DIM, VortexStyle.TEXT, kh), a));
+        // Die Zahl nur, wenn sie neben den Namen passt -- bei kleinem Fenster
+        // sind die Spalten schmal, und sie soll nie ueber dem Namen liegen.
         String zahl = an + "/" + module(kat).size();
-        ctx.text(this.font, Component.literal(zahl), x + spalteB - 8 - this.font.width(zahl),
-                y + 6, VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
+        int zahlX = x + spalteB - 17 - this.font.width(zahl);
+        if (zahlX > x + 8 + this.font.width(schoen(kat.name())) + 4) {
+            ctx.text(this.font, Component.literal(zahl), zahlX,
+                    y + 6, VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
+        }
+        Treffer kopf = new Treffer(x, y, spalteB, KOPF_H, Art.KOPF, null, null);
+        kopf.kat = kat;
+        treffer.add(kopf);
 
         // --- Inhalt ----------------------------------------------------------
         int maxH = Math.max(ZEILE_H, spalteBoden - y - KOPF_H);
@@ -263,27 +304,40 @@ public class PanelGui extends Screen {
         l[0] = weich(l[0], l[1], 16f, dt);
 
         int top = y + KOPF_H;
+        // Koerperhoehe folgt dem Klappzustand. Der Inhalt wird nicht
+        // gestaucht, sondern von unten abgeschnitten -- er faehrt wie ein
+        // Rollo ein und aus.
+        int koerper = (int) ((Math.max(4, sichtbar + 2)) * ka);
+        if (koerper < 2) {
+            // Ganz eingeklappt: nur der Kopf, mit Schatten.
+            VortexStyle.schatten(ctx, x, y, spalteB, KOPF_H, a * 0.9f);
+            spaltenFlaeche.add(new int[]{x, y, spalteB, KOPF_H});
+            spaltenKat.add(kat);
+            return;
+        }
         // Weicher Schatten um die ganze Spalte -- sie schwebt ueber dem Spiel.
-        VortexStyle.schatten(ctx, x, y, spalteB, KOPF_H + Math.max(4, sichtbar + 2), a * 0.9f);
-        roundRect(ctx, x, top, spalteB, Math.max(4, sichtbar + 2),
+        VortexStyle.schatten(ctx, x, y, spalteB, KOPF_H + koerper, a * 0.9f);
+        roundRect(ctx, x, top, spalteB, koerper,
                 VortexStyle.fade(VortexStyle.WINDOW, a * 0.94f));
         // Lichtkante direkt unter dem Kopf: trennt ihn vom Inhalt wie eine
         // Kante, an die Licht faellt.
         ctx.fill(x + 3, top, x + spalteB - 3, top + 1,
                 VortexStyle.fade(VortexStyle.mix(VortexStyle.WINDOW, VortexStyle.TEXT, 0.06f), a));
-        spaltenFlaeche.add(new int[]{x, y, spalteB, KOPF_H + sichtbar + 2});
+        spaltenFlaeche.add(new int[]{x, y, spalteB, KOPF_H + koerper});
         spaltenKat.add(kat);
 
-        ctx.enableScissor(x, top, x + spalteB, top + sichtbar + 2);
+        // Beim Klappen blendet der Inhalt mit -- sonst wirkt das Abschneiden hart.
+        float ia = a * Math.min(1f, ka * 1.4f);
+        ctx.enableScissor(x, top, x + spalteB, top + koerper);
         int cy = top + 1 - (int) l[0];
         for (Module m : liste) {
-            cy = zeichneModul(ctx, m, x, cy, top, top + sichtbar + 2, a, dt);
+            cy = zeichneModul(ctx, m, x, cy, top, top + koerper, ia, dt);
         }
         ctx.disableScissor();
 
         // Duenner Bildlaufbalken rechts -- nur, wenn es mehr gibt als passt.
         // Er zeigt, dass man scrollen kann, und wo man gerade ist.
-        if (inhaltH > sichtbar && sichtbar > 20) {
+        if (ka > 0.98f && inhaltH > sichtbar && sichtbar > 20) {
             int spur = sichtbar - 6;
             int balken = Math.max(14, (int) (spur * (sichtbar / (float) inhaltH)));
             float pos = maxLauf <= 0 ? 0f : l[0] / maxLauf;
@@ -432,13 +486,21 @@ public class PanelGui extends Screen {
         int dim = VortexStyle.fade(VortexStyle.TEXT_DIM, a);
         int txt = VortexStyle.fade(VortexStyle.TEXT, a);
         int akz = VortexStyle.fade(VortexStyle.akzent(0.5f), a);
-        String name = kuerzen(s.getName(), w - 40);
         if (mx >= x && mx < x + w && my >= y && my < y + EINST_H) {
             ctx.fill(x - 2, y, x + w + 2, y + EINST_H,
                     VortexStyle.fade(VortexStyle.HOV, a * 0.7f));
         }
 
+        // NAME UND WERT UEBERLAPPEN NICHT MEHR.
+        //
+        // Vorher wurde der Name pauschal auf "Breite minus 40" gekuerzt -- egal
+        // wie breit der Wert rechts war. "Not bound" ist breiter als 40 Pixel
+        // und lag deshalb ueber "Toggle Key". Jetzt wird zuerst der Wert
+        // gemessen, und der Name bekommt genau den Platz, der links davon
+        // uebrig bleibt.
+
         if (s instanceof BooleanSetting b) {
+            String name = kuerzen(s.getName(), w - 16 - 8);
             ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
             // Kleiner Schalter statt Kaestchen, der Knauf gleitet.
             float an = weich(einstAnim.getOrDefault(s, b.get() ? 1f : 0f),
@@ -454,8 +516,10 @@ public class PanelGui extends Screen {
 
         } else if (s instanceof NumberSetting n) {
             String wert = zahl(n);
+            int wertB = this.font.width(wert);
+            String name = kuerzen(s.getName(), w - wertB - 8);
             ctx.text(this.font, Component.literal(name), x + 2, y + 1, dim, false);
-            ctx.text(this.font, Component.literal(wert), x + w - this.font.width(wert), y + 1, txt, false);
+            ctx.text(this.font, Component.literal(wert), x + w - wertB, y + 1, txt, false);
             // Schiene unter dem Text
             int ty = y + 11;
             ctx.fill(x + 2, ty, x + w, ty + 2, VortexStyle.fade(VortexStyle.TRACK, a));
@@ -475,12 +539,17 @@ public class PanelGui extends Screen {
             treffer.add(new Treffer(x + 2, y, w - 2, EINST_H, Art.NUM, m, s));
 
         } else if (s instanceof ModeSetting mode) {
+            // Der Wert darf hoechstens die halbe Breite nehmen -- sonst bliebe
+            // fuer den Namen nichts.
+            String wert = kuerzen(String.valueOf(mode.get()), Math.max(24, w / 2));
+            int wertB = this.font.width(wert);
+            String name = kuerzen(s.getName(), w - wertB - 8);
             ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
-            String wert = kuerzen(String.valueOf(mode.get()), 44);
-            ctx.text(this.font, Component.literal(wert), x + w - this.font.width(wert), y + 3, akz, false);
+            ctx.text(this.font, Component.literal(wert), x + w - wertB, y + 3, akz, false);
             treffer.add(new Treffer(x, y, w, EINST_H, Art.MODUS, m, s));
 
         } else if (s instanceof ColorSetting c) {
+            String name = kuerzen(s.getName(), w - 12 - 8);
             ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
             int bx = x + w - 12;
             ctx.fill(bx, y + 2, bx + 10, y + 12, VortexStyle.fade(0xFF000000, a));
@@ -488,10 +557,22 @@ public class PanelGui extends Screen {
             treffer.add(new Treffer(x, y, w, EINST_H, Art.FARBE, m, s));
 
         } else if (s instanceof KeySetting k) {
+            // Taste als kleine Kappe rechts. Nicht belegt heisst hier kurz
+            // "None" statt "Not bound" -- das spart den Platz, der vorher
+            // fehlte. Lange Tastennamen ("LEFT SHIFT") werden gekuerzt.
+            boolean lauscht = k.isListening();
+            String wert = lauscht ? "..." : (k.isBound() ? kuerzen(k.getKeyName(), Math.max(20, w / 2 - 8)) : "None");
+            int kappeB = this.font.width(wert) + 8;
+            int kx = x + w - kappeB;
+            ctx.fill(kx, y + 1, kx + kappeB, y + EINST_H - 1,
+                    VortexStyle.fade(lauscht ? VortexStyle.mix(VortexStyle.CARD, VortexStyle.akzent(0.5f), 0.45f)
+                                             : VortexStyle.CARD, a));
+            ctx.fill(kx, y + EINST_H - 2, kx + kappeB, y + EINST_H - 1,
+                    VortexStyle.fade(lauscht ? VortexStyle.akzent(0.5f) : VortexStyle.LINE, a));
+            ctx.text(this.font, Component.literal(wert), kx + 4, y + 3,
+                    lauscht ? txt : (k.isBound() ? txt : dim), false);
+            String name = kuerzen(s.getName(), w - kappeB - 8);
             ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
-            String wert = k.isListening() ? "..." : k.getKeyName();
-            ctx.text(this.font, Component.literal(wert), x + w - this.font.width(wert), y + 3,
-                    k.isListening() ? akz : txt, false);
             treffer.add(new Treffer(x, y, w, EINST_H, Art.TASTE, m, s));
         }
     }
@@ -509,6 +590,10 @@ public class PanelGui extends Screen {
             Treffer t = treffer.get(i);
             if (!t.in(mx, my)) continue;
             switch (t.art) {
+                case KOPF:
+                    // Links- oder Rechtsklick: Kategorie auf- oder zuklappen
+                    katZu.put(t.kat, !katZu.getOrDefault(t.kat, false));
+                    return true;
                 case MODUL:
                     if (knopf == 1) {
                         if (hatEinstellungen(t.modul)) {
@@ -735,6 +820,32 @@ public class PanelGui extends Screen {
         float f = 1f - (float) Math.exp(-tempo * dt);
         float neu = ist + (ziel - ist) * f;
         return Math.abs(ziel - neu) < 0.005f ? ziel : neu;
+    }
+
+    /**
+     * Klapp-Pfeil, 5 Pixel gross. Offen zeigt er nach unten, zu nach rechts.
+     * Beide Formen werden je nach Klappzustand ueberblendet -- eine echte
+     * Drehung ginge nur ueber die Matrix, das Ueberblenden wirkt genauso weich.
+     */
+    private static void pfeil(GuiGraphicsExtractor ctx, int x, int y, float offen, int farbe) {
+        int alpha = (farbe >>> 24) & 0xFF;
+        int rgb = farbe & 0x00FFFFFF;
+        int aUnten = (int) (alpha * offen);
+        int aRechts = (int) (alpha * (1f - offen));
+        if (aUnten > 3) {
+            int c = (aUnten << 24) | rgb;
+            // v: Zeilen 5,3,1 Pixel breit
+            ctx.fill(x, y, x + 5, y + 1, c);
+            ctx.fill(x + 1, y + 1, x + 4, y + 2, c);
+            ctx.fill(x + 2, y + 2, x + 3, y + 3, c);
+        }
+        if (aRechts > 3) {
+            int c = (aRechts << 24) | rgb;
+            // >: Spalten 5,3,1 Pixel hoch
+            ctx.fill(x + 1, y - 1, x + 2, y + 4, c);
+            ctx.fill(x + 2, y, x + 3, y + 3, c);
+            ctx.fill(x + 3, y + 1, x + 4, y + 2, c);
+        }
     }
 
     private void roundRect(GuiGraphicsExtractor ctx, int x, int y, int w, int h, int c) {
