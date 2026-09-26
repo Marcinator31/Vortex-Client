@@ -142,12 +142,17 @@ public final class DebugOverlay {
         }
 
         if (mod.showPosition.get()) {
-            LINES.add(new Line("XYZ", String.format(java.util.Locale.ROOT, "%.1f %.1f %.1f",
-                    player.getX(), player.getY(), player.getZ()), false));
-
             BlockPos pos = player.blockPosition();
-            LINES.add(new Line("Chunk", (pos.getX() >> 4) + " " + (pos.getZ() >> 4)
-                    + "   in-chunk " + (pos.getX() & 15) + " " + (pos.getZ() & 15), false));
+            // Streamer-Modus: weder Koordinaten noch Chunk im Bild -- beides
+            // verraet den Standort.
+            if (com.vortex.client.module.modules.StreamerModeModule.koordinatenVerstecken()) {
+                LINES.add(new Line("XYZ", "hidden", false));
+            } else {
+                LINES.add(new Line("XYZ", String.format(java.util.Locale.ROOT, "%.1f %.1f %.1f",
+                        player.getX(), player.getY(), player.getZ()), false));
+                LINES.add(new Line("Chunk", (pos.getX() >> 4) + " " + (pos.getZ() >> 4)
+                        + "   in-chunk " + (pos.getX() & 15) + " " + (pos.getZ() & 15), false));
+            }
 
             String facing = switch (player.getDirection()) {
                 case NORTH -> "north  (-Z)";
@@ -182,6 +187,7 @@ public final class DebugOverlay {
                 LINES.add(new Line("Looking at",
                         (id == null ? "?" : id.getPath().replace('_', ' ')), false));
                 BlockPos bp = block.getBlockPos();
+                if (!com.vortex.client.module.modules.StreamerModeModule.koordinatenVerstecken())
                 LINES.add(new Line("Block", bp.getX() + " " + bp.getY() + " " + bp.getZ(), false));
             } else if (hit instanceof EntityHitResult entity) {
                 LINES.add(new Line("Looking at",

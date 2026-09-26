@@ -85,6 +85,7 @@ public class PotatoModeModule extends Module {
             oBiomeBlend    = get(o.biomeBlendRadius());
             oSimDistance   = get(o.simulationDistance());
             oClouds        = get(o.cloudStatus());
+            sichereExtras(o);
             saved = true;
         }
 
@@ -118,6 +119,7 @@ public class PotatoModeModule extends Module {
             set(o.biomeBlendRadius(), oBiomeBlend);
             set(o.simulationDistance(), oSimDistance);
             set(o.cloudStatus(), oClouds);
+            stelleExtrasHer();
             saved = false;
             // Welt neu laden, damit die wiederhergestellte Render-Distanz wirkt.
             reloadWorld();
@@ -164,6 +166,11 @@ public class PotatoModeModule extends Module {
         // Vanilla minimum is 5.
         set(o.simulationDistance(), aggressive ? 5 : 8);
 
+        // Grafik "Schnell", undurchsichtiges Laub, keine verbesserte
+        // Transparenz. Seit 1.21.11 sind das einzelne Optionen statt eines
+        // Grafik-Schalters -- siehe setzeExtras().
+        setzeExtras(o);
+
         // Welt neu laden, damit Render-Distanz & Smooth-Lighting sofort wirken.
         reloadWorld();
     }
@@ -176,6 +183,77 @@ public class PotatoModeModule extends Module {
      */
     private static void reloadWorld() {
         // Absichtlich kein direkter Renderer-Reset.
+    }
+
+    // ------------------------------------------------------------------
+    // Grafik, Laub, Transparenz (4.4.0)
+    // ------------------------------------------------------------------
+    //
+    // WARUM PER NAME GESUCHT: Mojang hat "Grafik: Schnell/Schoen" in 1.21.11
+    // in einzelne Optionen zerlegt, und die Namen sind zwischen den Fassungen
+    // gewandert. Statt fest einen Namen einzubauen (Build-Fehler, falls er
+    // nicht passt), wird die Option zur Laufzeit gesucht. Gibt es sie nicht,
+    // wird sie einfach uebersprungen.
+    //
+    //   Wahrheitswert  -> auf false (kein durchsichtiges Laub, keine teure
+    //                     Transparenz-Stufe)
+    //   Aufzaehlung    -> auf den Wert "FAST", falls vorhanden
+
+    private static final String[] EXTRA_OPTIONEN = {
+            // KEIN "graphicsPreset": ein Preset setzt beim Anwenden auch
+            // Sichtweite und Co. -- es wuerde Potatos eigene Werte ueberschreiben.
+            "graphicsMode", "cutoutLeaves", "improvedTransparency"
+    };
+    // Reihenfolge zaehlt: ein Grafik-Preset kann beim Setzen andere Optionen
+    // mitsetzen. Deshalb feste Reihenfolge (LinkedHashMap) und beim
+    // Zuruecksetzen das Preset ZUERST, dann die Einzeloptionen darueber.
+    private final java.util.Map<String, Object> extraAlt = new java.util.LinkedHashMap<>();
+
+    private static OptionInstance<?> finde(Options o, String name) {
+        try {
+            java.lang.reflect.Method m = o.getClass().getMethod(name);
+            Object r = m.invoke(o);
+            return (r instanceof OptionInstance<?> oi) ? oi : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private void sichereExtras(Options o) {
+        extraAlt.clear();
+        for (String n : EXTRA_OPTIONEN) {
+            OptionInstance<?> oi = finde(o, n);
+            if (oi != null) extraAlt.put(n, get(oi));
+        }
+    }
+
+    private void stelleExtrasHer() {
+        Options o = options();
+        if (o == null) return;
+        for (var e : extraAlt.entrySet()) {
+            OptionInstance<?> oi = finde(o, e.getKey());
+            if (oi != null) set(oi, e.getValue());
+        }
+        extraAlt.clear();
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void setzeExtras(Options o) {
+        for (String n : EXTRA_OPTIONEN) {
+            OptionInstance<?> oi = finde(o, n);
+            if (oi == null) continue;
+            Object jetzt = get(oi);
+            if (jetzt instanceof Boolean) {
+                set(oi, Boolean.FALSE);
+            } else if (jetzt instanceof Enum<?>) {
+                Enum<?> en = (Enum<?>) jetzt;
+                try {
+                    set(oi, Enum.valueOf((Class) en.getDeclaringClass(), "FAST"));
+                } catch (Throwable ignored) {
+                    // Kein Wert "FAST" -- Option bleibt, wie sie ist.
+                }
+            }
+        }
     }
 
     private static Options options() {

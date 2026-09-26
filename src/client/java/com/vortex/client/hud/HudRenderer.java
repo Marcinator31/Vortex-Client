@@ -74,6 +74,9 @@ public final class HudRenderer {
         ItemCounterRenderer.render(context, client);
         DebugOverlay.render(context, client);
         drawSessionStats(context, client);
+        ExtraHud.render(context, client);
+        BossBars.render(context, client);
+        SlotLock.render(context, client);
 
         // --- CPS ---
         CpsModule cps = (CpsModule) find(CpsModule.class);
@@ -167,6 +170,10 @@ public final class HudRenderer {
             }
 
             String text = "XYZ: " + px + " " + py + " " + pz + "  [" + dir + "]";
+            // Streamer-Modus: Richtung ja, Position nein.
+            if (com.vortex.client.module.modules.StreamerModeModule.koordinatenVerstecken()) {
+                text = "XYZ: hidden  [" + dir + "]";
+            }
             pushScale(context, coords.x.getInt(), coords.y.getInt(), coords.scale.getFloat());
             context.text(client.font, Component.literal(text),
                     coords.x.getInt(), coords.y.getInt(), coords.color.get());

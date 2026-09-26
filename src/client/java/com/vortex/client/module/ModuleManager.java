@@ -114,6 +114,24 @@ public final class ModuleManager {
         register(new NoPumpkinBlurModule());
         register(new LowFireModule());
         register(new LowShieldModule());
+        // --- 4.4.0 ---
+        register(new com.vortex.client.module.modules.SpeedometerModule());
+        register(new com.vortex.client.module.modules.CompassModule());
+        register(new com.vortex.client.module.modules.ReachModule());
+        register(new com.vortex.client.module.modules.ComboModule());
+        register(new com.vortex.client.module.modules.TpsModule());
+        register(new com.vortex.client.module.modules.ClockModule());
+        register(new com.vortex.client.module.modules.BlockOutlineModule());
+        register(new com.vortex.client.module.modules.HitColorModule());
+        register(new com.vortex.client.module.modules.ScoreboardModule());
+        register(new com.vortex.client.module.modules.BossBarModule());
+        register(new com.vortex.client.module.modules.TitlesModule());
+        register(new com.vortex.client.module.modules.TimeChangerModule());
+        register(new com.vortex.client.module.modules.ItemPhysicsModule());
+        register(new com.vortex.client.module.modules.FreelookModule());
+        register(new com.vortex.client.module.modules.StreamerModeModule());
+        register(new com.vortex.client.module.modules.FriendsModule());
+        register(new com.vortex.client.module.modules.SlotLockModule());
         // Weitere kommen einfach hier dazu.
     }
 

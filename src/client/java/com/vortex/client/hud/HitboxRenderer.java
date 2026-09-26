@@ -89,7 +89,9 @@ public final class HitboxRenderer {
                     int color;
                     if (entity instanceof Player) {
                         if (!mod.showPlayers.get()) continue;
-                        color = mod.playerColor.get();
+                        color = com.vortex.client.core.Friends.markiert(entity)
+                                ? com.vortex.client.core.Friends.farbe()
+                                : mod.playerColor.get();
                     } else if (entity instanceof Enemy) {
                         if (!mod.showHostiles.get()) continue;
                         color = mod.hostileColor.get();

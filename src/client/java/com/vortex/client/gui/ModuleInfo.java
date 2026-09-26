@@ -74,6 +74,23 @@ public final class ModuleInfo {
         put("Tunnel Detector", "Finds long straight tunnels that were dug by players.");
         put("No Fall", "Prevents fall damage. High ban risk.");
         put("Chunk Borders", "Shows the edges of the chunk you are standing in.");
+        put("Speedometer", "How fast you are moving, in blocks per second or km/h.");
+        put("Compass Bar", "A compass strip along the top of the screen, like in survival games.");
+        put("Reach Display", "How far away your last hit landed, measured like the server does.");
+        put("Combo Counter", "Counts hits in a row without being hit back.");
+        put("TPS", "The server's ticks per second -- tells you whether the server or you is lagging.");
+        put("Clock", "Real time, the in-game day and memory use.");
+        put("Block Outline", "Your own outline around the block you look at: colour and thickness.");
+        put("Hit Color", "Your own colour for the flash when something takes damage.");
+        put("Scoreboard", "Move and resize the scoreboard, hide the red numbers.");
+        put("Boss Bar", "Move, resize and recolour boss bars, or draw slim bars of your own.");
+        put("Titles", "Move, shrink, recolour or hide the big titles in the middle of the screen.");
+        put("Time Changer", "Your own time of day and weather. Only you see it.");
+        put("Item Physics", "Dropped items lie flat on the ground instead of floating and spinning.");
+        put("Freelook", "Look around without changing where you walk. Some servers forbid it.");
+        put("Streamer Mode", "Hides your name, the server address and your coordinates on screen.");
+        put("Friends", "Middle-click players to add them. Friends get their own colour and are spared by combat modules.");
+        put("Slot Lock", "Locked hotbar slots cannot be thrown away by accident.");
     }
 
     private ModuleInfo() {}

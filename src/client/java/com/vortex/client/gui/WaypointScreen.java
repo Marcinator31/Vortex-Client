@@ -67,6 +67,22 @@ public class WaypointScreen extends Screen {
     private String status = "";
 
     private int winX, winY, winH, listH;
+
+    /** Gleitender Zustand des Hauptschalters. */
+    private float showAnim = -1f;
+
+    /** Knopf "Settings" oben rechts: x, y, w, h. */
+    private int[] einstellKnopf() {
+        int w = this.font.width("Settings") + 16;
+        return new int[]{winX + WIN_W - w - 10, winY + 6, w, 18};
+    }
+
+    /** Schalter "Show" links neben dem Knopf. */
+    private int[] schalter() {
+        int[] k = einstellKnopf();
+        int w = this.font.width("Show") + 30;
+        return new int[]{k[0] - w - 8, winY + 6, w, 18};
+    }
     private int WIN_W;   // tatsaechliche Breite, in init() gesetzt
 
     public WaypointScreen(Screen parent) {
@@ -210,10 +226,40 @@ public class WaypointScreen extends Screen {
                     pinx + 8, winY + 62, 0xFFFFD070, false);
         }
 
+        // HAUPTSCHALTER UND EINSTELLUNGEN.
+        //
+        // Beides stand nur im alten Menue. Seit das Spaltenmenue es ersetzt
+        // hat, liessen sich die Marker weder aus- noch einschalten, und Tracer,
+        // Beschriftungen und Tasten waren unerreichbar. Jetzt oben rechts.
+        var wps = com.vortex.client.waypoint.WaypointSettings.INSTANCE;
+        int[] knopf = einstellKnopf();
+        boolean eHov = inRect(knopf[0], knopf[1], knopf[2], knopf[3]);
+        roundRect(ctx, knopf[0], knopf[1], knopf[2], knopf[3],
+                eHov ? mix(C_INNER, accent, 0.45f) : C_INNER);
+        ctx.text(this.font, Component.literal("Settings"),
+                knopf[0] + 8, knopf[1] + 5, 0xFFFFFFFF, false);
+
+        int[] sch = schalter();
+        if (showAnim < 0f) showAnim = wps.enabled.get() ? 1f : 0f;
+        showAnim += ((wps.enabled.get() ? 1f : 0f) - showAnim) * (1f - (float) Math.exp(-16f * dt));
+        boolean sHov = inRect(sch[0], sch[1], sch[2], sch[3]);
+        ctx.text(this.font, Component.literal("Show"),
+                sch[0] + 2, sch[1] + 5, sHov ? 0xFFFFFFFF : VortexStyle.TEXT_DIM, false);
+        int bx0 = sch[0] + sch[2] - 22;
+        ctx.fill(bx0, sch[1] + 5, bx0 + 20, sch[1] + 12,
+                VortexStyle.mix(VortexStyle.TRACK, accent, showAnim));
+        int kx0 = bx0 + 1 + (int) (showAnim * 11f);
+        ctx.fill(kx0, sch[1] + 4, kx0 + 8, sch[1] + 13,
+                VortexStyle.mix(0xFFB8B2CC, 0xFFFFFFFF, showAnim));
+
         String count = list.size() + " Marker";
         int cw = this.font.width(count);
-        ctx.text(this.font, Component.literal(count),
-                winX + WIN_W - cw - 12, winY + 12, VortexStyle.TEXT_DIM, false);
+        // Nur, wenn neben dem Titel Platz ist -- bei schmalem Fenster nie
+        // darueber.
+        if (sch[0] - cw - 12 > winX + 30 + this.font.width("Waypoints") + 8) {
+            ctx.text(this.font, Component.literal(count),
+                    sch[0] - cw - 12, winY + 12, VortexStyle.TEXT_DIM, false);
+        }
 
         // Eingabefeld-Rahmen + Knopf "Add here"
         roundRect(ctx, winX + 8, winY + 30, 208, 20, C_INNER);
@@ -374,6 +420,22 @@ public class WaypointScreen extends Screen {
 
         if (inRect(winX + 8, winY + 8, 16, 16)) {
             this.onClose();
+            return true;
+        }
+
+        // Hauptschalter und Einstellungen (oben rechts)
+        int[] sch = schalter();
+        if (inRect(sch[0], sch[1], sch[2], sch[3])) {
+            var wps = com.vortex.client.waypoint.WaypointSettings.INSTANCE;
+            wps.enabled.toggle();
+            com.vortex.client.core.ConfigManager.save();
+            status = wps.enabled.get() ? "Markers shown." : "Markers hidden.";
+            return true;
+        }
+        int[] knopf = einstellKnopf();
+        if (inRect(knopf[0], knopf[1], knopf[2], knopf[3])) {
+            Minecraft.getInstance().gui.setScreen(new SettingsScreen(this, "Waypoint Settings",
+                    com.vortex.client.waypoint.WaypointSettings.INSTANCE.getSettings()));
             return true;
         }
 

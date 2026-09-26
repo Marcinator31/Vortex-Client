@@ -32,6 +32,24 @@ public abstract class CameraMixin {
     @Shadow
     protected abstract void setPosition(double x, double y, double z);
 
+    /**
+     * Freelook: die Kamera bekommt die Freelook-Drehung statt der des
+     * Spielers. Nur der ERSTE setRotation-Aufruf -- der zweite gehoert zur
+     * Ansicht von vorne, die sich daraus selbst ableitet. Die Ansicht von
+     * hinten rechnet Minecraft danach aus genau dieser Drehung, samt Abstand
+     * zu Waenden.
+     */
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "alignWithEntity",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 0),
+            require = 0)
+    private void vortex$freelook(net.minecraft.client.Camera kamera, float yaw, float pitch) {
+        if (com.vortex.client.hud.Freelook.aktiv()) {
+            yaw = com.vortex.client.hud.Freelook.yaw();
+            pitch = com.vortex.client.hud.Freelook.pitch();
+        }
+        setRotation(yaw, pitch);
+    }
+
     @Inject(method = "update", at = @At("TAIL"))
     private void pvpclient$freecamUpdate(DeltaTracker deltaTracker, CallbackInfo ci) {
         if (!Freecam.isActive()) return;

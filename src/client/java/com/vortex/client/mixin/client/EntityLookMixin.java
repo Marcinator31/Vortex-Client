@@ -24,6 +24,14 @@ public abstract class EntityLookMixin {
 
     @Inject(method = "turn", at = @At("HEAD"), cancellable = true)
     private void pvpclient$freecamLook(double cursorDeltaX, double cursorDeltaY, CallbackInfo ci) {
+        // Freelook: die Maus dreht nur die Kamera, der Spieler schaut weiter
+        // geradeaus.
+        if (com.vortex.client.hud.Freelook.aktiv()
+                && (Object) this == Minecraft.getInstance().player) {
+            com.vortex.client.hud.Freelook.drehe(cursorDeltaX, cursorDeltaY);
+            ci.cancel();
+            return;
+        }
         if (!Freecam.isActive()) return;
         Entity self = (Entity) (Object) this;
         if (self != Minecraft.getInstance().player) return;

@@ -28,6 +28,39 @@ public final class ClientCommands {
                         return 1;
                     }));
 
+            // /friend add|remove <name>, /friend list -- Freundesliste
+            dispatcher.register(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("friend")
+                    .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("add")
+                        .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument("name",
+                                com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .executes(ctx -> {
+                            String n = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name");
+                            boolean neu = com.vortex.client.core.Friends.hinzu(n);
+                            com.vortex.client.core.ConfigManager.save();
+                            ctx.getSource().sendFeedback(Component.literal(
+                                    neu ? n + " is now your friend." : n + " already is your friend."));
+                            return 1;
+                        })))
+                    .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("remove")
+                        .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument("name",
+                                com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .executes(ctx -> {
+                            String n = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name");
+                            boolean weg = com.vortex.client.core.Friends.weg(n);
+                            com.vortex.client.core.ConfigManager.save();
+                            ctx.getSource().sendFeedback(Component.literal(
+                                    weg ? n + " removed from friends." : n + " was not on the list."));
+                            return 1;
+                        })))
+                    .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("list")
+                        .executes(ctx -> {
+                            var alle = com.vortex.client.core.Friends.alle();
+                            ctx.getSource().sendFeedback(Component.literal(alle.isEmpty()
+                                    ? "No friends yet. Middle-click a player or use /friend add <name>."
+                                    : "Friends (" + alle.size() + "): " + String.join(", ", alle)));
+                            return 1;
+                        })));
+
             // /export <name> -- aktives Preset als Textdatei sichern
             dispatcher.register(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("export")
                     .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument("name",

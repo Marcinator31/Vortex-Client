@@ -297,8 +297,11 @@ public class LivingEntityRendererMixin {
             }
 
             int alpha = (int) (255 * Math.max(0.2, Math.min(1.0, mod.opacity.get())));
+            // Freunde in ihrer Farbe
+            int nameFarbe = com.vortex.client.core.Friends.markiert(entity)
+                    ? (com.vortex.client.core.Friends.farbe() & 0xFFFFFF) : 0xFFFFFF;
             Component label = Component.literal(name).setStyle(
-                    Style.EMPTY.withColor(0xFFFFFF));
+                    Style.EMPTY.withColor(nameFarbe));
 
             // Full brightness makes the label readable in the dark; it is also
             // what lets it show through walls, since the depth test follows it.

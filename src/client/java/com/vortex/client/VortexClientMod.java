@@ -67,6 +67,15 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.AutoReconnect.register();
         com.vortex.client.hud.ChatCopy.register();
         com.vortex.client.core.EntityCache.register();
+        // 4.4.0
+        com.vortex.client.hud.CombatTracker.register();
+        com.vortex.client.hud.TickRate.register();
+        com.vortex.client.hud.ExtraHud.register();
+        com.vortex.client.hud.BlockOutline.register();
+        com.vortex.client.hud.HitColor.register();
+        com.vortex.client.hud.TimeWeather.register();
+        com.vortex.client.hud.Freelook.register();
+        com.vortex.client.hud.SlotLock.register();
 
         // Point out Sodium and Lithium once, a moment after joining.
         //
