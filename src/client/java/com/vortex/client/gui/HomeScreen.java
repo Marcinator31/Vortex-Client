@@ -342,7 +342,7 @@ public class HomeScreen extends Screen {
         // Alle Unterseiten bekommen diesen Bildschirm als Eltern -- ESC fuehrt
         // also hierher zurueck, nicht ins Spiel.
         if (in(flaeche[MODS]))      { mc.gui.setScreen(new PanelGui()); return true; }
-        if (in(flaeche[BOTS]))      { mc.gui.setScreen(new PanelGui(Module.Category.BOTS)); return true; }
+        if (in(flaeche[BOTS]))      { mc.gui.setScreen(new BotScreen(this)); return true; }
         if (in(flaeche[WAYPOINTS])) { mc.gui.setScreen(new WaypointScreen(this)); return true; }
         if (in(flaeche[MACROS]))    { mc.gui.setScreen(new MacroScreen(this)); return true; }
         if (in(flaeche[WARDROBE]))  { mc.gui.setScreen(new SkinScreen(this)); return true; }
