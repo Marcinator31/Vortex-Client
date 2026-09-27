@@ -116,8 +116,10 @@ public final class Freecam {
         // Genau daran scheiterte "Show Player" vorher: die Einstellung wurde
         // ausgewertet, aber der Spieler war die Kamera und damit ohnehin
         // unsichtbar.
-        boolean brauchtKamera = schalter("Render Anchor", false)
-                || schalter("Show Player", true);
+        // Seit 4.6.1 NUR noch fuer "Render Anchor". "Show Player" braucht
+        // keine eigene Kamera-Entity mehr (CameraMixin: detached) -- der
+        // Spieler bleibt Kamera und schickt weiter seine Pakete.
+        boolean brauchtKamera = schalter("Render Anchor", false);
         if (!brauchtKamera) {
             cameraEntity = null;
             return;
@@ -225,8 +227,7 @@ public final class Freecam {
         //
         // Nur bei ECHTER Aenderung handeln: sonst wuerde die Entity in jedem
         // Bild neu erzeugt.
-        boolean brauchtJetzt = schalter("Render Anchor", false)
-                || schalter("Show Player", true);
+        boolean brauchtJetzt = schalter("Render Anchor", false);
         if (brauchtJetzt && cameraEntity == null) {
             spawnCameraEntity(mc);
         } else if (!brauchtJetzt && cameraEntity != null) {

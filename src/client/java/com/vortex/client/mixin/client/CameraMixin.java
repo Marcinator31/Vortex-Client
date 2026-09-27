@@ -33,6 +33,14 @@ public abstract class CameraMixin {
     protected abstract void setPosition(double x, double y, double z);
 
     /**
+     * "Abgeloeste" Kamera wie in F5. In der Freecam auf true gesetzt -- dann
+     * zeichnet Minecraft den eigenen Spieler von selbst, OHNE dass eine
+     * eigene Kamera-Entity noetig ist (dieselbe Stelle wie Meteor in 26.2).
+     */
+    @Shadow
+    private boolean detached;
+
+    /**
      * Freelook: die Kamera bekommt die Freelook-Drehung statt der des
      * Spielers. Nur der ERSTE setRotation-Aufruf -- der zweite gehoert zur
      * Ansicht von vorne, die sich daraus selbst ableitet. Die Ansicht von
@@ -60,5 +68,17 @@ public abstract class CameraMixin {
         // Erst Rotation (berechnet Richtungsvektoren neu), dann Position.
         setRotation(Freecam.getYaw(), Freecam.getPitch());
         setPosition(Freecam.getPos().x, Freecam.getPos().y, Freecam.getPos().z);
+        // SPIELER SICHTBAR, OHNE ANTI-CHEAT-RISIKO.
+        //
+        // Vorher brauchte "Show Player" eine eigene Kamera-Entity. Dann galt
+        // aber der echte Spieler nicht mehr als Kamera -- und Minecraft
+        // schickt Bewegungspakete nur fuer die Kamera. Der Spieler verstummte
+        // auf dem Server, was Anti-Cheats auffaellt.
+        //
+        // Jetzt bleibt der Spieler die Kamera-Entity (er meldet sich weiter
+        // ganz normal), und die Kamera gilt nur als "abgeloest" -- wie in F5.
+        // Damit zeichnet Minecraft den Koerper, und die eigene Hand
+        // verschwindet in der Freecam.
+        detached = true;
     }
 }

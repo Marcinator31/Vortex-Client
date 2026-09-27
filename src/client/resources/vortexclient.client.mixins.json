@@ -49,7 +49,8 @@
     "SlotLockDropMixin",
     "StreamerTextMixin",
     "ZoomFovMixin",
-    "ZoomScrollMixin"
+    "ZoomScrollMixin",
+    "HitArmorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

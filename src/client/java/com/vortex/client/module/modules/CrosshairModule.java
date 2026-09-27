@@ -23,7 +23,11 @@ import com.vortex.client.module.Module;
  *            Waffe noch laedt -- wie in Shootern
  *   Treffer  Hit Marker: kurzes X, wenn dein Schlag wirklich trifft
  *   Angriff  Attack Indicator: Bar, Ring oder Prozent, eigene Farbe, auf
- *            Wunsch immer sichtbar, kurzes Aufleuchten wenn voll
+ *            Wunsch immer sichtbar, kurzes Aufleuchten wenn voll.
+ *            Seit 4.6.1 ausserdem: Position (unten/oben/links/rechts),
+ *            Abstand, Laenge, Dicke, Farbe der leeren Spur, Hintergrund,
+ *            Farbe je nach Aufladung (z. B. rot -> weiss), Textgroesse bei
+ *            Prozent und "nur, wenn du auf ein Wesen zielst".
  */
 public class CrosshairModule extends Module {
 
@@ -57,6 +61,18 @@ public class CrosshairModule extends Module {
     public final ColorSetting indicatorColor = new ColorSetting("Indicator Colour", 0xFFFFFFFF);
     public final BooleanSetting indicatorAlways = new BooleanSetting("Indicator Always Visible", false);
     public final BooleanSetting readyFlash = new BooleanSetting("Flash When Ready", true);
+    // 4.6.1: feiner einstellbar
+    public final ModeSetting indicatorPosition =
+            new ModeSetting("Indicator Position", 0, "Below", "Above", "Left", "Right");
+    public final NumberSetting indicatorDistance = new NumberSetting("Indicator Distance", 4, 0, 30, 1);
+    public final NumberSetting indicatorLength = new NumberSetting("Indicator Length", 16, 6, 60, 1);
+    public final NumberSetting indicatorThickness = new NumberSetting("Indicator Thickness", 2, 1, 6, 1);
+    public final ColorSetting indicatorTrack = new ColorSetting("Indicator Track Colour", 0xFF2E2A3A);
+    public final ColorSetting indicatorBackground = new ColorSetting("Indicator Background", 0xB0000000);
+    public final BooleanSetting colorByCharge = new BooleanSetting("Colour By Charge", false);
+    public final ColorSetting chargingColor = new ColorSetting("Charging Colour", 0xFFFF5555);
+    public final NumberSetting indicatorTextScale = new NumberSetting("Indicator Text Scale", 1.0, 0.5, 2.0, 0.1);
+    public final BooleanSetting indicatorOnlyTarget = new BooleanSetting("Indicator Only On Target", false);
 
     // --- Sonstiges --------------------------------------------------------
     public final BooleanSetting thirdPerson = new BooleanSetting("Show in Third Person", false);
@@ -81,6 +97,16 @@ public class CrosshairModule extends Module {
         addSetting(indicatorColor);
         addSetting(indicatorAlways);
         addSetting(readyFlash);
+        addSetting(indicatorPosition);
+        addSetting(indicatorDistance);
+        addSetting(indicatorLength);
+        addSetting(indicatorThickness);
+        addSetting(indicatorTrack);
+        addSetting(indicatorBackground);
+        addSetting(colorByCharge);
+        addSetting(chargingColor);
+        addSetting(indicatorTextScale);
+        addSetting(indicatorOnlyTarget);
         addSetting(thirdPerson);
     }
 }

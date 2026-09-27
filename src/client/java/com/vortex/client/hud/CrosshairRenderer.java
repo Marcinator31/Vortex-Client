@@ -116,7 +116,10 @@ public final class CrosshairRenderer {
             boolean laedt = staerke < 1f;
             long seitVoll = jetzt - vollSeit;
             boolean blitz = m.readyFlash.get() && !laedt && seitVoll < 200;
-            if (laedt || blitz || m.indicatorAlways.get()) {
+            boolean zielt = mc.hitResult instanceof EntityHitResult;
+            boolean zeigen = laedt || blitz || m.indicatorAlways.get();
+            if (m.indicatorOnlyTarget.get() && !zielt) zeigen = false;
+            if (zeigen) {
                 int ausdehnung = aussenmass(m.style.getIndex(), gap, len, th, dot);
                 anzeige(ctx, mc, m, modus, cx, cy, ausdehnung, staerke, blitz ? 1f - seitVoll / 200f : 0f);
             }
@@ -201,37 +204,102 @@ public final class CrosshairRenderer {
 
     private static void anzeige(GuiGraphicsExtractor ctx, Minecraft mc, CrosshairModule m, int modus,
                                 int cx, int cy, int ausdehnung, float staerke, float blitz) {
-        int farbe = m.indicatorColor.get();
-        if (blitz > 0f) farbe = mischen(farbe, 0xFFFFFFFF, blitz);
-        int y = cy + ausdehnung + 4;
+        float voll = Math.min(1f, Math.max(0f, staerke));
+        com.vortex.client.core.setting.ColorSetting fs = m.indicatorColor;
+        // Farbe je nach Aufladung: von "Charging Colour" nach "Indicator Colour"
+        boolean nachLadung = m.colorByCharge.get();
+        int einfarbig = nachLadung ? mischen(m.chargingColor.get(), fs.get(), voll) : fs.get();
+        if (blitz > 0f) einfarbig = mischen(einfarbig, 0xFFFFFFFF, blitz);
+        boolean verlauf = !nachLadung && blitz <= 0f && fs.isGradient();
+
+        int lage = m.indicatorPosition.getIndex();          // 0 unten, 1 oben, 2 links, 3 rechts
+        int abstand = m.indicatorDistance.getInt();
+        int laenge = m.indicatorLength.getInt();
+        int dicke = m.indicatorThickness.getInt();
+        int spur = m.indicatorTrack.get();
+        int grund = m.indicatorBackground.get();
+
         switch (modus) {
-            case 1: {   // Bar
-                int b = 16, x = cx - b / 2;
-                ctx.fill(x - 1, y - 1, x + b + 1, y + 3, 0xB0000000);
-                ctx.fill(x, y, x + b, y + 2, 0xFF2E2A3A);
-                int voll = Math.round(b * Math.min(1f, staerke));
-                if (voll > 0) ctx.fill(x, y, x + voll, y + 2, farbe);
+            case 1: {   // Balken -- waagerecht unter/ueber, senkrecht links/rechts
+                boolean senkrecht = lage >= 2;
+                int b = senkrecht ? dicke : laenge;
+                int h = senkrecht ? laenge : dicke;
+                int x, y;
+                switch (lage) {
+                    case 1:  x = cx - b / 2; y = cy - ausdehnung - abstand - h; break;
+                    case 2:  x = cx - ausdehnung - abstand - b; y = cy - h / 2; break;
+                    case 3:  x = cx + ausdehnung + abstand + 1; y = cy - h / 2; break;
+                    default: x = cx - b / 2; y = cy + ausdehnung + abstand; break;
+                }
+                if ((grund >>> 24) != 0) ctx.fill(x - 1, y - 1, x + b + 1, y + h + 1, grund);
+                if ((spur >>> 24) != 0) ctx.fill(x, y, x + b, y + h, spur);
+                if (!senkrecht) {
+                    int gefuellt = Math.round(b * voll);
+                    for (int i = 0; i < gefuellt; i += 2) {
+                        int c = verlauf ? fs.at((i + 1f) / b) : einfarbig;
+                        ctx.fill(x + i, y, x + Math.min(i + 2, gefuellt), y + h, c);
+                    }
+                } else {
+                    // senkrecht: fuellt sich von unten nach oben
+                    int gefuellt = Math.round(h * voll);
+                    for (int i = 0; i < gefuellt; i += 2) {
+                        int c = verlauf ? fs.at((i + 1f) / h) : einfarbig;
+                        int unten = y + h - i;
+                        ctx.fill(x, unten - Math.min(2, gefuellt - i), x + b, unten, c);
+                    }
+                }
                 break;
             }
             case 2: {   // Ring um das Fadenkreuz, faellt im Uhrzeigersinn voll
-                int r = ausdehnung + 3;
-                TEILE.clear();
+                int r = ausdehnung + Math.max(1, abstand - 1);
                 int schritte = Math.max(32, r * 8);
-                int bis = Math.round(schritte * Math.min(1f, staerke));
+                int bis = Math.round(schritte * voll);
+                int halb = dicke / 2;
+                // Leere Spur zuerst (ganzer Ring), dann der gefuellte Teil
+                if ((spur >>> 24) != 0) {
+                    TEILE.clear();
+                    java.util.Set<Long> schon = new java.util.HashSet<>();
+                    for (int i = bis; i < schritte; i++) {
+                        double w = -Math.PI / 2 + Math.PI * 2 * i / schritte;
+                        int px = cx + (int) Math.round(Math.cos(w) * r) - halb;
+                        int py = cy + (int) Math.round(Math.sin(w) * r) - halb;
+                        if (schon.add(((long) px << 32) ^ (py & 0xFFFFFFFFL))) rechteck(px, py, dicke, dicke);
+                    }
+                    zeichne(ctx, spur, false, 0);
+                }
                 java.util.Set<Long> schon = new java.util.HashSet<>();
                 for (int i = 0; i < bis; i++) {
                     double w = -Math.PI / 2 + Math.PI * 2 * i / schritte;
-                    int px = cx + (int) Math.round(Math.cos(w) * r);
-                    int py = cy + (int) Math.round(Math.sin(w) * r);
-                    if (schon.add(((long) px << 32) ^ (py & 0xFFFFFFFFL))) rechteck(px, py, 1, 1);
+                    int px = cx + (int) Math.round(Math.cos(w) * r) - halb;
+                    int py = cy + (int) Math.round(Math.sin(w) * r) - halb;
+                    if (!schon.add(((long) px << 32) ^ (py & 0xFFFFFFFFL))) continue;
+                    int c = verlauf ? fs.at(i / (float) schritte) : einfarbig;
+                    if ((grund >>> 24) != 0) ctx.fill(px - 1, py - 1, px + dicke + 1, py + dicke + 1, grund);
+                    ctx.fill(px, py, px + dicke, py + dicke, c);
                 }
-                zeichne(ctx, farbe, true, 0x90000000);
                 break;
             }
             case 3: {   // Prozent
-                String t = String.format(Locale.ROOT, "%d%%", Math.round(Math.min(1f, staerke) * 100));
-                int tw = mc.font.width(t);
-                ctx.text(mc.font, Component.literal(t), cx - tw / 2, y, farbe, true);
+                String t = String.format(Locale.ROOT, "%d%%", Math.round(voll * 100));
+                float sk = (float) m.indicatorTextScale.get();
+                int tw = Math.round(mc.font.width(t) * sk);
+                int th = Math.round(8 * sk);
+                int x, y;
+                switch (lage) {
+                    case 1:  x = cx - tw / 2; y = cy - ausdehnung - abstand - th; break;
+                    case 2:  x = cx - ausdehnung - abstand - tw; y = cy - th / 2; break;
+                    case 3:  x = cx + ausdehnung + abstand + 1; y = cy - th / 2; break;
+                    default: x = cx - tw / 2; y = cy + ausdehnung + abstand; break;
+                }
+                var p = ctx.pose();
+                p.pushMatrix();
+                p.translate(x, y);
+                p.scale(sk, sk);
+                if ((grund >>> 24) != 0) {
+                    ctx.fill(-2, -2, mc.font.width(t) + 1, 9, grund);
+                }
+                ctx.text(mc.font, Component.literal(t), 0, 0, verlauf ? fs.at(0.5f) : einfarbig, true);
+                p.popMatrix();
                 break;
             }
             default: break;
