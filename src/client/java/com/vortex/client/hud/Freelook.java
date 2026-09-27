@@ -31,6 +31,8 @@ public final class Freelook {
     private static boolean aktiv = false;
     private static float yaw, pitch;
     private static CameraType vorher = null;
+    /** Die Ansicht, die Freelook selbst eingestellt hat (null = keine). */
+    private static CameraType gesetzt = null;
     private static boolean tasteVorher = false;
 
     /** Kamera folgt nicht -- abgeschaltet, bis das Modul neu eingeschaltet wird. */
@@ -89,13 +91,25 @@ public final class Freelook {
             pitch = mc.player.getXRot();
             gedreht = 0f;
             aktivSeit = System.currentTimeMillis();
-            if (m.thirdPerson.get()) {
+            // F5-kompatibel: Ist schon eine F5-Ansicht an (hinten ODER vorne),
+            // bleibt sie. Nur aus der Ego-Perspektive geht es nach hinten.
+            vorher = null;
+            gesetzt = null;
+            if (m.thirdPerson.get() && mc.options.getCameraType().isFirstPerson()) {
                 vorher = mc.options.getCameraType();
-                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                gesetzt = CameraType.THIRD_PERSON_BACK;
+                mc.options.setCameraType(gesetzt);
             }
             aktiv = true;
         } else if (!soll && aktiv) {
             beenden();
+        }
+
+        // F5 waehrend Freelook gedrueckt? Dann gilt deine Wahl -- beim Beenden
+        // nicht wieder zuruecksetzen.
+        if (aktiv && gesetzt != null && mc.options.getCameraType() != gesetzt) {
+            vorher = null;
+            gesetzt = null;
         }
 
         if (aktiv) pruefeKamera(mc);
@@ -145,9 +159,10 @@ public final class Freelook {
         if (!aktiv) return;
         aktiv = false;
         Minecraft mc = Minecraft.getInstance();
-        if (vorher != null && mc.options != null) {
+        if (vorher != null && mc.options != null && mc.options.getCameraType() == gesetzt) {
             mc.options.setCameraType(vorher);
         }
         vorher = null;
+        gesetzt = null;
     }
 }

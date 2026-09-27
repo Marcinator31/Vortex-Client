@@ -41,23 +41,32 @@ public abstract class CameraMixin {
     private boolean detached;
 
     /**
-     * Freelook: die Kamera bekommt die Freelook-Drehung statt der des
-     * Spielers. Nur der ERSTE setRotation-Aufruf -- der zweite gehoert zur
-     * Ansicht von vorne, die sich daraus selbst ableitet. Die Ansicht von
-     * hinten rechnet Minecraft danach aus genau dieser Drehung, samt Abstand
-     * zu Waenden.
+     * Freelook: die Kamera bekommt die Freelook-Drehung statt der des Spielers.
+     *
+     * FEHLER BIS 4.6.2: Eingehakt war der ERSTE setRotation-Aufruf in
+     * alignWithEntity. In 26.x ist das aber der Sonderfall "sitzt in einer
+     * Lore" -- im normalen Spiel lief der Eingriff nie, und die Selbstpruefung
+     * hat Freelook nach 1,5 s abgeschaltet.
+     *
+     * JETZT: direkt dort, wo die Kamera die Blickrichtung des Spielers liest
+     * (getViewYRot/getViewXRot). Das deckt alle Faelle ab. F5 von vorne leitet
+     * Minecraft danach selbst aus diesen Werten ab (yRot + 180, -xRot) -- also
+     * funktioniert Freelook in jeder F5-Ansicht.
      */
-    @org.spongepowered.asm.mixin.injection.ModifyArgs(method = "alignWithEntity",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 0),
+    @com.llamalad7.mixinextras.injector.ModifyExpressionValue(method = "alignWithEntity",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getViewYRot(F)F"),
             require = 0)
-    private void vortex$freelook(org.spongepowered.asm.mixin.injection.invoke.arg.Args args) {
-        // Gleiche Form wie Meteor fuer 26.2 (ModifyArgs statt Redirect):
-        // vertraegt sich mit anderen Mods, die denselben Aufruf anfassen.
-        if (com.vortex.client.hud.Freelook.aktiv()) {
-            args.set(0, com.vortex.client.hud.Freelook.yaw());
-            args.set(1, com.vortex.client.hud.Freelook.pitch());
-            com.vortex.client.hud.Freelook.kameraGreift();
-        }
+    private float vortex$freelookYaw(float original) {
+        if (!com.vortex.client.hud.Freelook.aktiv()) return original;
+        com.vortex.client.hud.Freelook.kameraGreift();
+        return com.vortex.client.hud.Freelook.yaw();
+    }
+
+    @com.llamalad7.mixinextras.injector.ModifyExpressionValue(method = "alignWithEntity",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getViewXRot(F)F"),
+            require = 0)
+    private float vortex$freelookPitch(float original) {
+        return com.vortex.client.hud.Freelook.aktiv() ? com.vortex.client.hud.Freelook.pitch() : original;
     }
 
     @Inject(method = "update", at = @At("TAIL"))
