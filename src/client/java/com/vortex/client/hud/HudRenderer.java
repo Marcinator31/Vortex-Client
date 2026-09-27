@@ -83,33 +83,27 @@ public final class HudRenderer {
         if (cps != null && cps.isEnabled()) {
             // Left, right, or both side by side -- see the module for why the
             // two are not added together.
-            String text;
+            String wert;
             switch (cps.mode.getIndex()) {
                 case 1:
-                    text = "CPS: " + CpsCounter.RIGHT.getCps();
+                    wert = String.valueOf(CpsCounter.RIGHT.getCps());
                     break;
                 case 2:
-                    text = "CPS: " + CpsCounter.LEFT.getCps()
-                            + " | " + CpsCounter.RIGHT.getCps();
+                    wert = CpsCounter.LEFT.getCps() + " | " + CpsCounter.RIGHT.getCps();
                     break;
                 default:
-                    text = "CPS: " + CpsCounter.LEFT.getCps();
+                    wert = String.valueOf(CpsCounter.LEFT.getCps());
                     break;
             }
-            pushScale(context, cps.x.getInt(), cps.y.getInt(), cps.scale.getFloat());
-            context.text(client.font, Component.literal(text),
-                    cps.x.getInt(), cps.y.getInt(), cps.color.get());
-            popScale(context);
+            HudText.zeile(context, client.font, cps.x.getInt(), cps.y.getInt(), cps.scale.getFloat(),
+                    cps.style, cps.color, "CPS", wert, HudStyle.FORM_LABEL_FIRST);
         }
 
         // --- FPS ---
         FpsModule fps = (FpsModule) find(FpsModule.class);
         if (fps != null && fps.isEnabled()) {
-            String text = client.getFps() + " FPS";
-            pushScale(context, fps.x.getInt(), fps.y.getInt(), fps.scale.getFloat());
-            context.text(client.font, Component.literal(text),
-                    fps.x.getInt(), fps.y.getInt(), fps.color.get());
-            popScale(context);
+            HudText.zeile(context, client.font, fps.x.getInt(), fps.y.getInt(), fps.scale.getFloat(),
+                    fps.style, fps.color, "FPS", String.valueOf(client.getFps()), HudStyle.FORM_LABEL_LAST);
         }
 
         // --- Ping (aktuelle Latenz zum Server) ---
@@ -145,10 +139,8 @@ public final class HudRenderer {
             // reading from a live one -- which is exactly how a wrong-looking
             // ping goes unexplained for weeks.
             String text = own ? (latency + " ms") : (latency + " ms*");
-            pushScale(context, ping.x.getInt(), ping.y.getInt(), ping.scale.getFloat());
-            context.text(client.font, Component.literal(text),
-                    ping.x.getInt(), ping.y.getInt(), ping.color.get());
-            popScale(context);
+            HudText.zeile(context, client.font, ping.x.getInt(), ping.y.getInt(), ping.scale.getFloat(),
+                    ping.style, ping.color, "Ping", text, HudStyle.FORM_VALUE_ONLY);
         }
 
         // --- Koordinaten (nur wenn ein Spieler da ist) ---
@@ -169,15 +161,13 @@ public final class HudRenderer {
                 default    -> dir = "";
             }
 
-            String text = "XYZ: " + px + " " + py + " " + pz + "  [" + dir + "]";
+            String text = px + " " + py + " " + pz + "  [" + dir + "]";
             // Streamer-Modus: Richtung ja, Position nein.
             if (com.vortex.client.module.modules.StreamerModeModule.koordinatenVerstecken()) {
-                text = "XYZ: hidden  [" + dir + "]";
+                text = "hidden  [" + dir + "]";
             }
-            pushScale(context, coords.x.getInt(), coords.y.getInt(), coords.scale.getFloat());
-            context.text(client.font, Component.literal(text),
-                    coords.x.getInt(), coords.y.getInt(), coords.color.get());
-            popScale(context);
+            HudText.zeile(context, client.font, coords.x.getInt(), coords.y.getInt(), coords.scale.getFloat(),
+                    coords.style, coords.color, "XYZ", text, HudStyle.FORM_LABEL_FIRST);
         }
 
         // --- Potion-Effekte (Box + Icon + Name + Restzeit, wie AppleSkin-Stil) ---
@@ -240,8 +230,6 @@ public final class HudRenderer {
             int tx = totem.x.getInt();
             int ty = totem.y.getInt();
 
-            pushScale(context, tx, ty, totem.scale.getFloat());
-
             // Totem-Icon links zeichnen (16x16). new ItemStack(Item) ist ok,
             // weil Item das ItemConvertible-Interface erfuellt.
             // The stack is built once and kept.
@@ -255,20 +243,16 @@ public final class HudRenderer {
                         || !totemIcon.is(totemItem)) {
                     totemIcon = new net.minecraft.world.item.ItemStack(totemItem);
                 }
-                context.item(totemIcon, tx, ty);
             }
 
-            // Anzahl rechts neben dem Icon, vertikal mittig zum 16px-Icon.
-            // Component object rebuilt only when the count changes -- same idea as
-            // the icon above it.
+            // Anzahl rechts neben dem Icon, vertikal mittig zum 16px-Icon --
+            // Kasten, Rahmen und Verlauf ueber HudText.
             if (count != lastTotemCount || totemCountText == null) {
                 lastTotemCount = count;
                 totemCountText = Component.literal("x" + count);
             }
-            context.text(client.font, totemCountText,
-                    tx + 20, ty + 4, totem.color.get());
-
-            popScale(context);
+            HudText.mitIcon(context, client.font, tx, ty, totem.scale.getFloat(),
+                    totem.style, totem.color, totemCountText.getString(), totemIcon);
         }
 
         // --- ArmorHUD (nur wenn ein Spieler da ist) ---
@@ -384,22 +368,16 @@ public final class HudRenderer {
         var list = com.vortex.client.hud.TotemPops.top(mod.maxEntries.getInt());
         if (list.isEmpty()) return;
 
-        int bx = mod.x.getInt();
-        int by = mod.y.getInt();
-        pushScale(ctx, bx, by, mod.scale.getFloat());
-
-        ctx.text(client.font, TOTEM_POPPER_TITLE,
-                bx, by, mod.color.get());
-        int ly = by + 10;
+        java.util.List<HudText.Zeile> zeilen = new java.util.ArrayList<>(list.size() + 1);
+        zeilen.add(new HudText.Zeile(null, TOTEM_POPPER_TITLE.getString()));
         for (var e : list) {
             // Frisch verbrauchte Totems fuer zwei Sekunden hervorheben.
             boolean fresh = mod.highlight.get() && e.since < 2000;
-            int col = fresh ? mod.highlightColor.get() : mod.color.get();
-            ctx.text(client.font,
-                    Component.literal(e.name + ": " + e.count), bx, ly, col);
-            ly += 10;
+            zeilen.add(new HudText.Zeile(e.name, String.valueOf(e.count),
+                    fresh ? mod.highlightColor.get() : 0));
         }
-        popScale(ctx);
+        HudText.block(ctx, client.font, mod.x.getInt(), mod.y.getInt(), mod.scale.getFloat(),
+                mod.style, mod.color, zeilen, HudStyle.FORM_LABEL_FIRST, 0, 1f, null);
     }
 
     /** Spielzeit, Tode, eigene Totems, hoechste Klickrate. */
@@ -408,12 +386,6 @@ public final class HudRenderer {
         if (mod == null || !mod.isEnabled()) return;
         if (client.font == null) return;
 
-        int bx = mod.x.getInt();
-        int by = mod.y.getInt();
-        pushScale(ctx, bx, by, mod.scale.getFloat());
-
-        int col = mod.color.get();
-        int ly = by;
 
         // Rebuilt twice a second: playtime is the fastest-moving of the four
         // and only changes once a second -- four string concats plus four
@@ -421,32 +393,23 @@ public final class HudRenderer {
         long nowMs = System.currentTimeMillis();
         if (nowMs - sessionTextsBuilt > 500 || sessionTime == null) {
             sessionTextsBuilt = nowMs;
-            sessionTime   = Component.literal("Time: " + com.vortex.client.hud.SessionStats.playtime());
-            sessionDeaths = Component.literal("Deaths: " + com.vortex.client.hud.SessionStats.getDeaths());
-            sessionTotems = Component.literal("Totems: " + com.vortex.client.hud.SessionStats.getOwnTotems());
-            sessionCps    = Component.literal("Max CPS: " + com.vortex.client.hud.SessionStats.getMaxCps());
+            sessionTime   = com.vortex.client.hud.SessionStats.playtime();
+            sessionDeaths = String.valueOf(com.vortex.client.hud.SessionStats.getDeaths());
+            sessionTotems = String.valueOf(com.vortex.client.hud.SessionStats.getOwnTotems());
+            sessionCps    = String.valueOf(com.vortex.client.hud.SessionStats.getMaxCps());
         }
 
-        if (mod.showTime.get()) {
-            ctx.text(client.font, sessionTime, bx, ly, col);
-            ly += 10;
-        }
-        if (mod.showDeaths.get()) {
-            ctx.text(client.font, sessionDeaths, bx, ly, col);
-            ly += 10;
-        }
-        if (mod.showTotems.get()) {
-            ctx.text(client.font, sessionTotems, bx, ly, col);
-            ly += 10;
-        }
-        if (mod.showMaxCps.get()) {
-            ctx.text(client.font, sessionCps, bx, ly, col);
-        }
-        popScale(ctx);
+        java.util.List<HudText.Zeile> zeilen = new java.util.ArrayList<>(4);
+        if (mod.showTime.get())   zeilen.add(new HudText.Zeile("Time", sessionTime));
+        if (mod.showDeaths.get()) zeilen.add(new HudText.Zeile("Deaths", sessionDeaths));
+        if (mod.showTotems.get()) zeilen.add(new HudText.Zeile("Totems", sessionTotems));
+        if (mod.showMaxCps.get()) zeilen.add(new HudText.Zeile("Max CPS", sessionCps));
+        HudText.block(ctx, client.font, mod.x.getInt(), mod.y.getInt(), mod.scale.getFloat(),
+                mod.style, mod.color, zeilen, HudStyle.FORM_LABEL_FIRST, 0, 1f, null);
     }
 
     private static long sessionTextsBuilt = 0L;
-    private static Component sessionTime, sessionDeaths, sessionTotems, sessionCps;
+    private static String sessionTime, sessionDeaths, sessionTotems, sessionCps;
 
     private static void drawKeystrokes(GuiGraphicsExtractor ctx, Minecraft client) {
         KeystrokesModule mod = (KeystrokesModule) find(KeystrokesModule.class);

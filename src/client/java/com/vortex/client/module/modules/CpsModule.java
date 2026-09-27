@@ -29,6 +29,9 @@ public class CpsModule extends Module implements HudElement {
      */
     public final ModeSetting mode = new ModeSetting("Count", 0, "Left", "Right", "Both");
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public CpsModule() {
         super("CPS", Category.HUD);
         enabledByDefault();
@@ -37,6 +40,7 @@ public class CpsModule extends Module implements HudElement {
         addSetting(color);
         addSetting(scale);
         addSetting(mode);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "CPS"; }
@@ -44,6 +48,6 @@ public class CpsModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public com.vortex.client.core.setting.ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return mode.getIndex() == 2 ? 84 : 50; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(mode.getIndex() == 2 ? 84 : 50); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

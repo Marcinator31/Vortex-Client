@@ -24,6 +24,9 @@ public class SpeedometerModule extends Module implements HudElement {
     public final ModeSetting unit = new ModeSetting("Unit", 0, "Blocks/s", "km/h");
     public final BooleanSetting vertical = new BooleanSetting("Include Vertical", false);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public SpeedometerModule() {
         super("Speedometer", Category.HUD);
         addSetting(x);
@@ -32,6 +35,7 @@ public class SpeedometerModule extends Module implements HudElement {
         addSetting(scale);
         addSetting(unit);
         addSetting(vertical);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "Speedometer"; }
@@ -39,6 +43,6 @@ public class SpeedometerModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 80; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(80); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

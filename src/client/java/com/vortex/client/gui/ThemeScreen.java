@@ -137,7 +137,7 @@ public class ThemeScreen extends Screen {
                     winX + 18, y + 8, VortexStyle.TEXT, false);
 
             // Farbfeld + Hex-Wert
-            String hx = String.format(java.util.Locale.ROOT, "#%08X", c.get());
+            String hx = String.format(java.util.Locale.ROOT, "#%08X", c.color1());
             int hw = this.font.width(hx);
             ctx.text(this.font, Component.literal(hx),
                     winX + winW - 34 - hw - 8, y + 8, VortexStyle.TEXT_DIM, false);

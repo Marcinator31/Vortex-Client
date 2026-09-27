@@ -23,6 +23,9 @@ public class ReachModule extends Module implements HudElement {
     public final NumberSetting hideAfter = new NumberSetting("Hide After (s)", 3, 0, 20, 1);
     public final ModeSetting decimals = new ModeSetting("Decimals", 1, "1", "2");
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public ReachModule() {
         super("Reach Display", Category.PVP);
         addSetting(x);
@@ -31,6 +34,7 @@ public class ReachModule extends Module implements HudElement {
         addSetting(scale);
         addSetting(hideAfter);
         addSetting(decimals);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "Reach Display"; }
@@ -38,6 +42,6 @@ public class ReachModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 70; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(70); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

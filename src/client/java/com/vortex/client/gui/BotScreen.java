@@ -340,7 +340,10 @@ public class BotScreen extends Screen {
             ctx.text(this.font, Component.literal(kuerzen(s.getName(), w - 20)), x + 2, y + 5, dim, false);
             int bx = x + w - 14;
             ctx.fill(bx, y + 3, bx + 12, y + 15, VortexStyle.fade(0xFF000000, a));
-            ctx.fill(bx + 1, y + 4, bx + 11, y + 14, VortexStyle.fade(c.get() | 0xFF000000, a));
+            for (int i = 0; i < 10; i++) {
+                ctx.fill(bx + 1 + i, y + 4, bx + 2 + i, y + 14,
+                        VortexStyle.fade(c.at((i + 0.5f) / 10f) | 0xFF000000, a));
+            }
             treffer.add(new Treffer(x, y, w, zh, Art.FARBE, m, s));
 
         } else if (s instanceof KeySetting k) {

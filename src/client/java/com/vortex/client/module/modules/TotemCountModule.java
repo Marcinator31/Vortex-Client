@@ -34,6 +34,9 @@ public class TotemCountModule extends Module implements HudElement {
     // die Registry es nicht kennt -- dann zaehlen wir einfach 0).
     private static Item totemItem;
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(false);
+
     public TotemCountModule() {
         super("Totem Counter", Category.HUD);
         enabledByDefault();
@@ -41,6 +44,7 @@ public class TotemCountModule extends Module implements HudElement {
         addSetting(y);
         addSetting(color);
         addSetting(scale);
+        style.addTo(this::addSetting);
     }
 
     /** Liefert das Totem-Item (lazy, einmalig aus der Registry). */
@@ -82,6 +86,6 @@ public class TotemCountModule extends Module implements HudElement {
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
     // Breite etwas groesser: Icon (16) + Abstand + Zahl.
-    @Override public int hudWidth() { return 40; }
-    @Override public int hudHeight() { return 16; }
+    @Override public int hudWidth() { return style.breite(40); }
+    @Override public int hudHeight() { return style.hoehe(16); }
 }

@@ -13,6 +13,9 @@ public class FpsModule extends Module implements HudElement {
     public final ColorSetting color = new ColorSetting("Text Color", 0xFFFFFFFF);
     public final NumberSetting scale = new NumberSetting("Scale", 1.0, 0.5, 3.0, 0.1);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public FpsModule() {
         super("FPS", Category.HUD);
         enabledByDefault();
@@ -20,6 +23,7 @@ public class FpsModule extends Module implements HudElement {
         addSetting(y);
         addSetting(color);
         addSetting(scale);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "FPS"; }
@@ -27,6 +31,6 @@ public class FpsModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public com.vortex.client.core.setting.ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 60; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(60); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

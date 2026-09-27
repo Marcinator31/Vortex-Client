@@ -85,7 +85,8 @@ public final class ExtraHud {
             tachoWert = schluessel;
             tachoText = String.format(Locale.ROOT, "%.1f %s", wert, kmh ? "km/h" : "b/s");
         }
-        zeile(ctx, mc, m.x.getInt(), m.y.getInt(), m.scale.getFloat(), tachoText, m.color.get());
+        HudText.zeile(ctx, mc.font, m.x.getInt(), m.y.getInt(), m.scale.getFloat(),
+                m.style, m.color, "Speed", tachoText, HudStyle.FORM_VALUE_ONLY);
     }
 
     // ----------------------------------------------------------------------
@@ -159,18 +160,18 @@ public final class ExtraHud {
         if (m == null || !m.isEnabled()) return;
         double r = CombatTracker.reichweite();
         String text;
-        int alpha = 255;
+        float alpha = 1f;
         if (r < 0) {
             text = "-- blocks";
         } else {
             long alter = CombatTracker.reichweiteAlter();
             long grenze = (long) (m.hideAfter.get() * 1000);
             if (grenze > 0 && alter > grenze + 400) return;
-            if (grenze > 0 && alter > grenze) alpha = (int) (255 * (1f - (alter - grenze) / 400f));
+            if (grenze > 0 && alter > grenze) alpha = 1f - (alter - grenze) / 400f;
             text = String.format(Locale.ROOT, m.decimals.getIndex() == 1 ? "%.2f blocks" : "%.1f blocks", r);
         }
-        int col = (Math.max(8, alpha) << 24) | (m.color.get() & 0xFFFFFF);
-        zeile(ctx, mc, m.x.getInt(), m.y.getInt(), m.scale.getFloat(), text, col);
+        HudText.zeile(ctx, mc.font, m.x.getInt(), m.y.getInt(), m.scale.getFloat(),
+                m.style, m.color, "Reach", text, HudStyle.FORM_VALUE_ONLY, 0, Math.max(0.03f, alpha));
     }
 
     private static void combo(GuiGraphicsExtractor ctx, Minecraft mc) {
@@ -180,30 +181,31 @@ public final class ExtraHud {
         if (c == 0 && m.hideAtZero.get()) return;
         // Kurzes Aufleuchten bei jedem neuen Treffer
         long alter = CombatTracker.comboAlter();
-        int col = m.color.get();
+        int blitz = 0;
         if (c > 0 && alter < 250) {
-            col = com.vortex.client.gui.VortexStyle.mix(0xFFFFFFFF, col, alter / 250f);
+            blitz = com.vortex.client.gui.VortexStyle.mix(0xFFFFFFFF, m.color.get(), alter / 250f);
         }
-        zeile(ctx, mc, m.x.getInt(), m.y.getInt(), m.scale.getFloat(),
-                c == 1 ? "1 hit" : c + " hits", col);
+        HudText.zeile(ctx, mc.font, m.x.getInt(), m.y.getInt(), m.scale.getFloat(),
+                m.style, m.color, "Combo", c == 1 ? "1 hit" : c + " hits", HudStyle.FORM_VALUE_ONLY, blitz, 1f);
     }
 
     private static void tps(GuiGraphicsExtractor ctx, Minecraft mc) {
         TpsModule m = ModuleManager.INSTANCE.get(TpsModule.class);
         if (m == null || !m.isEnabled()) return;
         float t = TickRate.tps();
-        String text = String.format(Locale.ROOT, "TPS %.1f", t);
+        String text = String.format(Locale.ROOT, "%.1f", t);
         float seit = TickRate.seitLetztem();
         if (m.lagTimer.get() && seit >= 2f) {
             text += String.format(Locale.ROOT, "  (%.0fs)", seit);
         }
-        int col = m.color.get();
+        int col = 0;
         if (m.colorByValue.get()) {
             if (seit >= 3f || t < 15f) col = 0xFFFF5555;
             else if (t < 18f) col = 0xFFFFD050;
             else col = 0xFF55FF7A;
         }
-        zeile(ctx, mc, m.x.getInt(), m.y.getInt(), m.scale.getFloat(), text, col);
+        HudText.zeile(ctx, mc.font, m.x.getInt(), m.y.getInt(), m.scale.getFloat(),
+                m.style, m.color, "TPS", text, HudStyle.FORM_LABEL_FIRST, col, 1f);
     }
 
     private static String uhrText = null;
@@ -233,15 +235,8 @@ public final class ExtraHud {
             uhrText = sb.toString();
         }
         if (uhrText.isEmpty()) return;
-        zeile(ctx, mc, m.x.getInt(), m.y.getInt(), m.scale.getFloat(), uhrText, m.color.get());
+        HudText.zeile(ctx, mc.font, m.x.getInt(), m.y.getInt(), m.scale.getFloat(),
+                m.style, m.color, "Time", uhrText, HudStyle.FORM_VALUE_ONLY);
     }
 
-    // ----------------------------------------------------------------------
-
-    private static void zeile(GuiGraphicsExtractor ctx, Minecraft mc, int x, int y, float sc,
-                              String text, int col) {
-        HudRenderer.pushScale(ctx, x, y, sc);
-        ctx.text(mc.font, Component.literal(text), x, y, col);
-        HudRenderer.popScale(ctx);
-    }
 }

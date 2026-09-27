@@ -23,6 +23,9 @@ public class ClockModule extends Module implements HudElement {
     public final BooleanSetting showDay = new BooleanSetting("Show Day", true);
     public final BooleanSetting showMemory = new BooleanSetting("Show Memory", false);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public ClockModule() {
         super("Clock", Category.HUD);
         addSetting(x);
@@ -33,6 +36,7 @@ public class ClockModule extends Module implements HudElement {
         addSetting(format);
         addSetting(showDay);
         addSetting(showMemory);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "Clock"; }
@@ -40,6 +44,6 @@ public class ClockModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 150; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(150); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

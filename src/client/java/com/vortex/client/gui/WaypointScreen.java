@@ -566,7 +566,7 @@ public class WaypointScreen extends Screen {
                 int bx = winX + WIN_W - 26;
                 if (inRect(bx, y + 6, 12, 12)) {
                     // Farbe aendern -- ueber ein kurzlebiges ColorSetting.
-                    var cs = new com.vortex.client.core.setting.ColorSetting("Marker Colour", w.color);
+                    var cs = new com.vortex.client.core.setting.ColorSetting("Marker Colour", w.color).noGradient();
                     Minecraft.getInstance().gui.setScreen(
                             new ColorPickerScreen(this, cs, () -> w.color = cs.get()));
                     return true;

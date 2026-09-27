@@ -27,6 +27,9 @@ public class SessionStatsModule extends Module implements HudElement {
     public final BooleanSetting showTotems = new BooleanSetting("Own Totems", true);
     public final BooleanSetting showMaxCps = new BooleanSetting("Best CPS", true);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public SessionStatsModule() {
         super("Session Stats", Category.HUD);
         addSetting(x);
@@ -37,6 +40,7 @@ public class SessionStatsModule extends Module implements HudElement {
         addSetting(showDeaths);
         addSetting(showTotems);
         addSetting(showMaxCps);
+        style.addTo(this::addSetting);
     }
 
     /** Anzahl der eingeschalteten Zeilen. */
@@ -54,6 +58,6 @@ public class SessionStatsModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return (int) (95 * scale.get()); }
-    @Override public int hudHeight() { return (int) (Math.max(1, lineCount()) * 10 * scale.get()); }
+    @Override public int hudWidth() { return style.breite((int) (95 * scale.get())); }
+    @Override public int hudHeight() { return style.hoehe((int) (Math.max(1, lineCount()) * 10 * scale.get())); }
 }

@@ -640,7 +640,11 @@ public class PanelGui extends Screen {
             ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
             int bx = x + w - 12;
             ctx.fill(bx, y + 2, bx + 10, y + 12, VortexStyle.fade(0xFF000000, a));
-            ctx.fill(bx + 1, y + 3, bx + 9, y + 11, VortexStyle.fade(c.get() | 0xFF000000, a));
+            // Verlauf: das Kaestchen zeigt ihn (laufend, wenn animiert)
+            for (int i = 0; i < 8; i++) {
+                ctx.fill(bx + 1 + i, y + 3, bx + 2 + i, y + 11,
+                        VortexStyle.fade(c.at((i + 0.5f) / 8f) | 0xFF000000, a));
+            }
             treffer.add(new Treffer(x, y, w, EINST_H, Art.FARBE, m, s));
 
         } else if (s instanceof KeySetting k) {

@@ -23,6 +23,9 @@ public class ComboModule extends Module implements HudElement {
     public final NumberSetting resetAfter = new NumberSetting("Reset After (s)", 3, 1, 10, 1);
     public final BooleanSetting hideAtZero = new BooleanSetting("Hide At Zero", true);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public ComboModule() {
         super("Combo Counter", Category.PVP);
         addSetting(x);
@@ -31,6 +34,7 @@ public class ComboModule extends Module implements HudElement {
         addSetting(scale);
         addSetting(resetAfter);
         addSetting(hideAtZero);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "Combo Counter"; }
@@ -38,6 +42,6 @@ public class ComboModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 70; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(70); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

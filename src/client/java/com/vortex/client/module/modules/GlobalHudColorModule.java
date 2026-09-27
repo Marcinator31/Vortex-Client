@@ -36,31 +36,36 @@ public class GlobalHudColorModule extends Module {
 
     /** Uebertraegt die eingestellte Farbe auf alle HUD-Elemente. */
     public void applyToAll() {
-        applyColor(color.get());
+        applyColor(color);
         // Knopf zuruecksetzen (er ist nur ein Ausloeser, kein Dauerzustand).
         apply.set(false);
     }
 
     /** Setzt alle HUD-Texte wieder auf Weiss zurueck. */
     public void resetToWhite() {
-        applyColor(WHITE);
         // Auch die eingestellte Farbe selbst auf Weiss zuruecksetzen, damit
-        // die Anzeige konsistent ist.
+        // die Anzeige konsistent ist -- und zwar einfarbig.
         color.set(WHITE);
+        color.setType(ColorSetting.SOLID);
+        applyColor(color);
         reset.set(false);
     }
 
-    /** Setzt die gegebene Farbe auf alle HUD-Elemente (inkl. ArmorHud). */
-    private void applyColor(int c) {
+    /**
+     * Uebertraegt die Farbe auf alle HUD-Elemente (inkl. ArmorHud) -- mit
+     * Verlauf, Art und Tempo. Ein Verlauf auf "HUD Color" macht also alle
+     * HUD-Texte zum Verlauf.
+     */
+    private void applyColor(ColorSetting c) {
         for (Module m : ModuleManager.INSTANCE.getModules()) {
             // Alle HUD-Elemente mit Farb-Setting einfaerben.
-            if (m instanceof HudElement he) {
-                he.hudColor().set(c);
+            if (m instanceof HudElement he && he.hudColor() != null) {
+                he.hudColor().copyFrom(c);
             }
             // ArmorHud implementiert HudElement nicht (kein x/y), hat aber
             // eine textColor -- separat mit abdecken.
             if (m instanceof ArmorHudModule armor) {
-                armor.textColor.set(c);
+                armor.textColor.copyFrom(c);
             }
         }
     }

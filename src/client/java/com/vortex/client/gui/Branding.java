@@ -31,7 +31,11 @@ public final class Branding {
     public static boolean hasAddon() {
         if (addonPresent == null) {
             try {
-                addonPresent = FabricLoader.getInstance().isModLoaded(ADDON_ID);
+                // Die tatsaechliche ID in der fabric.mod.json des Addons ist
+                // "vortexplusaddon" -- die alte Schreibweise wurde nie
+                // gefunden, die rote Kennzeichnung erschien deshalb nie.
+                addonPresent = FabricLoader.getInstance().isModLoaded(ADDON_ID)
+                        || FabricLoader.getInstance().isModLoaded("vortexplusaddon");
             } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("Branding", pvpErr);
                 addonPresent = Boolean.FALSE;

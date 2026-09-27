@@ -47,6 +47,9 @@ public class TotemPopperModule extends Module implements HudElement {
     /** How far away the overhead count is still drawn. */
     public final NumberSetting overheadRange = new NumberSetting("Overhead Range", 32, 8, 96, 4);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(false);
+
     public TotemPopperModule() {
         super("Totem Popper", Category.HUD);
         addSetting(x);
@@ -59,6 +62,7 @@ public class TotemPopperModule extends Module implements HudElement {
         addSetting(showList);
         addSetting(overhead);
         addSetting(overheadRange);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "Totem Popper"; }
@@ -66,6 +70,6 @@ public class TotemPopperModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return (int) (110 * scale.get()); }
-    @Override public int hudHeight() { return (int) ((maxEntries.getInt() * 10 + 10) * scale.get()); }
+    @Override public int hudWidth() { return style.breite((int) (110 * scale.get())); }
+    @Override public int hudHeight() { return style.hoehe((int) ((maxEntries.getInt() * 10 + 10) * scale.get())); }
 }

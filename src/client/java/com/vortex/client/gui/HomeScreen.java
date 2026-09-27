@@ -369,12 +369,9 @@ public class HomeScreen extends Screen {
             rund(ctx, x - i * 2, y - i * 2, g + i * 4, g + i * 4,
                     (al << 24) | (VortexStyle.VIOLETT & 0x00FFFFFF), Math.max(2, g / 5));
         }
-        try {
-            ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                    LOGO, x, y, g, g);
-        } catch (Throwable ignored) {
-            // Sprite nicht ladbar -- dann bleibt der Schein allein.
-        }
+        // Das neue Logo: der Wirbel-Bogen dreht sich langsam um das V, beim
+        // Oeffnen waechst es herein (LogoRenderer).
+        LogoRenderer.zeichne(ctx, x, y, g, a, a);
     }
 
     /** Gruppenueberschrift mit einer duennen Linie bis zum rechten Rand. */

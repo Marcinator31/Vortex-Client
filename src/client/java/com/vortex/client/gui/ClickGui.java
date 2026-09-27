@@ -428,9 +428,7 @@ public class ClickGui extends Screen {
         // Clients steckt ohnehin im Logo.
         int logoG = 34;
         try {
-            ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                    net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "logo"),
-                    x + PAD, y + (HEADER_H - logoG) / 2, logoG, logoG);
+            LogoRenderer.zeichne(ctx, x + PAD, y + (HEADER_H - logoG) / 2, logoG, openAnim, openAnim);
         } catch (Throwable pvpErr) {
             drawRingMark(ctx, x + PAD + 6, y + 17, 6, fade(Branding.accent(), openAnim));
         }

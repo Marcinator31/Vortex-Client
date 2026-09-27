@@ -27,6 +27,9 @@ public class PingModule extends Module implements HudElement {
     /** Seconds between measurements. */
     public final NumberSetting interval = new NumberSetting("Interval (s)", 1, 1, 10, 1);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public PingModule() {
         super("Ping", Category.HUD);
         addSetting(measure);
@@ -35,6 +38,7 @@ public class PingModule extends Module implements HudElement {
         addSetting(y);
         addSetting(color);
         addSetting(scale);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "Ping"; }
@@ -42,6 +46,6 @@ public class PingModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 60; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(60); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

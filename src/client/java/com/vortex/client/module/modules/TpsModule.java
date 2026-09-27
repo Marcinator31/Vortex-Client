@@ -24,6 +24,9 @@ public class TpsModule extends Module implements HudElement {
     public final BooleanSetting lagTimer = new BooleanSetting("Show Lag Timer", true);
     public final BooleanSetting colorByValue = new BooleanSetting("Color By Value", true);
 
+    /** Aussehen: Schatten, Kasten, Rahmen, Beschriftung ... (4.6.0) */
+    public final com.vortex.client.hud.HudStyle style = new com.vortex.client.hud.HudStyle(true);
+
     public TpsModule() {
         super("TPS", Category.HUD);
         addSetting(x);
@@ -32,6 +35,7 @@ public class TpsModule extends Module implements HudElement {
         addSetting(scale);
         addSetting(lagTimer);
         addSetting(colorByValue);
+        style.addTo(this::addSetting);
     }
 
     @Override public String hudName() { return "TPS"; }
@@ -39,6 +43,6 @@ public class TpsModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 90; }
-    @Override public int hudHeight() { return 12; }
+    @Override public int hudWidth() { return style.breite(90); }
+    @Override public int hudHeight() { return style.hoehe(12); }
 }

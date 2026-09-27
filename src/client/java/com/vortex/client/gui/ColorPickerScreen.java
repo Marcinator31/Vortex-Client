@@ -16,6 +16,9 @@ import net.minecraft.network.chat.Component;
  *   - Leiste fuer die Deckkraft (kariertes Muster dahinter, damit man sie sieht)
  *   - Reihe mit Voreinstellungen zum schnellen Zugriff
  *   - Hex-Eingabe (#RRGGBB oder #AARRGGBB) mit Live-Vorschau
+ *   - NEU: Art oben (Solid / Gradient / Wave / Rainbow). Bei einem Verlauf
+ *     zwei Reiter "Color 1" / "Color 2", eine laufende Vorschau des Verlaufs,
+ *     ein Tempo-Regler und fertige Verlaufs-Vorlagen.
  *
  * Die Farbe wird sofort uebernommen -- man sieht die Wirkung also direkt, ohne
  * erst bestaetigen zu muessen.
@@ -23,7 +26,9 @@ import net.minecraft.network.chat.Component;
 public class ColorPickerScreen extends Screen {
 
     private static final int WIN_W = 300;
-    private static final int WIN_H_MAX = 250;
+    private static final int WIN_H_MAX = 300;
+    /** Alles ausser dem Farbfeld braucht so viel Hoehe. */
+    private static final int FEST_H = 196;
 
     /**
      * Hoehe des Fensters -- hoechstens 250, sonst so viel, wie das Fenster
@@ -35,7 +40,7 @@ public class ColorPickerScreen extends Screen {
      * vom Farbfeld abgezogen; alles darunter rueckt entsprechend nach.
      */
     private int winH() {
-        return Math.max(170, Math.min(WIN_H_MAX, this.height - 8));
+        return Math.max(FEST_H + 40, Math.min(WIN_H_MAX, this.height - 8));
     }
 
     private static final int C_DIM    = VortexStyle.DIM;
@@ -47,8 +52,19 @@ public class ColorPickerScreen extends Screen {
     /** Haeufig gebrauchte Farben als Schnellauswahl. */
     private static final int[] PRESETS = {
         0xFFFFFFFF, 0xFF000000, 0xFFFF5555, 0xFFFFAA00, 0xFFFFFF55,
-        0xFF55FF55, 0xFF55FFFF, 0xFF5555FF, 0xFFAA00FF, 0xFFFF55AA
+        0xFF55FF55, 0xFF55FFFF, 0xFFAA00FF
     };
+
+    /** Fertige Verlaeufe: je zwei Farben. Der erste ist der des Clients. */
+    private static final int[][] VERLAEUFE = {
+        {0xFF8B5CF6, 0xFF3B82F6},   // Vortex: Violett -> Blau
+        {0xFFFF7A18, 0xFFFF2E93},   // Sonnenuntergang
+        {0xFF22D3EE, 0xFF34D399},   // Aqua
+        {0xFFFF3B3B, 0xFFFFD23F},   // Feuer
+    };
+
+    /** Welche Farbe gerade bearbeitet wird: 0 = Farbe 1, 1 = Farbe 2. */
+    private int bearbeitet = 0;
 
     private final Screen parent;
     private final ColorSetting setting;
@@ -71,6 +87,7 @@ public class ColorPickerScreen extends Screen {
     private int hueX, hueY, hueW, hueH;
     private int alphaX, alphaY, alphaW, alphaH;
     private int presetX, presetY, presetCell;
+    private int artX, artY, artB, reiterY, reiterB, tempoX, tempoY, tempoW, vorlageX;
 
     public ColorPickerScreen(Screen parent, ColorSetting setting) {
         this(parent, setting, null);
@@ -81,7 +98,27 @@ public class ColorPickerScreen extends Screen {
         this.parent = parent;
         this.setting = setting;
         this.onChange = onChange;
-        fromArgb(setting.get());
+        fromArgb(setting.color1());
+    }
+
+    private boolean verlauf() {
+        return setting.gradientAllowed() && setting.type() != ColorSetting.SOLID;
+    }
+
+    /** Hat die Art zwei Farben zum Einstellen? (Rainbow nicht.) */
+    private boolean zweiFarben() {
+        int t = setting.type();
+        return setting.gradientAllowed() && (t == ColorSetting.GRADIENT || t == ColorSetting.WAVE);
+    }
+
+    private int bearbeiteteFarbe() {
+        return bearbeitet == 1 ? setting.color2() : setting.color1();
+    }
+
+    private void wechsleZu(int welche) {
+        bearbeitet = welche;
+        fromArgb(bearbeiteteFarbe());
+        if (hexField != null) hexField.setValue(hex(currentArgb()));
     }
 
     // ------------------------------------------------------------ Farbmodell
@@ -102,7 +139,7 @@ public class ColorPickerScreen extends Screen {
 
     /** Farbe uebernehmen und die Live-Vorschau ausloesen. */
     private void apply() {
-        setting.set(currentArgb());
+        schreibe(currentArgb());
         if (onChange != null) {
             try {
                 onChange.run();
@@ -112,6 +149,21 @@ public class ColorPickerScreen extends Screen {
         }
         if (hexField != null && !hexField.isFocused()) {
             hexField.setValue(hex(currentArgb()));
+        }
+    }
+
+    /** In die gerade bearbeitete Farbe schreiben. */
+    private void schreibe(int argb) {
+        if (bearbeitet == 1 && zweiFarben()) setting.setColor2(argb);
+        else setting.set(argb);
+    }
+
+    private void geaendert() {
+        if (onChange == null) return;
+        try {
+            onChange.run();
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("ColorPickerScreen", pvpErr);
         }
     }
 
@@ -147,7 +199,7 @@ public class ColorPickerScreen extends Screen {
                     ? (0xFF000000 | (int) v)
                     : (int) v;
             fromArgb(argb);
-            setting.set(currentArgb());
+            schreibe(currentArgb());
             if (onChange != null) onChange.run();
         } catch (Throwable pvpErr) {
                 com.vortex.client.core.Errors.report("ColorPickerScreen", pvpErr);
@@ -190,14 +242,57 @@ public class ColorPickerScreen extends Screen {
         ctx.text(this.font, Component.literal(setting.getName()),
                 wx + 10, wy + 9, fade(0xFFFFFFFF, openAnim));
         drawChecker(ctx, wx + WIN_W - 44, wy + 7, 34, 12);
-        roundRect(ctx, wx + WIN_W - 44, wy + 7, 34, 12, currentArgb());
+        verlaufsBalken(ctx, wx + WIN_W - 44, wy + 7, 34, 12);
+
+        // --- Art: Solid / Gradient / Wave / Rainbow ------------------------
+        artY = wy + 32;
+        artX = wx + 10;
+        artB = (WIN_W - 20 - 3 * 4) / 4;
+        if (setting.gradientAllowed()) {
+            for (int i = 0; i < 4; i++) {
+                int bx = artX + i * (artB + 4);
+                boolean an = setting.type() == i;
+                boolean hov = inRect(mx, my, bx, artY, artB, 14);
+                roundRect(ctx, bx, artY, artB, 14,
+                        an ? mix(C_INNER, accent, 0.55f) : (hov ? mix(C_INNER, accent, 0.2f) : C_INNER));
+                String t = ColorSetting.TYPES[i];
+                ctx.text(this.font, Component.literal(t), bx + (artB - this.font.width(t)) / 2, artY + 3,
+                        an ? 0xFFFFFFFF : 0xFFB4B4C0, false);
+            }
+        } else {
+            ctx.text(this.font, Component.literal("Single colour only"), artX, artY + 3, 0xFF7F7896, false);
+        }
+
+        // --- Reiter Farbe 1 / Farbe 2 und laufende Vorschau -----------------
+        reiterY = wy + 50;
+        reiterB = 60;
+        int vorschauX = wx + 10;
+        if (zweiFarben()) {
+            for (int i = 0; i < 2; i++) {
+                int bx = wx + 10 + i * (reiterB + 4);
+                boolean an = bearbeitet == i;
+                boolean hov = inRect(mx, my, bx, reiterY, reiterB, 14);
+                roundRect(ctx, bx, reiterY, reiterB, 14,
+                        an ? mix(C_INNER, accent, 0.45f) : (hov ? mix(C_INNER, accent, 0.15f) : C_INNER));
+                int farbe = i == 0 ? setting.color1() : setting.color2();
+                ctx.fill(bx + 4, reiterY + 3, bx + 12, reiterY + 11, farbe | 0xFF000000);
+                ctx.text(this.font, Component.literal(i == 0 ? "Color 1" : "Color 2"), bx + 16, reiterY + 3,
+                        an ? 0xFFFFFFFF : 0xFFB4B4C0, false);
+            }
+            vorschauX = wx + 10 + 2 * (reiterB + 4) + 4;
+        }
+        if (verlauf()) {
+            int vb = wx + WIN_W - 10 - vorschauX;
+            drawChecker(ctx, vorschauX, reiterY + 1, vb, 12);
+            verlaufsBalken(ctx, vorschauX, reiterY + 1, vb, 12);
+        }
 
         // --- Farbfeld: waagerecht Sattheit, senkrecht Helligkeit ---
         fieldX = wx + 10;
-        fieldY = wy + 34;
+        fieldY = wy + 70;
         fieldW = WIN_W - 20;
-        // Farbfeld gibt nach, wenn das Fenster kleiner als 250 ist.
-        fieldH = Math.max(50, 110 - (WIN_H_MAX - winH()));
+        // Farbfeld gibt nach, wenn das Fenster kleiner ist.
+        fieldH = Math.max(40, winH() - FEST_H);
         drawSatBriField(ctx, fieldX, fieldY, fieldW, fieldH);
         // Markierung der aktuellen Position.
         int selX = fieldX + (int) (sat * fieldW);
@@ -238,10 +333,25 @@ public class ColorPickerScreen extends Screen {
         ctx.fill(ax - 1, alphaY - 2, ax + 2, alphaY + alphaH + 2, 0xFFFFFFFF);
         ctx.fill(ax, alphaY - 1, ax + 1, alphaY + alphaH + 1, 0xFF000000);
 
+        // --- Tempo (nur bei Verlauf) ---
+        tempoX = wx + 50;
+        tempoY = alphaY + alphaH + 10;
+        tempoW = WIN_W - 60 - 30;
+        if (verlauf()) {
+            ctx.text(this.font, Component.literal("Speed"), wx + 10, tempoY, 0xFFB4B4C0, false);
+            ctx.fill(tempoX, tempoY + 3, tempoX + tempoW, tempoY + 5, VortexStyle.TRACK);
+            float p = (setting.speed() - 0.1f) / 4.9f;
+            int kx = tempoX + (int) (p * tempoW);
+            ctx.fill(tempoX, tempoY + 3, kx, tempoY + 5, accent);
+            ctx.fill(kx - 2, tempoY, kx + 2, tempoY + 8, 0xFFFFFFFF);
+            String sp = String.format(Locale.ROOT, "%.1fx", setting.speed());
+            ctx.text(this.font, Component.literal(sp), tempoX + tempoW + 6, tempoY, 0xFFFFFFFF, false);
+        }
+
         // --- Voreinstellungen ---
         presetCell = 16;
         presetX = wx + 10;
-        presetY = alphaY + alphaH + 10;
+        presetY = tempoY + 14;
         for (int i = 0; i < PRESETS.length; i++) {
             int px = presetX + i * (presetCell + 4);
             boolean hov = inRect(mx, my, px, presetY, presetCell, presetCell);
@@ -251,6 +361,19 @@ public class ColorPickerScreen extends Screen {
             }
             roundRect(ctx, px, presetY, presetCell, presetCell, PRESETS[i]);
         }
+        // Verlaufs-Vorlagen rechts daneben
+        if (setting.gradientAllowed()) {
+            vorlageX = wx + WIN_W - 10 - VERLAEUFE.length * (presetCell + 4) + 4;
+            for (int i = 0; i < VERLAEUFE.length; i++) {
+                int px = vorlageX + i * (presetCell + 4);
+                boolean hov = inRect(mx, my, px, presetY, presetCell, presetCell);
+                if (hov) ctx.fill(px - 1, presetY - 1, px + presetCell + 1, presetY + presetCell + 1, 0xFFFFFFFF);
+                for (int k = 0; k < presetCell; k += 2) {
+                    int c = mix(VERLAEUFE[i][0], VERLAEUFE[i][1], (k + 1f) / presetCell);
+                    ctx.fill(px + k, presetY, px + Math.min(k + 2, presetCell), presetY + presetCell, c);
+                }
+            }
+        }
 
         // --- Hex-Eingabe ---
         int hy = wy + winH() - 33;
@@ -259,7 +382,7 @@ public class ColorPickerScreen extends Screen {
         roundRect(ctx, wx + 50, hy, 120, 20, C_INNER);
 
         // --- Fertig-Knopf ---
-        String done = "Fertig";
+        String done = "Done";
         int dw = this.font.width(done) + 20;
         int dx = wx + WIN_W - dw - 10;
         boolean dHov = inRect(mx, my, dx, hy, dw, 20);
@@ -288,6 +411,18 @@ public class ColorPickerScreen extends Screen {
         }
         ctx.fill(x, y, x + w, y + 1, C_LINE);
         ctx.fill(x, y + h - 1, x + w, y + h, C_LINE);
+    }
+
+    /** Die Einstellung als Balken -- einfarbig oder als (laufender) Verlauf. */
+    private void verlaufsBalken(GuiGraphicsExtractor ctx, int x, int y, int w, int h) {
+        if (!verlauf()) {
+            roundRect(ctx, x, y, w, h, currentArgb());
+            return;
+        }
+        for (int i = 0; i < w; i += 2) {
+            int c = setting.at((i + 1f) / Math.max(1, w));
+            ctx.fill(x + i, y, x + Math.min(i + 2, w), y + h, c);
+        }
     }
 
     /** Kariertes Muster als Untergrund fuer halbdurchsichtige Farben. */
@@ -322,6 +457,42 @@ public class ColorPickerScreen extends Screen {
 
         if (super.mouseClicked(click, doubled)) return true;
 
+        // Art
+        if (setting.gradientAllowed()) {
+            for (int i = 0; i < 4; i++) {
+                if (inRect(mx, my, artX + i * (artB + 4), artY, artB, 14)) {
+                    setting.setType(i);
+                    if (!zweiFarben() && bearbeitet == 1) wechsleZu(0);
+                    geaendert();
+                    return true;
+                }
+            }
+        }
+        // Reiter Farbe 1 / 2
+        if (zweiFarben()) {
+            for (int i = 0; i < 2; i++) {
+                if (inRect(mx, my, artX + i * (reiterB + 4), reiterY, reiterB, 14)) {
+                    wechsleZu(i);
+                    return true;
+                }
+            }
+        }
+        // Verlaufs-Vorlagen: setzen beide Farben (und schalten auf Verlauf)
+        if (setting.gradientAllowed()) {
+            for (int i = 0; i < VERLAEUFE.length; i++) {
+                int px = vorlageX + i * (presetCell + 4);
+                if (inRect(mx, my, px, presetY, presetCell, presetCell)) {
+                    int deck = setting.color1() & 0xFF000000;
+                    setting.set(deck | (VERLAEUFE[i][0] & 0xFFFFFF));
+                    setting.setColor2(deck | (VERLAEUFE[i][1] & 0xFFFFFF));
+                    if (!zweiFarben()) setting.setType(ColorSetting.GRADIENT);
+                    wechsleZu(bearbeitet);
+                    geaendert();
+                    return true;
+                }
+            }
+        }
+
         // Voreinstellungen
         for (int i = 0; i < PRESETS.length; i++) {
             int px = presetX + i * (presetCell + 4);
@@ -337,7 +508,7 @@ public class ColorPickerScreen extends Screen {
         int wx = (this.width - WIN_W) / 2;
         int wy = (this.height - winH()) / 2;
         int hy = wy + winH() - 33;
-        String done = "Fertig";
+        String done = "Done";
         int dw = this.font.width(done) + 20;
         int dx = wx + WIN_W - dw - 10;
         if (inRect(mx, my, dx, hy, dw, 20)) {
@@ -372,6 +543,7 @@ public class ColorPickerScreen extends Screen {
         // A little taller than drawn, so the thin bars are easy to grab.
         if (inRect(px, py, hueX, hueY - 3, hueW, hueH + 6)) return 2;
         if (inRect(px, py, alphaX, alphaY - 3, alphaW, alphaH + 6)) return 3;
+        if (verlauf() && inRect(px, py, tempoX - 3, tempoY - 2, tempoW + 6, 12)) return 4;
         return 0;
     }
 
@@ -381,6 +553,10 @@ public class ColorPickerScreen extends Screen {
             case 1: updateField(); break;
             case 2: updateHue(); break;
             case 3: updateAlpha(); break;
+            case 4:
+                setting.setSpeed(0.1f + clamp01((mx - tempoX) / (float) tempoW) * 4.9f);
+                geaendert();
+                break;
             default: break;
         }
     }
