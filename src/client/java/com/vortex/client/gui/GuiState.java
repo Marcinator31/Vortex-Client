@@ -114,4 +114,86 @@ public final class GuiState {
             windowH = 0;
         }
     }
+
+    // ---- Spaltenmenue (4.6.2) ----------------------------------------------
+    //
+    // Groesse des ganzen Menues, frei verschobene Kategorien und eigene
+    // Spaltenbreiten. Gespeichert in global.txt (gehoert zum Rechner, nicht
+    // zum Preset -- ein Freund mit anderem Bildschirm bekommt es nicht mit).
+
+    /** 0 = Auto (passt sich an), sonst Prozent 50..150. */
+    private static int panelScale = 0;
+    /** Kategorie -> {x, y} als Anteil der Bildschirmbreite/-hoehe. */
+    private static final java.util.Map<String, float[]> spaltenPos = new java.util.LinkedHashMap<>();
+    /** Kategorie -> eigene Breite in Pixeln (des verkleinerten Menues). */
+    private static final java.util.Map<String, Integer> spaltenBreite = new java.util.LinkedHashMap<>();
+
+    public static int getPanelScale() { return panelScale; }
+
+    public static void setPanelScale(int prozent) {
+        panelScale = prozent <= 0 ? 0 : Math.max(50, Math.min(150, prozent));
+    }
+
+    public static float[] getSpaltePos(String kat) { return spaltenPos.get(kat); }
+
+    public static void setSpaltePos(String kat, float x, float y) {
+        spaltenPos.put(kat, new float[]{Math.max(0f, Math.min(0.98f, x)), Math.max(0f, Math.min(0.98f, y))});
+    }
+
+    public static boolean hatFreieAnordnung() { return !spaltenPos.isEmpty(); }
+
+    public static int getSpalteBreite(String kat) {
+        Integer w = spaltenBreite.get(kat);
+        return w == null ? 0 : w;
+    }
+
+    public static void setSpalteBreite(String kat, int w) {
+        spaltenBreite.put(kat, Math.max(70, Math.min(240, w)));
+    }
+
+    /** Alles zurueck auf die automatische Anordnung. */
+    public static void resetSpalten() {
+        panelScale = 0;
+        spaltenPos.clear();
+        spaltenBreite.clear();
+    }
+
+    /** Format: skala;KAT@x@y@breite,KAT@... (x/y "-" = automatisch). */
+    public static String serializeSpalten() {
+        StringBuilder sb = new StringBuilder().append(panelScale).append(';');
+        java.util.Set<String> alle = new java.util.LinkedHashSet<>(spaltenPos.keySet());
+        alle.addAll(spaltenBreite.keySet());
+        boolean erst = true;
+        for (String k : alle) {
+            if (!erst) sb.append(',');
+            erst = false;
+            float[] p = spaltenPos.get(k);
+            sb.append(k).append('@')
+              .append(p == null ? "-" : String.format(java.util.Locale.ROOT, "%.4f", p[0])).append('@')
+              .append(p == null ? "-" : String.format(java.util.Locale.ROOT, "%.4f", p[1])).append('@')
+              .append(getSpalteBreite(k));
+        }
+        return sb.toString();
+    }
+
+    public static void deserializeSpalten(String data) {
+        resetSpalten();
+        if (data == null || data.isBlank()) return;
+        try {
+            String[] teile = data.split(";", 2);
+            setPanelScale(Integer.parseInt(teile[0].trim()));
+            if (teile.length < 2 || teile[1].isBlank()) return;
+            for (String e : teile[1].split(",")) {
+                String[] f = e.split("@");
+                if (f.length < 4) continue;
+                if (!f[1].equals("-") && !f[2].equals("-")) {
+                    setSpaltePos(f[0], Float.parseFloat(f[1]), Float.parseFloat(f[2]));
+                }
+                int w = Integer.parseInt(f[3].trim());
+                if (w > 0) setSpalteBreite(f[0], w);
+            }
+        } catch (RuntimeException ignored) {
+            resetSpalten();
+        }
+    }
 }

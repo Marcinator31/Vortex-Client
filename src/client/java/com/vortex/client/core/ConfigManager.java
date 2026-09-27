@@ -619,6 +619,8 @@ public final class ConfigManager {
                     + com.vortex.client.gui.GuiState.serializeFavorites());
             lines.add("__gui__\tfenster\t"
                     + com.vortex.client.gui.GuiState.serializeWindow());
+            lines.add("__gui__\tspalten\t"
+                    + com.vortex.client.gui.GuiState.serializeSpalten());
 
             // Farbschema mitspeichern (Pseudo-Modul "__theme__"), damit die
             // gewaehlten Farben einen Neustart ueberleben.
@@ -762,6 +764,8 @@ public final class ConfigManager {
                         com.vortex.client.gui.GuiState.deserializeFavorites(value);
                     } else if (settingName.equals("fenster")) {
                         com.vortex.client.gui.GuiState.deserializeWindow(value);
+                    } else if (settingName.equals("spalten")) {
+                        com.vortex.client.gui.GuiState.deserializeSpalten(value);
                     }
                     continue;
                 }

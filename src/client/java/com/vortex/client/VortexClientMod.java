@@ -73,6 +73,7 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.ExtraHud.register();
         com.vortex.client.hud.BlockOutline.register();
         com.vortex.client.hud.HitColor.register();
+        com.vortex.client.hud.FogCheck.register();
         com.vortex.client.hud.TimeWeather.register();
         com.vortex.client.hud.Freelook.register();
         com.vortex.client.hud.SlotLock.register();

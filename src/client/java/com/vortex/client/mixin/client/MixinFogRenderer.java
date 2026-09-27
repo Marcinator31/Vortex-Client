@@ -31,10 +31,33 @@ public class MixinFogRenderer {
                                      DeltaTracker tickCounter, float skyDarkness,
                                      ClientLevel world,
                                      CallbackInfoReturnable<FogData> cir) {
-        FogData data = cir.getReturnValue();
-        if (data == null) return;
+        com.vortex.client.hud.FogCheck.setupLief();
+        klaeren(cir.getReturnValue(), camera.getFluidInCamera());
+    }
 
-        FogType fogType = camera.getFluidInCamera();
+    /**
+     * ZWEITER EINGRIFF (4.6.2): direkt bevor der Nebel in den Grafikspeicher
+     * geschrieben wird.
+     *
+     * Der erste Eingriff (setupFog) greift nur, wenn Minecraft die Nebelwerte
+     * selbst ausrechnet. Ersetzt eine andere Mod diese Rechnung, kam er nie
+     * zum Zug -- genau so sah "geht bei mir, bei Freunden nicht" aus. Hier
+     * landen die Werte in jedem Fall, egal wer sie berechnet hat.
+     */
+    @Inject(method = "updateBuffer(Lnet/minecraft/client/renderer/fog/FogData;)V",
+            at = @At("HEAD"), require = 0)
+    private void vortex$vorDemSchreiben(FogData data,
+                                        org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        com.vortex.client.hud.FogCheck.pufferLief();
+        try {
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            klaeren(data, mc.gameRenderer.mainCamera().getFluidInCamera());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void klaeren(FogData data, FogType fogType) {
+        if (data == null || fogType == null) return;
         boolean remove;
         if (fogType == FogType.LAVA) {
             remove = isEnabled(ClearLavaModule.class);

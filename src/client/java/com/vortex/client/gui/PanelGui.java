@@ -33,6 +33,15 @@ import net.minecraft.network.chat.Component;
  *   Mausrad ueber einer Spalte   diese Spalte scrollen
  *   Suchfeld oben                filtert alle Spalten gleichzeitig
  *   Klick auf einen Spaltenkopf  Kategorie ein- und ausklappen
+ *   Spaltenkopf ziehen           Kategorie frei verschieben (4.6.2)
+ *   Rechten Rand des Kopfes ziehen  Spalte breiter/schmaler (4.6.2)
+ *   Leiste oben links            ganzes Menue kleiner/groesser, "Auto"
+ *   "Reset Layout" oben rechts   zurueck zur automatischen Anordnung
+ *
+ * GROESSE (4.6.2): Passt nicht jede Kategorie in eine Reihe, verkleinert
+ * sich das Menue von selbst ("Auto"), statt eine Spalte in eine zweite Reihe
+ * zu schieben. Vorher sah das auf 1920x1080 (GUI-Skalierung 4) so aus: vier
+ * Spalten oben, eine allein darunter.
  *
  * Die Einstellungen werden ueber genau dieselben Aufrufe geaendert wie im
  * bisherigen Menue (ClickGui) -- dort sind sie erprobt. Gespeichert wird beim
@@ -57,6 +66,8 @@ public class PanelGui extends Screen {
 
     private EditBox search;
     private int mx, my;
+    /** Echte (unskalierte) Mauskoordinaten -- fuer die Leiste oben. */
+    private int rmx, rmy;
     private long letzteZeit = 0;
     private float oeffnen = 0f;
     /** Sekunden seit dem Oeffnen -- fuer das gestaffelte Erscheinen. */
@@ -101,8 +112,26 @@ public class PanelGui extends Screen {
     private NumberSetting zieht = null;
     private int ziehX, ziehB;
 
+    // --- Massstab und freie Anordnung (4.6.2) -------------------------------
+    /** Massstab dieses Bildes; die Spalten werden damit verkleinert gezeichnet. */
+    private float masstab = 1f;
+    /** Logische Groesse (Bildschirm geteilt durch Massstab). */
+    private int W = 1, H = 1;
+    /** Aktuelle Lage jeder Spalte: x, y, Breite (logisch). */
+    private final Map<Module.Category, int[]> spaltenRect = new HashMap<>();
+    /** Kopf wird gezogen: welche Kategorie, und hat sie sich schon bewegt? */
+    private Module.Category ziehtKat = null;
+    private boolean kopfBewegt = false;
+    private int kopfOffX, kopfOffY, kopfStartX, kopfStartY;
+    /** Breite wird gezogen. */
+    private Module.Category ziehtBreite = null;
+    private int breiteStart, breiteStartX;
+    /** Klickflaechen der Leiste oben (echte Bildschirmkoordinaten): x, y, b, h, art. */
+    private final List<int[]> leiste = new ArrayList<>();
+    private static final int L_KLEINER = 1, L_AUTO = 2, L_GROESSER = 3, L_RESET = 4;
+
     // --- Klickflaechen ------------------------------------------------------
-    private enum Art { KOPF, MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL, RESET }
+    private enum Art { KOPF, MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL, RESET, GRIFF }
 
     private static final class Treffer {
         final int x, y, w, h;
@@ -136,8 +165,8 @@ public class PanelGui extends Screen {
         // oder das Fenster in der Groesse aendert. Der Suchbegriff wird dabei
         // uebernommen -- sonst waere er nach jedem Zurueckkommen weg.
         String bisher = (this.search != null) ? this.search.getValue() : "";
-        int sw = 180;
-        this.search = new EditBox(this.font, this.width / 2 - sw / 2 + 8, 11, sw - 16, 12,
+        int sw = sucheB();
+        this.search = new EditBox(this.font, sucheX() + 8, 11, sw - 16, 12,
                 Component.literal(""));
         this.search.setBordered(false);
         this.search.setMaxLength(32);
@@ -159,8 +188,8 @@ public class PanelGui extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
-        this.mx = mouseX;
-        this.my = mouseY;
+        this.rmx = mouseX;
+        this.rmy = mouseY;
         long jetzt = System.nanoTime();
         float dt = letzteZeit == 0 ? 0.016f : Math.min(0.1f, (jetzt - letzteZeit) / 1e9f);
         letzteZeit = jetzt;
@@ -201,6 +230,19 @@ public class PanelGui extends Screen {
             if (!module(c).isEmpty()) kats.add(c);
         }
 
+        // --- MASSSTAB ------------------------------------------------------
+        // Alles unterhalb der Leiste wird mit diesem Faktor gezeichnet. Die
+        // Maus wird entsprechend umgerechnet.
+        masstab = berechneMasstab(kats.size());
+        this.mx = (int) (mouseX / masstab);
+        this.my = (int) (mouseY / masstab);
+        W = Math.max(1, (int) (this.width / masstab));
+        H = Math.max(1, (int) (this.height / masstab));
+        zeichneLeiste(ctx, a);
+        var pose = ctx.pose();
+        pose.pushMatrix();
+        pose.scale(masstab, masstab);
+
         // --- PASST SICH DER FENSTERGROESSE AN ------------------------------
         //
         // Vorher: immer eine Reihe, Spalten hoechstens bis 80 Pixel schmal.
@@ -213,32 +255,140 @@ public class PanelGui extends Screen {
         // Reihe bekommt ihren Anteil der Hoehe. Den Rest erledigt der
         // Bildlauf jeder Spalte.
         int n = Math.max(1, kats.size());
-        int verfuegbar = this.width - 12;
+        int verfuegbar = W - 12;
         int proReihe = Math.max(1, Math.min(n, (verfuegbar + ABSTAND) / (SPALTE_MIN + ABSTAND)));
-        int reihen = (n + proReihe - 1) / proReihe;
-        spalteB = Math.min(SPALTE_B, (verfuegbar - (proReihe - 1) * ABSTAND) / proReihe);
-        int reiheB = proReihe * spalteB + (proReihe - 1) * ABSTAND;
-        int x0 = Math.max(6, (this.width - reiheB) / 2);
-        int reiheH = (this.height - OBEN - 6) / reihen;
+        int autoB = Math.min(SPALTE_B, (verfuegbar - (proReihe - 1) * ABSTAND) / proReihe);
+        int oben = (int) Math.ceil(OBEN / masstab);
 
-        // GESTAFFELTES ERSCHEINEN.
-        //
-        // Jede Spalte startet 45 Millisekunden nach der vorigen und gleitet
-        // von oben herein. Die Kurve ist ein weiches Auslaufen (1 - (1-t)^3):
-        // schnell am Anfang, sanft am Ende.
+        // Breite je Spalte: eigene (gezogen) oder die automatische
+        int[] bs = new int[kats.size()];
         for (int i = 0; i < kats.size(); i++) {
-            float t = Math.max(0f, Math.min(1f, (seit - i * 0.045f) / 0.32f));
-            float e = 1f - (1f - t) * (1f - t) * (1f - t);
-            int sx = x0 + (i % proReihe) * (spalteB + ABSTAND);
-            int sy = OBEN + (i / proReihe) * reiheH;
-            int gleiten = (int) ((1f - e) * -16f);
-            // Hoehenbegrenzung: bis zur naechsten Reihe, nicht bis zum Rand
-            spalteBoden = sy + reiheH - 6;
-            zeichneSpalte(ctx, kats.get(i), sx, sy + gleiten, a * e, dt);
+            int eigene = GuiState.getSpalteBreite(kats.get(i).name());
+            bs[i] = eigene > 0 ? eigene : autoB;
+        }
+        // Reihen bilden: so viele nebeneinander, wie hineinpassen
+        List<List<Integer>> reihenL = new ArrayList<>();
+        List<Integer> reihe = new ArrayList<>();
+        int belegt = 0;
+        for (int i = 0; i < kats.size(); i++) {
+            int noetig = (reihe.isEmpty() ? 0 : ABSTAND) + bs[i];
+            if (!reihe.isEmpty() && belegt + noetig > verfuegbar) {
+                reihenL.add(reihe);
+                reihe = new ArrayList<>();
+                belegt = 0;
+                noetig = bs[i];
+            }
+            reihe.add(i);
+            belegt += noetig;
+        }
+        if (!reihe.isEmpty()) reihenL.add(reihe);
+        int reiheH = (H - oben - 6) / Math.max(1, reihenL.size());
+        int[] ax = new int[kats.size()], ay = new int[kats.size()];
+        for (int r = 0; r < reihenL.size(); r++) {
+            int rb = 0;
+            for (int k : reihenL.get(r)) rb += bs[k] + (rb == 0 ? 0 : ABSTAND);
+            int x = Math.max(6, (W - rb) / 2);
+            for (int k : reihenL.get(r)) {
+                ax[k] = x;
+                ay[k] = oben + r * reiheH;
+                x += bs[k] + ABSTAND;
+            }
         }
 
+        // --- Zeichnen: frei verschobene Spalten an ihrer Stelle, die
+        // gezogene zuletzt (oben auf).
+        spaltenRect.clear();
+        int zuletzt = -1;
+        for (int durchgang = 0; durchgang < 2; durchgang++) {
+            for (int i = 0; i < kats.size(); i++) {
+                Module.Category kat = kats.get(i);
+                boolean istGezogen = kat == ziehtKat && kopfBewegt;
+                if ((durchgang == 0) == istGezogen) continue;
+                int sx = ax[i], sy = ay[i], boden = ay[i] + reiheH - 6;
+                float[] pos = GuiState.getSpaltePos(kat.name());
+                if (pos != null) {
+                    sx = Math.max(0, Math.min(W - bs[i], Math.round(pos[0] * W)));
+                    sy = Math.max(oben, Math.min(H - KOPF_H - 2, Math.round(pos[1] * H)));
+                    boden = H - 6;
+                }
+                spalteB = bs[i];
+                spalteBoden = boden;
+                spaltenRect.put(kat, new int[]{sx, sy, bs[i]});
+                // GESTAFFELTES ERSCHEINEN: jede Spalte 45 ms nach der vorigen
+                float t = Math.max(0f, Math.min(1f, (seit - i * 0.045f) / 0.32f));
+                float e = 1f - (1f - t) * (1f - t) * (1f - t);
+                int gleiten = (int) ((1f - e) * -16f);
+                zeichneSpalte(ctx, kat, sx, sy + gleiten, a * e, dt);
+                zuletzt = i;
+            }
+        }
+        pose.popMatrix();
+
         super.extractRenderState(ctx, mouseX, mouseY, delta);
+        pose.pushMatrix();
+        pose.scale(masstab, masstab);
         zeichneBeschreibung(ctx, dt);
+        pose.popMatrix();
+    }
+
+    /**
+     * Massstab: eingestellt, oder "Auto" -- dann so klein wie noetig, damit
+     * alle Kategorien in EINE Reihe passen (hoechstens bis 60 %).
+     */
+    private float berechneMasstab(int n) {
+        int p = GuiState.getPanelScale();
+        if (p > 0) return p / 100f;
+        n = Math.max(1, n);
+        int noetig = n * SPALTE_MIN + (n - 1) * ABSTAND + 12;
+        if (this.width >= noetig) return 1f;
+        return Math.max(0.6f, this.width / (float) noetig);
+    }
+
+    /** Leiste oben: Menuegroesse links, "Reset Layout" rechts (echte Pixel). */
+    private void zeichneLeiste(GuiGraphicsExtractor ctx, float a) {
+        leiste.clear();
+        int y = 7, h = 18;
+        boolean auto = GuiState.getPanelScale() == 0;
+        String wert = (auto ? "Auto " : "") + Math.round(masstab * 100) + "%";
+        int wb = Math.max(58, this.font.width(wert) + 10);
+        int[][] teile = {
+            {6, y, 16, h, L_KLEINER},
+            {24, y, wb, h, L_AUTO},
+            {26 + wb, y, 16, h, L_GROESSER},
+            {this.width - 6 - resetB(), y, resetB(), h, L_RESET}
+        };
+        for (int[] t : teile) {
+            boolean hov = rmx >= t[0] && rmx < t[0] + t[2] && rmy >= t[1] && rmy < t[1] + t[3];
+            roundRect(ctx, t[0], t[1], t[2], t[3], VortexStyle.fade(hov
+                    ? VortexStyle.mix(VortexStyle.CARD, VortexStyle.akzent(0.5f), 0.35f) : VortexStyle.CARD, a));
+            String txt = t[4] == L_KLEINER ? "-" : t[4] == L_GROESSER ? "+" : t[4] == L_AUTO ? wert : "Reset Layout";
+            int farbe = (t[4] == L_AUTO && auto) ? VortexStyle.akzent(0.5f) : (hov ? 0xFFFFFFFF : VortexStyle.TEXT_DIM);
+            ctx.text(this.font, Component.literal(txt), t[0] + (t[2] - this.font.width(txt)) / 2, t[1] + 5,
+                    VortexStyle.fade(farbe, a), false);
+            leiste.add(t);
+        }
+    }
+
+    /** Klick in die Leiste oben? Dann erledigt. */
+    private boolean leisteGeklickt(double px, double py) {
+        for (int[] t : leiste) {
+            if (px < t[0] || px >= t[0] + t[2] || py < t[1] || py >= t[1] + t[3]) continue;
+            int jetzt = Math.round(masstab * 100 / 10f) * 10;
+            switch (t[4]) {
+                case L_KLEINER:  GuiState.setPanelScale(Math.max(50, jetzt - 10)); break;
+                case L_GROESSER: GuiState.setPanelScale(Math.min(150, jetzt + 10)); break;
+                case L_AUTO:
+                    GuiState.setPanelScale(GuiState.getPanelScale() == 0 ? Math.round(masstab * 100) : 0);
+                    break;
+                case L_RESET:
+                    GuiState.resetSpalten();
+                    lauf.clear();
+                    break;
+                default: break;
+            }
+            return true;
+        }
+        return false;
     }
 
     /** Modul, ueber dem der Zeiger in diesem Bild steht. */
@@ -267,7 +417,7 @@ public class PanelGui extends Screen {
         if (text == null || text.isBlank()) return;
 
         // In Zeilen umbrechen, hoechstens 200 Pixel breit
-        int maxB = Math.min(200, this.width - 20);
+        int maxB = Math.min(200, W - 20);
         List<String> zeilen = new ArrayList<>();
         StringBuilder z = new StringBuilder();
         for (String wort : text.split(" ")) {
@@ -288,8 +438,8 @@ public class PanelGui extends Screen {
         int h = kopf + zeilen.size() * 10 + 8;
         // Rechts unten neben dem Zeiger, aber immer im Bild
         int x = mx + 12, y = my + 10;
-        if (x + w > this.width - 4) x = mx - w - 8;
-        if (y + h > this.height - 4) y = this.height - 4 - h;
+        if (x + w > W - 4) x = mx - w - 8;
+        if (y + h > H - 4) y = H - 4 - h;
         if (x < 4) x = 4;
         if (y < 4) y = 4;
 
@@ -306,8 +456,22 @@ public class PanelGui extends Screen {
         }
     }
 
+    /** Suchfeld: mittig, aber nie ueber der Leiste links/rechts. */
+    private int sucheX() {
+        return Math.max(this.width / 2 - 90, 108);
+    }
+
+    private int sucheB() {
+        int rechts = this.width - 6 - resetB() - 6;
+        return Math.max(60, Math.min(180, rechts - sucheX()));
+    }
+
+    private int resetB() {
+        return this.font.width("Reset Layout") + 12;
+    }
+
     private void zeichneSuche(GuiGraphicsExtractor ctx, float a) {
-        int sw = 180, sx = this.width / 2 - sw / 2, sy = 7;
+        int sw = sucheB(), sx = sucheX(), sy = 7;
         boolean tippt = search != null && !search.getValue().isEmpty();
         roundRect(ctx, sx, sy, sw, 18, VortexStyle.fade(VortexStyle.CARD, a));
         if (tippt) {
@@ -368,6 +532,15 @@ public class PanelGui extends Screen {
         Treffer kopf = new Treffer(x, y, spalteB, KOPF_H, Art.KOPF, null, null);
         kopf.kat = kat;
         treffer.add(kopf);
+        // Griff am rechten Rand des Kopfes: Spaltenbreite ziehen
+        boolean griffHov = mx >= x + spalteB - 3 && mx < x + spalteB + 2 && my >= y && my < y + KOPF_H;
+        if (griffHov || ziehtBreite == kat) {
+            ctx.fill(x + spalteB - 2, y + 3, x + spalteB, y + KOPF_H - 3,
+                    VortexStyle.fade(VortexStyle.akzent(0.5f), a));
+        }
+        Treffer griff = new Treffer(x + spalteB - 3, y, 5, KOPF_H, Art.GRIFF, null, null);
+        griff.kat = kat;
+        treffer.add(griff);
 
         // --- Inhalt ----------------------------------------------------------
         int maxH = Math.max(ZEILE_H, spalteBoden - y - KOPF_H);
@@ -674,17 +847,39 @@ public class PanelGui extends Screen {
 
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
+        if (leisteGeklickt(click.x(), click.y())) return true;
         if (super.mouseClicked(click, doubled)) return true;
         int knopf = click.button();
+        mx = (int) (click.x() / masstab);
+        my = (int) (click.y() / masstab);
         // Von hinten nach vorn: zuletzt Gezeichnetes liegt oben.
         for (int i = treffer.size() - 1; i >= 0; i--) {
             Treffer t = treffer.get(i);
             if (!t.in(mx, my)) continue;
             switch (t.art) {
-                case KOPF:
-                    // Links- oder Rechtsklick: Kategorie auf- oder zuklappen
-                    katZu.put(t.kat, !katZu.getOrDefault(t.kat, false));
+                case KOPF: {
+                    // Rechtsklick: sofort auf-/zuklappen. Linksklick: erst beim
+                    // Loslassen -- wird dabei gezogen, verschiebt es die Spalte.
+                    if (knopf == 1) {
+                        katZu.put(t.kat, !katZu.getOrDefault(t.kat, false));
+                        return true;
+                    }
+                    int[] r = spaltenRect.get(t.kat);
+                    ziehtKat = t.kat;
+                    kopfBewegt = false;
+                    kopfStartX = mx;
+                    kopfStartY = my;
+                    kopfOffX = r == null ? 0 : mx - r[0];
+                    kopfOffY = r == null ? 0 : my - r[1];
                     return true;
+                }
+                case GRIFF: {
+                    int[] r = spaltenRect.get(t.kat);
+                    ziehtBreite = t.kat;
+                    breiteStart = r == null ? SPALTE_B : r[2];
+                    breiteStartX = mx;
+                    return true;
+                }
                 case MODUL:
                     // Rechtsklick irgendwo auf der Zeile ODER Linksklick auf
                     // das Plus rechts: Einstellungen auf- und zuklappen.
@@ -743,6 +938,30 @@ public class PanelGui extends Screen {
 
     @Override
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent click, double dx, double dy) {
+        mx = (int) (click.x() / masstab);
+        my = (int) (click.y() / masstab);
+        if (ziehtBreite != null) {
+            GuiState.setSpalteBreite(ziehtBreite.name(), breiteStart + (mx - breiteStartX));
+            return true;
+        }
+        if (ziehtKat != null) {
+            if (!kopfBewegt && Math.abs(mx - kopfStartX) + Math.abs(my - kopfStartY) > 3) {
+                kopfBewegt = true;
+                // Beim ersten Verschieben alle Spalten an ihrer jetzigen Stelle
+                // festhalten -- sonst springen die anderen beim Umschalten auf
+                // freie Anordnung.
+                if (!GuiState.hatFreieAnordnung()) {
+                    for (Map.Entry<Module.Category, int[]> e : spaltenRect.entrySet()) {
+                        GuiState.setSpaltePos(e.getKey().name(),
+                                e.getValue()[0] / (float) W, e.getValue()[1] / (float) H);
+                    }
+                }
+            }
+            if (kopfBewegt) {
+                GuiState.setSpaltePos(ziehtKat.name(), (mx - kopfOffX) / (float) W, (my - kopfOffY) / (float) H);
+            }
+            return true;
+        }
         if (zieht != null) {
             schieber(zieht, mx);
             return true;
@@ -753,12 +972,21 @@ public class PanelGui extends Screen {
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent click) {
         zieht = null;
+        if (ziehtKat != null && !kopfBewegt) {
+            // Nur geklickt, nicht gezogen: auf-/zuklappen wie bisher
+            katZu.put(ziehtKat, !katZu.getOrDefault(ziehtKat, false));
+        }
+        ziehtKat = null;
+        kopfBewegt = false;
+        ziehtBreite = null;
         return super.mouseReleased(click);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         // Die Spalte unter dem Zeiger scrollen.
+        mouseX /= masstab;
+        mouseY /= masstab;
         for (int i = 0; i < spaltenFlaeche.size(); i++) {
             int[] f = spaltenFlaeche.get(i);
             if (mouseX >= f[0] && mouseX < f[0] + f[2] && mouseY >= f[1] && mouseY < f[1] + f[3]) {
