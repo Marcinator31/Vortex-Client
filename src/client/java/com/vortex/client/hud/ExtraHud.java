@@ -68,6 +68,7 @@ public final class ExtraHud {
         combo(ctx, mc);
         tps(ctx, mc);
         uhr(ctx, mc);
+        MaceHud.render(ctx, mc);       // 4.7.0
     }
 
     // ----------------------------------------------------------------------

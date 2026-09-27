@@ -76,6 +76,7 @@ public final class ModuleInfo {
         put("No Fall", "Prevents fall damage. High ban risk.");
         put("Chunk Borders", "Shows the edges of the chunk you are standing in.");
         put("Speedometer", "How fast you are moving, in blocks per second or km/h.");
+        put("Mace HUD", "Your fall height and how much a mace hit would do to your target right now -- calculated like the server (smash bonus, Density, Breach, crit, armour, protection). Also shows the height you need for a kill.");
         put("Compass Bar", "A compass strip along the top of the screen, like in survival games.");
         put("Reach Display", "How far away your last hit landed, measured like the server does.");
         put("Combo Counter", "Counts hits in a row without being hit back.");

@@ -116,6 +116,7 @@ public final class ModuleManager {
         register(new LowShieldModule());
         // --- 4.4.0 ---
         register(new com.vortex.client.module.modules.SpeedometerModule());
+        register(new com.vortex.client.module.modules.MaceHudModule());   // 4.7.0
         register(new com.vortex.client.module.modules.CompassModule());
         register(new com.vortex.client.module.modules.ReachModule());
         register(new com.vortex.client.module.modules.ComboModule());
