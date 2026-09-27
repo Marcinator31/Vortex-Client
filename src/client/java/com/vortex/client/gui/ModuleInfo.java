@@ -47,7 +47,7 @@ public final class ModuleInfo {
         put("Fly", "Lets you fly. Detected almost immediately on most servers.");
         put("Crystal Macro", "Places end crystals on obsidian and breaks them instantly. Extreme ban risk.");
         put("Potato Mode", "Turns off expensive effects for more frames per second.");
-        put("Debug Overlay", "A readable F3: position, biome, what you are looking at, how the game runs.");
+        put("Debug Overlay", "A readable F3 in sections: FPS with 1% low and frame graph, position with nether coords and speed, biome, light, time, target, memory, server with ping and TPS.");
         put("Item Counter", "Counts chosen items. Several displays, each with its own place and items.");
         put("Armor Warning", "Says something before a piece of armour breaks, with a sound.");
         put("Toggle Sneak", "Keeps you crouching without holding the key.");
