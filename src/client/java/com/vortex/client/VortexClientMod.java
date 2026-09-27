@@ -71,6 +71,7 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.CombatTracker.register();
         com.vortex.client.hud.TickRate.register();
         com.vortex.client.hud.ExtraHud.register();
+        com.vortex.client.core.PerfRecorder.register();    // 4.7.1: FPS fuer den Leistungs-Check im Launcher
         com.vortex.client.hud.BlockOutline.register();
         com.vortex.client.hud.HitColor.register();
         com.vortex.client.hud.FogCheck.register();
