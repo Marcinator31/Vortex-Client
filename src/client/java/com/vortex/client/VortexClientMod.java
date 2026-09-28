@@ -134,6 +134,9 @@ public class VortexClientMod implements ClientModInitializer {
                 com.vortex.client.hud.PingMeter.start();
             });
 
+        // Beenden absichern: Laeuft Java weiter, obwohl Minecraft fertig ist,
+        // haelt der Prozess alle Mod-Dateien offen (Windows: nicht loeschbar).
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> com.vortex.client.core.ExitGuard.start());
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             // Falls Potato Mode aktiv ist, vorher die Original-Grafikwerte
             // wiederherstellen -- sonst wuerde Minecraft die Potato-Werte als
