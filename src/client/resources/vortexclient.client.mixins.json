@@ -28,9 +28,11 @@
     "GameModeHookMixin",
     "GammaMixin",
     "HeldItemRendererMixin",
+    "HitArmorMixin",
     "HudCameraPlayerMixin",
     "HudTweaksMixin",
     "InputAccessor",
+    "ItemCooldownsHookMixin",
     "ItemPhysicsMixin",
     "ItemStackRenderStateAccessor",
     "KeyboardInputMixin",
@@ -40,6 +42,7 @@
     "LowShieldMixin",
     "MinecraftClientAccessor",
     "MixinFogRenderer",
+    "MotionBlurMixin",
     "MouseMixin",
     "NametagHideMixin",
     "NoPumpkinBlurMixin",
@@ -49,8 +52,7 @@
     "SlotLockDropMixin",
     "StreamerTextMixin",
     "ZoomFovMixin",
-    "ZoomScrollMixin",
-    "HitArmorMixin"
+    "ZoomScrollMixin"
   ],
   "injectors": {
     "defaultRequire": 1

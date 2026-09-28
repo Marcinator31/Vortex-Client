@@ -26,6 +26,7 @@ public abstract class GameModeHookMixin {
     private void vortex$schlag(Player player, Entity target, CallbackInfo ci) {
         try {
             com.vortex.client.hud.CombatTracker.schlag(target);
+            com.vortex.client.hud.CombatFx.schlag(target);
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("GameModeHookMixin.attack", pvpErr);
         }

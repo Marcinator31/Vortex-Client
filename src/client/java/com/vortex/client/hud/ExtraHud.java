@@ -69,6 +69,10 @@ public final class ExtraHud {
         tps(ctx, mc);
         uhr(ctx, mc);
         MaceHud.render(ctx, mc);       // 4.7.0
+        CooldownHud.render(ctx, mc);   // 4.9.0
+        InventoryHud.render(ctx, mc);
+        DamageNumbers.render(ctx, mc);
+        PearlTracker.render(ctx, mc);
     }
 
     // ----------------------------------------------------------------------

@@ -75,6 +75,13 @@ public final class ModuleInfo {
         put("Tunnel Detector", "Finds long straight tunnels that were dug by players.");
         put("No Fall", "Prevents fall damage. High ban risk.");
         put("Chunk Borders", "Shows the edges of the chunk you are standing in.");
+        put("Cooldown HUD", "Cooldowns as bars with seconds: ender pearl, wind charge, chorus fruit, goat horn, your shield after an axe hit and everything else with a cooldown.");
+        put("Inventory HUD", "Your inventory on screen, so you see totems, pearls and potions without pressing E.");
+        put("Damage Numbers", "Floating damage numbers above hit players and mobs. Calculated from the health the server sends -- servers that hide health show wrong or no numbers.");
+        put("Hit & Kill Effects", "Your own sound on every confirmed hit, plus a sound and an effect (lightning, totem, flames, hearts, blood ...) when you kill someone. Only you see and hear it.");
+        put("Pearl Tracker", "Shows where other players' ender pearls will land: line, marker and a note with name and distance. Some servers forbid this in their rules.");
+        put("Glint Customizer", "Colour (also gradient or rainbow), speed and strength of the enchantment glint on items and armour.");
+        put("Motion Blur", "Motion blur like in other PvP clients. Only the world is blurred, HUD and menus stay sharp. Costs a little performance.");
         put("Speedometer", "How fast you are moving, in blocks per second or km/h.");
         put("Mace HUD", "Your fall height and how much a mace hit would do to your target right now -- calculated like the server (smash bonus, Density, Breach, crit, armour, protection). Also shows the height you need for a kill.");
         put("Compass Bar", "A compass strip along the top of the screen, like in survival games.");
