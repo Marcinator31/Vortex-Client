@@ -33,7 +33,8 @@ public abstract class FreecamMoveMixin {
 
     @ModifyVariable(method = "move", at = @At("HEAD"), argsOnly = true)
     private Vec3 pvpclient$freezeHorizontalMovement(Vec3 movement) {
-        if (!Freecam.isActive() || movement == null) return movement;
+        // Nur mit "Hold Position" (fuer Anti-Cheats sichtbar, siehe Freecam.halteFest).
+        if (!Freecam.halteFest() || movement == null) return movement;
 
         // Nur den echten Spieler betreffen -- alle anderen Wesen (und die
         // Freecam-Kamera selbst) bewegen sich normal weiter.
