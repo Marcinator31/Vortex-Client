@@ -228,7 +228,9 @@ public class VortexClientMod implements ClientModInitializer {
             if (openClickGui && client.gui.screen() == null) {
                 // Erst der Startbildschirm, von dort aus zu den Mods --
                 // wie bei grossen PvP-Clients.
-                client.gui.setScreen(new com.vortex.client.gui.HomeScreen());
+                // "Right Shift Opens" in den Client-Einstellungen
+                client.gui.setScreen(com.vortex.client.core.ClientSettings.INSTANCE.rightShiftOpens.getIndex() == 1
+                        ? new com.vortex.client.gui.PanelGui() : new com.vortex.client.gui.HomeScreen());
                             }
 
             while (openHudEditorKey.consumeClick()) {
@@ -266,6 +268,7 @@ public class VortexClientMod implements ClientModInitializer {
                         boolean was = Boolean.TRUE.equals(toggleKeyDown.get(module.getName()));
                         if (down && !was) {
                             module.toggle();
+                            com.vortex.client.core.ClientSettings.umgeschaltet(module, true);
                             com.vortex.client.core.ConfigManager.save();
                         }
                         toggleKeyDown.put(module.getName(), down);

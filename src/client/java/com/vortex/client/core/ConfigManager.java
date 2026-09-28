@@ -602,6 +602,10 @@ public final class ConfigManager {
             for (Setting ws : com.vortex.client.waypoint.WaypointSettings.INSTANCE.getSettings()) {
                 lines.add("__wpsettings__\t" + ws.getName() + "\t" + ws.serialize());
             }
+            // Allgemeine Client-Einstellungen (Settings im Mods-Menue).
+            for (Setting cs : ClientSettings.INSTANCE.all()) {
+                lines.add("__client__\t" + cs.getName() + "\t" + cs.serialize());
+            }
 
             // Makros.
             lines.add("__macros__\tdaten\t" + com.vortex.client.macro.MacroManager.serialize());
@@ -724,6 +728,12 @@ public final class ConfigManager {
                 }
 
                 // Sonderfall: Waypoint-Einstellungen.
+                if (modName.equals("__client__")) {
+                    for (Setting cs : ClientSettings.INSTANCE.all()) {
+                        if (cs.getName().equals(settingName)) { cs.deserialize(value); break; }
+                    }
+                    continue;
+                }
                 if (modName.equals("__wpsettings__")) {
                     for (Setting ws : com.vortex.client.waypoint.WaypointSettings
                             .INSTANCE.getSettings()) {

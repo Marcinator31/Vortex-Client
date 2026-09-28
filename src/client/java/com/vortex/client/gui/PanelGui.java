@@ -128,7 +128,7 @@ public class PanelGui extends Screen {
     private int breiteStart, breiteStartX;
     /** Klickflaechen der Leiste oben (echte Bildschirmkoordinaten): x, y, b, h, art. */
     private final List<int[]> leiste = new ArrayList<>();
-    private static final int L_KLEINER = 1, L_AUTO = 2, L_GROESSER = 3, L_RESET = 4;
+    private static final int L_KLEINER = 1, L_AUTO = 2, L_GROESSER = 3, L_RESET = 4, L_SETTINGS = 5;
 
     // --- Klickflaechen ------------------------------------------------------
     private enum Art { KOPF, MODUL, BOOL, NUM, MODUS, FARBE, TASTE, AUSWAHL, RESET, GRIFF }
@@ -327,7 +327,7 @@ public class PanelGui extends Screen {
         super.extractRenderState(ctx, mouseX, mouseY, delta);
         pose.pushMatrix();
         pose.scale(masstab, masstab);
-        zeichneBeschreibung(ctx, dt);
+        if (com.vortex.client.core.ClientSettings.INSTANCE.moduleTooltips.get()) zeichneBeschreibung(ctx, dt);
         pose.popMatrix();
     }
 
@@ -355,13 +355,15 @@ public class PanelGui extends Screen {
             {6, y, 16, h, L_KLEINER},
             {24, y, wb, h, L_AUTO},
             {26 + wb, y, 16, h, L_GROESSER},
-            {this.width - 6 - resetB(), y, resetB(), h, L_RESET}
+            {this.width - 6 - resetB(), y, resetB(), h, L_RESET},
+            {this.width - 6 - resetB() - 4 - settingsB(), y, settingsB(), h, L_SETTINGS}
         };
         for (int[] t : teile) {
             boolean hov = rmx >= t[0] && rmx < t[0] + t[2] && rmy >= t[1] && rmy < t[1] + t[3];
             roundRect(ctx, t[0], t[1], t[2], t[3], VortexStyle.fade(hov
                     ? VortexStyle.mix(VortexStyle.CARD, VortexStyle.akzent(0.5f), 0.35f) : VortexStyle.CARD, a));
-            String txt = t[4] == L_KLEINER ? "-" : t[4] == L_GROESSER ? "+" : t[4] == L_AUTO ? wert : "Reset Layout";
+            String txt = t[4] == L_KLEINER ? "-" : t[4] == L_GROESSER ? "+" : t[4] == L_AUTO ? wert
+                    : t[4] == L_SETTINGS ? "Settings" : "Reset Layout";
             int farbe = (t[4] == L_AUTO && auto) ? VortexStyle.akzent(0.5f) : (hov ? 0xFFFFFFFF : VortexStyle.TEXT_DIM);
             ctx.text(this.font, Component.literal(txt), t[0] + (t[2] - this.font.width(txt)) / 2, t[1] + 5,
                     VortexStyle.fade(farbe, a), false);
@@ -383,6 +385,11 @@ public class PanelGui extends Screen {
                 case L_RESET:
                     GuiState.resetSpalten();
                     lauf.clear();
+                    break;
+                case L_SETTINGS:
+                    // Allgemeine Client-Einstellungen (Meldung beim Umschalten usw.)
+                    Minecraft.getInstance().gui.setScreen(new SettingsScreen(this, "Client Settings",
+                            com.vortex.client.core.ClientSettings.INSTANCE.all()));
                     break;
                 default: break;
             }
@@ -462,8 +469,12 @@ public class PanelGui extends Screen {
     }
 
     private int sucheB() {
-        int rechts = this.width - 6 - resetB() - 6;
+        int rechts = this.width - 6 - resetB() - 4 - settingsB() - 6;
         return Math.max(60, Math.min(180, rechts - sucheX()));
+    }
+
+    private int settingsB() {
+        return this.font.width("Settings") + 12;
     }
 
     private int resetB() {
@@ -889,6 +900,7 @@ public class PanelGui extends Screen {
                         }
                     } else {
                         t.modul.toggle();
+                        com.vortex.client.core.ClientSettings.umgeschaltet(t.modul, false);
                     }
                     return true;
                 case BOOL:

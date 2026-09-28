@@ -419,8 +419,13 @@ public class HomeScreen extends Screen {
         // --- Fuss: zwei leise Textknoepfe rechts ----------------------------------
         int fy = cy + 2;
         int rx = x0 + W - 12;
-        rx = fussKnopf(ctx, rx, fy, "Restart", true, a, dt, () -> { frageNeustart = true; fehler = null; });
-        fussKnopf(ctx, rx - 4, fy, "Community", false, a, dt, () -> mc.gui.setScreen(new CommunityScreen(this)));
+        rx = fussKnopf(ctx, rx, fy, "Restart", true, a, dt, () -> {
+            if (com.vortex.client.core.ClientSettings.INSTANCE.confirmRestart.get()) { frageNeustart = true; fehler = null; }
+            else neustarten();
+        });
+        rx = fussKnopf(ctx, rx - 4, fy, "Community", false, a, dt, () -> mc.gui.setScreen(new CommunityScreen(this)));
+        fussKnopf(ctx, rx - 4, fy, "Settings", false, a, dt, () -> mc.gui.setScreen(new SettingsScreen(this, "Client Settings",
+                com.vortex.client.core.ClientSettings.INSTANCE.all())));
         if (fehler != null) {
             ctx.text(this.font, Component.literal(fehler), (this.width - this.font.width(fehler)) / 2,
                     Math.min(this.height - 11, y0 + H + 6), VortexStyle.fade(0xFFF87171, a), false);
@@ -554,16 +559,7 @@ public class HomeScreen extends Screen {
         if (frageNeustart) {
             if (in(kJa)) {
                 frageNeustart = false;
-                try {
-                    com.vortex.client.util.GameRestarter.restart();
-                } catch (Throwable pvpErr) {
-                    // Der Neustart prueft selbst, ob der neue Prozess ueberlebt.
-                    // Scheitert er, bleibt das Spiel offen und zeigt den Grund.
-                    fehler = "Restart failed: "
-                            + (pvpErr.getMessage() == null ? pvpErr.getClass().getSimpleName()
-                                                           : pvpErr.getMessage());
-                    com.vortex.client.core.Errors.report("HomeScreen.restart", pvpErr);
-                }
+                neustarten();
                 return true;
             }
             if (in(kNein)) { frageNeustart = false; return true; }
@@ -592,6 +588,19 @@ public class HomeScreen extends Screen {
         if (in(flaeche[FRIENDS]))   { mc.gui.setScreen(new FriendsScreen(this)); return true; }
         if (in(flaeche[RESTART]))   { frageNeustart = true; fehler = null; return true; }
         return false;
+    }
+
+    private void neustarten() {
+        try {
+            com.vortex.client.util.GameRestarter.restart();
+        } catch (Throwable pvpErr) {
+            // Der Neustart prueft selbst, ob der neue Prozess ueberlebt.
+            // Scheitert er, bleibt das Spiel offen und zeigt den Grund.
+            fehler = "Restart failed: "
+                    + (pvpErr.getMessage() == null ? pvpErr.getClass().getSimpleName()
+                                                   : pvpErr.getMessage());
+            com.vortex.client.core.Errors.report("HomeScreen.restart", pvpErr);
+        }
     }
 
     // ======================================================================
