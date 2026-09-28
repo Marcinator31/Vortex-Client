@@ -33,7 +33,7 @@ public class GammaMixin {
         if (FullbrightModule.optionsSpeichern) return;     // echten Wert speichern, nicht 15
         FullbrightModule mod = find();
         boolean fullbright = mod != null && mod.isEnabled();
-        boolean freecam = com.vortex.client.freecam.Freecam.isActive();
+        boolean freecam = com.vortex.client.freecam.Freecam.hell();
         if (!fullbright && !freecam) return;
 
         net.minecraft.client.Minecraft client =

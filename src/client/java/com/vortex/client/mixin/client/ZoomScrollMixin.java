@@ -23,6 +23,11 @@ public abstract class ZoomScrollMixin {
         try {
             if (com.vortex.client.hud.Zoom.onScroll(vertical)) {
                 ci.cancel();
+                return;
+            }
+            // Freecam: das Rad regelt die Fluggeschwindigkeit.
+            if (com.vortex.client.freecam.Freecam.onScroll(vertical)) {
+                ci.cancel();
             }
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("ZoomScrollMixin", pvpErr);

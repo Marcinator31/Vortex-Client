@@ -42,6 +42,13 @@ public final class Freecam {
 
     private static long lastFrameNano = 0L;
 
+    /** Mausrad-Faktor auf die eingestellte Geschwindigkeit (bleibt fuer die Sitzung). */
+    private static double radFaktor = 1.0;
+    /** War der Spieler beim Einschalten am Schleichen? Dann bleibt er es. */
+    private static boolean schleichenBeimStart = false;
+    /** Leben + Absorption im letzten Tick -- zum Erkennen von Schaden. */
+    private static float letztesLeben = -1f;
+
     // Position des echten Spielers beim Einschalten der Freecam. Solange die
     // Freecam laeuft, wird der Spieler jeden Tick horizontal hierauf zurueck-
     // gesetzt -- egal welcher Code-Pfad ihn bewegen wollte.
@@ -94,6 +101,8 @@ public final class Freecam {
             lockX = mc.player.getX();
             lockZ = mc.player.getZ();
             lastFrameNano = System.nanoTime();
+            schleichenBeimStart = mc.player.isShiftKeyDown();
+            letztesLeben = mc.player.getHealth() + mc.player.getAbsorptionAmount();
             // Kamera-Entity spawnen und als aktive Kamera setzen, damit das
             // Rendering (inkl. Cave-Culling) der Freecam folgt.
             spawnCameraEntity(mc);
@@ -159,6 +168,59 @@ public final class Freecam {
     }
 
     /**
+     * Freecam beenden UND das Modul ausschalten.
+     *
+     * Nur disable() reichte nicht: das Modul blieb an, und der Client schaltete
+     * die Kamera im naechsten Tick wieder ein (VortexClientMod gleicht beide ab).
+     * Nach dem Tod lief das jeden Tick im Kreis.
+     */
+    public static void beenden(String grund) {
+        disable();
+        try {
+            com.vortex.client.module.Module m = module();
+            if (m != null && m.isEnabled()) m.setEnabled(false);
+        } catch (Throwable ignored) { }
+        Minecraft mc = Minecraft.getInstance();
+        if (grund != null && mc.player != null) {
+            mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[Freecam] \u00a7f" + grund));
+        }
+    }
+
+    /** Fuer die Eingabe-Mixins: soll der Spieler waehrend der Freecam schleichen? */
+    public static boolean schleichen() {
+        return active && schleichenBeimStart && schalter("Keep Sneaking", true);
+    }
+
+    /** Aufhellung in der Freecam (GammaMixin). */
+    public static boolean hell() {
+        return active && schalter("Fullbright", true);
+    }
+
+    /** Aktuelle Fluggeschwindigkeit in Bloecken pro Sekunde (ohne Sprint). */
+    public static double tempo() {
+        return zahl("Speed", SPEED) * radFaktor;
+    }
+
+    /**
+     * Mausrad in der Freecam: Geschwindigkeit aendern statt Hotbar-Slot.
+     * @return true, wenn das Rad verbraucht wurde
+     */
+    public static boolean onScroll(double amount) {
+        if (!active || amount == 0) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.gui.screen() != null || !schalter("Scroll Changes Speed", true)) return false;
+        radFaktor *= Math.pow(1.25, Math.signum(amount));
+        double basis = Math.max(0.1, zahl("Speed", SPEED));
+        // Ergebnis zwischen 0,5 und 200 Bloecken pro Sekunde.
+        radFaktor = Math.max(0.5 / basis, Math.min(200.0 / basis, radFaktor));
+        infoBis = System.currentTimeMillis() + 1500;
+        return true;
+    }
+
+    /** Bis wann die Info-Zeile hervorgehoben wird (nach einer Aenderung). */
+    private static long infoBis = 0;
+
+    /**
      * Sicherheitsnetz gegen "Spieler haengt fest".
      *
      * Wenn die Freecam AUS ist, muss der echte Spieler die aktive Kamera sein.
@@ -168,6 +230,14 @@ public final class Freecam {
      * Dieser Tick-Check setzt das automatisch zurueck.
      */
     public static void registerSafety() {
+        try {
+            net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(
+                    net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MISC_OVERLAYS,
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "freecam_info"),
+                    (ctx, tick) -> info(ctx));
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("Freecam.hud", pvpErr);
+        }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
                 .END_CLIENT_TICK.register(mc -> {
             if (mc.player == null) return;
@@ -180,9 +250,19 @@ public final class Freecam {
                 if (mc.level != freecamWelt || mc.player != freecamSpieler || mc.player.isDeadOrDying()) {
                     freecamWelt = null;
                     freecamSpieler = null;
-                    disable();
+                    beenden(mc.player.isDeadOrDying() ? "Off -- you died." : null);
                     return;
                 }
+                // Schaden: sofort zurueck in den eigenen Koerper. Wer in der
+                // Freecam angegriffen wird, merkt es sonst erst, wenn es zu
+                // spaet ist.
+                float leben = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+                if (letztesLeben >= 0 && leben < letztesLeben - 0.01f && schalter("Disable On Damage", true)) {
+                    letztesLeben = -1f;
+                    beenden("Off -- you took damage.");
+                    return;
+                }
+                letztesLeben = leben;
             } else {
                 freecamWelt = null;
                 freecamSpieler = null;
@@ -291,9 +371,17 @@ public final class Freecam {
             double pitchRad = Math.toRadians(pitch);
 
             // Vorwaerts-Vektor (inkl. Pitch fuers Hoch-/Runterfliegen beim Blicken).
-            fx = -Math.sin(yawRad) * Math.cos(pitchRad);
-            fy = -Math.sin(pitchRad);
-            fz =  Math.cos(yawRad) * Math.cos(pitchRad);
+            // "Horizontal Movement": wie Kreativ-Flug -- W bleibt auf der Hoehe,
+            // hoch und runter nur mit Springen/Schleichen.
+            if (schalter("Horizontal Movement", false)) {
+                fx = -Math.sin(yawRad);
+                fy = 0;
+                fz = Math.cos(yawRad);
+            } else {
+                fx = -Math.sin(yawRad) * Math.cos(pitchRad);
+                fy = -Math.sin(pitchRad);
+                fz =  Math.cos(yawRad) * Math.cos(pitchRad);
+            }
             // Rechts-Vektor (horizontal), korrekt = (-cos(yaw), -sin(yaw)).
             // Herleitung: rechts = forward um 90 Grad gedreht in der XZ-Ebene
             // -> (-fz, fx) bei pitch 0. So zeigt D wirklich nach rechts.
@@ -301,7 +389,7 @@ public final class Freecam {
             rz = -Math.sin(yawRad);
 
             // Geschwindigkeit aus den Modul-Einstellungen (in der GUI regelbar).
-            double speed = zahl("Speed", SPEED);
+            double speed = zahl("Speed", SPEED) * radFaktor;
             double sprintFactor = zahl("Sprint Multiplier", SPRINT_MULT);
             if (mc.options.keySprint.isDown()) speed *= sprintFactor;
             accel = speed;
@@ -322,8 +410,15 @@ public final class Freecam {
                 tvy = tvy/len * speed;
                 tvz = tvz/len * speed;
             }
-            // Direkte Zielgeschwindigkeit (snappy, gut kontrollierbar).
-            velX = tvx; velY = tvy; velZ = tvz;
+            if (schalter("Smooth Movement", false)) {
+                // Weich anfahren und abbremsen (fuer Aufnahmen).
+                double k = 1.0 - Math.exp(-4.0 * dt);
+                velX += (tvx - velX) * k; velY += (tvy - velY) * k; velZ += (tvz - velZ) * k;
+                anyMove = true;   // Ausgleiten uebernimmt hier die Glaettung
+            } else {
+                // Direkte Zielgeschwindigkeit (snappy, gut kontrollierbar).
+                velX = tvx; velY = tvy; velZ = tvz;
+            }
         }
 
         // Wenn keine Taste: ausgleiten ueber Daempfung (delta-skaliert).
@@ -347,6 +442,27 @@ public final class Freecam {
             cameraEntity.yOld = y;
             cameraEntity.zOld = z;
         }
+    }
+
+    /**
+     * Kleine Zeile oben in der Mitte: Tempo und Abstand zum eigenen Koerper.
+     * Der Abstand zaehlt: nur Chunks in Sichtweite des SPIELERS werden
+     * geladen -- fliegt man zu weit, endet die Welt.
+     */
+    private static void info(net.minecraft.client.gui.GuiGraphicsExtractor ctx) {
+        if (!active || !schalter("Show Info", true)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui || mc.font == null) return;
+        double dx = x - mc.player.getX(), dy = y - mc.player.getEyeY(), dz = z - mc.player.getZ();
+        int abstand = (int) Math.sqrt(dx * dx + dy * dy + dz * dz);
+        String t = String.format(java.util.Locale.ROOT, "Freecam  \u00a77%.1f b/s  \u00b7  %d m", tempo(), abstand);
+        int grenze = mc.options.getEffectiveRenderDistance() * 16;
+        if (abstand > grenze - 16) t += "  \u00a7c(edge of loaded world)";
+        boolean hervor = System.currentTimeMillis() < infoBis;
+        int w = mc.font.width(t);
+        int sx = (ctx.guiWidth() - w) / 2;
+        ctx.fill(sx - 4, 3, sx + w + 4, 15, hervor ? 0xC0301A4A : 0x80000000);
+        ctx.text(mc.font, net.minecraft.network.chat.Component.literal(t), sx, 5, 0xFFE8DDFF, false);
     }
 
     private static boolean isDown(Minecraft mc, int key) {

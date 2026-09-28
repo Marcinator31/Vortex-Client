@@ -122,7 +122,7 @@ public class VortexClientMod implements ClientModInitializer {
         // Entity an der alten Welt und kann beim Wechsel crashen.
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT
             .register((handler, client) -> {
-                com.vortex.client.freecam.Freecam.disable();
+                com.vortex.client.freecam.Freecam.beenden(null);
                 // Beim Serverwechsel die Totem-Zaehlung leeren -- die Werte
                 // gelten nur fuer die Spieler der aktuellen Welt.
                 com.vortex.client.hud.TotemPops.reset();

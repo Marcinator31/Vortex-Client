@@ -21,6 +21,9 @@ public abstract class KeyboardInputMixin {
         if (!Freecam.isActive()) return;
         InputAccessor acc = (InputAccessor) this;
         acc.pvpclient$setMovementVector(Vec2.ZERO);
-        acc.pvpclient$setPlayerInput(Input.EMPTY);
+        // Schleichen bleibt, wie es beim Einschalten war -- sonst stand der
+            // Spieler an einer Kante ploetzlich auf.
+            acc.pvpclient$setPlayerInput(Freecam.schleichen()
+                    ? new Input(false, false, false, false, false, true, false) : Input.EMPTY);
     }
 }
