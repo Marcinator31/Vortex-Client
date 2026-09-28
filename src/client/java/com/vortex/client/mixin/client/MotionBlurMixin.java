@@ -1,5 +1,6 @@
 package com.vortex.client.mixin.client;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -36,9 +37,29 @@ public abstract class MotionBlurMixin {
             if (id == null) return;
             Minecraft mc = Minecraft.getInstance();
             PostChain chain = mc.getShaderManager().getPostChain(id, LevelTargetBundle.MAIN_TARGETS);
-            if (chain != null) chain.process(mc.getMainRenderTarget(), resourcePool);
+            RenderTarget main = mainTarget(mc);
+            if (chain != null && main != null) chain.process(main, resourcePool);
         } catch (Throwable e) {
             com.vortex.client.core.Errors.report("MotionBlur", e);
         }
+    }
+
+    /**
+     * Das Haupt-Bildziel. Der Methodenname hat sich zwischen 26.1 und 26.2
+     * geaendert -- deshalb einmal per Reflection die Methode von Minecraft
+     * suchen, die ohne Parameter ein RenderTarget liefert.
+     */
+    @org.spongepowered.asm.mixin.Unique
+    private static java.lang.reflect.Method vortex$mainTarget;
+
+    @org.spongepowered.asm.mixin.Unique
+    private static RenderTarget mainTarget(Minecraft mc) throws Exception {
+        if (vortex$mainTarget == null) {
+            for (var m : Minecraft.class.getMethods()) {
+                if (m.getParameterCount() == 0 && RenderTarget.class.isAssignableFrom(m.getReturnType())) { vortex$mainTarget = m; break; }
+            }
+            if (vortex$mainTarget == null) return null;
+        }
+        return (RenderTarget) vortex$mainTarget.invoke(mc);
     }
 }

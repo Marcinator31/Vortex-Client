@@ -146,7 +146,11 @@ public final class CombatFx {
     /** Ein Blitz nur fuer dich: visualOnly, eigene negative ID (kollidiert nie mit Server-IDs). */
     private static void lightning(ClientLevel level, double x, double y, double z) {
         try {
-            LightningBolt bolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
+            // Ueber die Registry statt ueber das Feld: der Feldname hat sich in 26.2 geaendert.
+            @SuppressWarnings("unchecked")
+            EntityType<LightningBolt> type = (EntityType<LightningBolt>) net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
+                    .getValue(net.minecraft.resources.Identifier.withDefaultNamespace("lightning_bolt"));
+            LightningBolt bolt = new LightningBolt(type, level);
             bolt.setVisualOnly(true);
             bolt.setId(nextId--);
             bolt.snapTo(x, y, z);
