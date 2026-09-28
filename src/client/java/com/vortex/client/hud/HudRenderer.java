@@ -33,13 +33,18 @@ public final class HudRenderer {
             (context, tickCounter) -> onHudRender(context)
         );
 
-        // Vanilla-Statuseffekt-Overlay (oben rechts) entfernen, damit unsere
-        // eigene Effekt-Anzeige links nicht doppelt ist. removeElement tut
-        // nichts, falls der Identifier nicht existiert -> kein Crash-Risiko.
+        // Vanilla-Statuseffekte (oben rechts) nur ausblenden, solange unsere
+        // eigene Anzeige an ist. Vorher wurden sie immer entfernt (und unter
+        // einem falschen Namen) -- mit ausgeschaltetem "Potion Effects" sah
+        // man dann gar keine Effekte.
         try {
-            HudElementRegistry.removeElement(Identifier.withDefaultNamespace("status_effects"));
-        } catch (Throwable ignored) {
-            // Falls der Name in dieser Version abweicht: ignorieren.
+            HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, vanilla -> (ctx, tick) -> {
+                Module m = find(PotionEffectsModule.class);
+                if (m != null && m.isEnabled()) return;
+                vanilla.extractRenderState(ctx, tick);
+            });
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("HudRenderer.effects", pvpErr);
         }
     }
 
@@ -156,7 +161,7 @@ public final class HudRenderer {
             switch (client.player.getDirection()) {
                 case NORTH -> dir = "N";
                 case SOUTH -> dir = "S";
-                case EAST  -> dir = "O";
+                case EAST  -> dir = "E";
                 case WEST  -> dir = "W";
                 default    -> dir = "";
             }

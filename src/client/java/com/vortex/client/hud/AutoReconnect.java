@@ -33,6 +33,9 @@ public final class AutoReconnect {
     /** How many attempts have been made since the last successful connect. */
     private static int tries = 0;
 
+    /** Ticks connected in one go (reset when the disconnect screen opens). */
+    private static int verbundenTicks = 0;
+
     /** Set while the countdown is stopped by hand. */
     private static boolean cancelled = false;
 
@@ -71,7 +74,10 @@ public final class AutoReconnect {
         var entry = client.getCurrentServer();
         if (entry != null) {
             lastServer = entry;
-            tries = 0;          // a working connection clears the count
+            // Only a connection that HOLDS clears the count (30 s). A server
+            // that lets you in and kicks you right away used to reset it on
+            // every join -- "Attempts" never ran out and it reconnected forever.
+            if (++verbundenTicks >= 600) tries = 0;
         }
     }
 
@@ -93,6 +99,7 @@ public final class AutoReconnect {
 
     /** Called when the disconnect screen opens. */
     public static void onDisconnected(DisconnectedScreen screen) {
+        verbundenTicks = 0;
         cancelled = false;
         ticksLeft = -1;
 

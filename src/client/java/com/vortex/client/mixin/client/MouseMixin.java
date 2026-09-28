@@ -60,12 +60,15 @@ public class MouseMixin {
                 com.vortex.client.core.Errors.report("MouseMixin.freund", pvpErr);
             }
         }
+        // Klicks in Menues (Inventar sortieren, ClickGUI) zaehlen nicht als CPS --
+        // sonst zeigte der Zaehler und "hoechste Klickrate" Fantasiewerte.
+        boolean imSpiel = net.minecraft.client.Minecraft.getInstance().gui.screen() == null;
         if (button == LEFT_BUTTON) {
-            CpsCounter.LEFT.onClick();
+            if (imSpiel) CpsCounter.LEFT.onClick();
             com.vortex.client.macro.MacroManager.record(
                     com.vortex.client.macro.Macro.Action.LEFT_CLICK, 0, 0);
         } else if (button == RIGHT_BUTTON) {
-            CpsCounter.RIGHT.onClick();
+            if (imSpiel) CpsCounter.RIGHT.onClick();
             com.vortex.client.macro.MacroManager.record(
                     com.vortex.client.macro.Macro.Action.RIGHT_CLICK, 0, 0);
         }

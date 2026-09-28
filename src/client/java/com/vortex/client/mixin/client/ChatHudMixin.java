@@ -65,8 +65,11 @@ public abstract class ChatHudMixin {
      * A hundred lines is a couple of minutes on a busy server. The limit is a
      * constant compiled into the trimming step, so it is changed there rather
      * than through a field -- there is no field left to change.
+     *
+     * The trimming lives in addMessageToDisplayQueue/addMessageToQueue (checked
+     * against the game code); targeting addMessage, as before, changed nothing.
      */
-    @ModifyConstant(method = "addMessage", constant = @Constant(intValue = 100), require = 0)
+    @ModifyConstant(method = {"addMessageToDisplayQueue", "addMessageToQueue"}, constant = @Constant(intValue = 100), require = 0)
     private int vortex$moreHistory(int original) {
         try {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(

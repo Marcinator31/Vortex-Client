@@ -35,6 +35,7 @@ public final class CombatFx {
     private static final class Hit { long at; boolean confirmed; int hurtBefore; }
     private static final Map<Integer, Hit> HITS = new HashMap<>();
     private static final Map<Integer, Long> KILLED = new HashMap<>();
+    private static Object letzteWelt = null;
     private static int nextId = -2_000_000;
 
     public static void register() {
@@ -58,6 +59,7 @@ public final class CombatFx {
 
     private static void tick(Minecraft mc) {
         if (mc.level == null || mc.player == null) { HITS.clear(); KILLED.clear(); return; }
+        if (mc.level != letzteWelt) { letzteWelt = mc.level; HITS.clear(); KILLED.clear(); }
         HitEffectsModule m = ModuleManager.INSTANCE.get(HitEffectsModule.class);
         if (m == null || !m.isEnabled()) { HITS.clear(); return; }
         long now = System.currentTimeMillis();

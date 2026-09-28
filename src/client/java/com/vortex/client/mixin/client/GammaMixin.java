@@ -30,6 +30,7 @@ public class GammaMixin {
     private void pvpclient$boostGamma(CallbackInfoReturnable<Object> cir) {
         // Hell machen, wenn Fullbright an ist ODER die Freecam aktiv ist.
         // Letzteres, damit man beim Umschauen unter der Erde etwas sieht.
+        if (FullbrightModule.optionsSpeichern) return;     // echten Wert speichern, nicht 15
         FullbrightModule mod = find();
         boolean fullbright = mod != null && mod.isEnabled();
         boolean freecam = com.vortex.client.freecam.Freecam.isActive();

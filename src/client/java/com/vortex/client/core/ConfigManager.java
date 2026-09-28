@@ -695,6 +695,10 @@ public final class ConfigManager {
             FREMDE_ZEILEN.clear();
             int unknown = 0;   // Zeilen ohne passendes Modul/Setting
             for (String line : lines) {
+              // Jede Zeile einzeln absichern: ein kaputter Wert (Hand-Edit,
+              // alte Fassung) kostete vorher das GANZE Laden -- und danach
+              // wurde die Sitzung ueber gar nicht mehr gespeichert.
+              try {
                 if (line.isBlank()) continue;
                 // In drei Teile zerlegen: ModulName, SettingName, Wert.
                 // limit=3, damit ein Wert selbst Tabs enthalten duerfte.
@@ -800,6 +804,9 @@ public final class ConfigManager {
                     FREMDE_ZEILEN.add(line);
                     unknown++;
                 }
+              } catch (RuntimeException zeileErr) {
+                Errors.report("ConfigManager.line", zeileErr);
+              }
             }
             // WICHTIG: Die Werte sind jetzt gesetzt -- aber damit ist noch nichts
             // passiert. Module, die ihre Wirkung ueber onEnable()/onDisable()

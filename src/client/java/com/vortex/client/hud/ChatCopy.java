@@ -63,7 +63,7 @@ public final class ChatCopy {
         }
         java.util.List<String> all = new java.util.ArrayList<>(LINES);
         int from = Math.max(0, all.size() - count);
-        String text = String.join("\\n", all.subList(from, all.size()));
+        String text = String.join("\n", all.subList(from, all.size()));
 
         try {
             client.keyboardHandler.setClipboard(text);

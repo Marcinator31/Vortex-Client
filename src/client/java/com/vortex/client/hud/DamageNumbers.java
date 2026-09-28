@@ -39,6 +39,7 @@ public final class DamageNumbers {
 
     private static final Map<Integer, Float> LAST = new HashMap<>();
     private static final List<Num> NUMS = new ArrayList<>();
+    private static Object letzteWelt = null;
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(DamageNumbers::tick);
@@ -50,6 +51,13 @@ public final class DamageNumbers {
             LAST.clear();
             synchronized (NUMS) { NUMS.clear(); }
             return;
+        }
+        // Neue Welt (Dimension, Server, Respawn): Entity-IDs gelten nicht mehr --
+        // sonst erschienen Zahlen aus dem Vergleich mit einem ganz anderen Wesen.
+        if (mc.level != letzteWelt) {
+            letzteWelt = mc.level;
+            LAST.clear();
+            synchronized (NUMS) { NUMS.clear(); }
         }
         double range = m.range.get();
         Map<Integer, Float> seen = new HashMap<>();

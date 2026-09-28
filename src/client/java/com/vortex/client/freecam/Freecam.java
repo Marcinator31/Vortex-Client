@@ -22,6 +22,7 @@ public final class Freecam {
 
     private static boolean active = false;
     private static double x, y, z;          // aktuelle Freecam-Position
+    private static Object freecamWelt = null, freecamSpieler = null;
     private static double velX, velY, velZ; // Geschwindigkeit (Bloecke pro Sekunde)
 
     // Die clientseitige Kamera-Entity (Anker fuers Chunk-Rendering, damit auch
@@ -171,6 +172,22 @@ public final class Freecam {
                 .END_CLIENT_TICK.register(mc -> {
             if (mc.player == null) return;
 
+            // Tod, Respawn oder Dimensionswechsel: die gesperrte Position und
+            // die Kamera-Entity gehoeren zur alten Welt -- vorher wurde der
+            // Spieler nach dem Respawn an die alte Stelle zurueckgezogen.
+            if (active) {
+                if (freecamWelt == null) { freecamWelt = mc.level; freecamSpieler = mc.player; }
+                if (mc.level != freecamWelt || mc.player != freecamSpieler || mc.player.isDeadOrDying()) {
+                    freecamWelt = null;
+                    freecamSpieler = null;
+                    disable();
+                    return;
+                }
+            } else {
+                freecamWelt = null;
+                freecamSpieler = null;
+            }
+
             if (active) {
                 // Erste Sperre: der FreecamMoveMixin faengt den Bewegungsvektor
                 // ab, BEVOR er angewendet wird. Zweite Sperre: die Tasten werden
@@ -262,12 +279,12 @@ public final class Freecam {
         boolean anyMove = false;
 
         if (inputAllowed) {
-            boolean fwd   = isDown(mc, org.lwjgl.glfw.GLFW.GLFW_KEY_W);
-            boolean back  = isDown(mc, org.lwjgl.glfw.GLFW.GLFW_KEY_S);
-            boolean left  = isDown(mc, org.lwjgl.glfw.GLFW.GLFW_KEY_A);
-            boolean right = isDown(mc, org.lwjgl.glfw.GLFW.GLFW_KEY_D);
-            up    = isDown(mc, org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE);
-            down  = isDown(mc, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT);
+            boolean fwd   = taste(mc, mc.options.keyUp, org.lwjgl.glfw.GLFW.GLFW_KEY_W);
+            boolean back  = taste(mc, mc.options.keyDown, org.lwjgl.glfw.GLFW.GLFW_KEY_S);
+            boolean left  = taste(mc, mc.options.keyLeft, org.lwjgl.glfw.GLFW.GLFW_KEY_A);
+            boolean right = taste(mc, mc.options.keyRight, org.lwjgl.glfw.GLFW.GLFW_KEY_D);
+            up    = taste(mc, mc.options.keyJump, org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE);
+            down  = taste(mc, mc.options.keyShift, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT);
 
             // Freecam-eigene Blickrichtung nutzen (nicht die des Spielers).
             double yawRad = Math.toRadians(yaw);
@@ -334,6 +351,22 @@ public final class Freecam {
 
     private static boolean isDown(Minecraft mc, int key) {
         return InputConstants.isKeyDown(mc.getWindow(), key);
+    }
+
+    /**
+     * Die Taste, die der Spieler in den Steuerungs-Optionen belegt hat (AZERTY,
+     * ESDF ...), nicht fest W/A/S/D. Direkt am Fenster abgefragt, weil die
+     * Freecam die Tastenbelegungen des Spielers absichtlich neutralisiert.
+     */
+    private static boolean taste(Minecraft mc, net.minecraft.client.KeyMapping km, int fallback) {
+        try {
+            InputConstants.Key key = InputConstants.getKey(km.saveString());
+            if (key.getType() == InputConstants.Type.KEYSYM) return isDown(mc, key.getValue());
+            if (key.getType() == InputConstants.Type.MOUSE) {
+                return org.lwjgl.glfw.GLFW.glfwGetMouseButton(mc.getWindow().handle(), key.getValue()) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+            }
+        } catch (Throwable ignored) { }
+        return isDown(mc, fallback);
     }
 
     /** Liefert das Freecam-Modul (oder null). */

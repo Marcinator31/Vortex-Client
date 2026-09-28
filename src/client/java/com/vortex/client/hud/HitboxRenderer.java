@@ -125,9 +125,11 @@ public final class HitboxRenderer {
                     // wie die Vanilla-Hitbox mit F3+B.
                     EspRender.submitBox(collector, matrices, box, cam, color, lineWidth, false);
                 }
-            } catch (Throwable ignored) {
+            } catch (Throwable pvpErr) {
                 // Falls eine Render-Methode in dieser Version doch abweicht:
-                // Hitboxen still ausfallen lassen, NICHT das Spiel crashen.
+                // Hitboxen ausfallen lassen, NICHT das Spiel crashen -- aber im
+                // Log und in der Debug-Anzeige vermerken statt still zu schlucken.
+                com.vortex.client.core.Errors.report("HitboxRenderer", pvpErr);
             } finally {
                 com.vortex.client.core.Profiler.record("Hitboxes",
                         System.nanoTime() - pvpT0);

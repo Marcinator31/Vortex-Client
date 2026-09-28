@@ -74,6 +74,13 @@ public class PotatoModeModule extends Module {
         if (o == null) return;
 
         // Aktuelle Werte einmalig sichern (nur wenn noch nicht gesichert).
+        if (!saved && ladeAusDatei(o)) {
+            // Letzte Sitzung endete, ohne die Werte zurueckzusetzen (Absturz,
+            // Task-Manager): options.txt enthaelt dann die Potato-Werte. Die
+            // aktuellen Werte waeren die falschen Originale -- also die aus
+            // der Datei nehmen.
+            saved = true;
+        }
         if (!saved) {
             oViewDistance  = get(o.renderDistance());
             oMaxFps        = get(o.framerateLimit());
@@ -87,6 +94,7 @@ public class PotatoModeModule extends Module {
             oClouds        = get(o.cloudStatus());
             sichereExtras(o);
             saved = true;
+            schreibeDatei();
         }
 
         applyPotato(o);
@@ -121,8 +129,101 @@ public class PotatoModeModule extends Module {
             set(o.cloudStatus(), oClouds);
             stelleExtrasHer();
             saved = false;
+            try { java.nio.file.Files.deleteIfExists(datei()); } catch (Throwable ignored) { }
             // Welt neu laden, damit die wiederhergestellte Render-Distanz wirkt.
             reloadWorld();
+        }
+    }
+
+    // --- Originale auf der Platte --------------------------------------------
+    //
+    // Nur im Speicher gehalten gingen sie bei einem Absturz verloren: beim
+    // naechsten Start las das Modul die Potato-Werte als "Originale" -- und
+    // man kam aus der Kartoffelgrafik nie wieder heraus.
+
+    private static java.nio.file.Path datei() {
+        return com.vortex.client.core.ConfigManager.dataDir().resolve("potato_originals.txt");
+    }
+
+    private java.util.Map<String, Object> hauptWerte() {
+        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("renderDistance", oViewDistance); m.put("framerateLimit", oMaxFps);
+        m.put("mipmapLevels", oMipmap); m.put("entityShadows", oEntityShadows);
+        m.put("bobView", oBobView); m.put("ambientOcclusion", oAo);
+        m.put("entityDistanceScaling", oEntityDist); m.put("biomeBlendRadius", oBiomeBlend);
+        m.put("simulationDistance", oSimDistance); m.put("cloudStatus", oClouds);
+        return m;
+    }
+
+    private static String kodiere(Object v) {
+        if (v instanceof Integer i) return "I\t" + i;
+        if (v instanceof Boolean b) return "B\t" + b;
+        if (v instanceof Double d) return "D\t" + d;
+        if (v instanceof Enum<?> e) return "E:" + e.getDeclaringClass().getName() + "\t" + e.name();
+        return null;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object dekodiere(String typ, String wert) {
+        try {
+            switch (typ) {
+                case "I": return Integer.valueOf(wert);
+                case "B": return Boolean.valueOf(wert);
+                case "D": return Double.valueOf(wert);
+                default:
+                    if (typ.startsWith("E:")) return Enum.valueOf((Class) Class.forName(typ.substring(2)), wert);
+                    return null;
+            }
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private void schreibeDatei() {
+        try {
+            java.util.List<String> zeilen = new java.util.ArrayList<>();
+            for (var e : hauptWerte().entrySet()) {
+                String k = kodiere(e.getValue());
+                if (k != null) zeilen.add("main\t" + e.getKey() + "\t" + k);
+            }
+            for (var e : extraAlt.entrySet()) {
+                String k = kodiere(e.getValue());
+                if (k != null) zeilen.add("extra\t" + e.getKey() + "\t" + k);
+            }
+            java.nio.file.Files.createDirectories(datei().getParent());
+            java.nio.file.Files.write(datei(), zeilen, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Throwable t) {
+            com.vortex.client.core.Errors.report("PotatoMode.save", t);
+        }
+    }
+
+    private boolean ladeAusDatei(Options o) {
+        try {
+            if (!java.nio.file.Files.exists(datei())) return false;
+            java.util.Map<String, Object> haupt = new java.util.HashMap<>();
+            extraAlt.clear();
+            for (String z : java.nio.file.Files.readAllLines(datei(), java.nio.charset.StandardCharsets.UTF_8)) {
+                String[] t = z.split("\t", 4);
+                if (t.length < 4) continue;
+                Object v = dekodiere(t[2], t[3]);
+                if (v == null) continue;
+                if (t[0].equals("main")) haupt.put(t[1], v); else extraAlt.put(t[1], v);
+            }
+            // Fehlt etwas, den aktuellen Wert nehmen (besser als null).
+            oViewDistance  = haupt.getOrDefault("renderDistance", get(o.renderDistance()));
+            oMaxFps        = haupt.getOrDefault("framerateLimit", get(o.framerateLimit()));
+            oMipmap        = haupt.getOrDefault("mipmapLevels", get(o.mipmapLevels()));
+            oEntityShadows = haupt.getOrDefault("entityShadows", get(o.entityShadows()));
+            oBobView       = haupt.getOrDefault("bobView", get(o.bobView()));
+            oAo            = haupt.getOrDefault("ambientOcclusion", get(o.ambientOcclusion()));
+            oEntityDist    = haupt.getOrDefault("entityDistanceScaling", get(o.entityDistanceScaling()));
+            oBiomeBlend    = haupt.getOrDefault("biomeBlendRadius", get(o.biomeBlendRadius()));
+            oSimDistance   = haupt.getOrDefault("simulationDistance", get(o.simulationDistance()));
+            oClouds        = haupt.getOrDefault("cloudStatus", get(o.cloudStatus()));
+            return true;
+        } catch (Throwable t) {
+            com.vortex.client.core.Errors.report("PotatoMode.load", t);
+            return false;
         }
     }
 

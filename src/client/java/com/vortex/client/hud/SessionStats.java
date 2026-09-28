@@ -84,7 +84,7 @@ public final class SessionStats {
         int n = 0;
         try {
             var inv = self.getInventory();
-            for (int i = 0; i < inv.getContainerSize(); i++) {
+            for (int i = 0; i < net.minecraft.world.entity.player.Inventory.INVENTORY_SIZE; i++) {  // nur Haupt-Inventar; Nebenhand unten extra (sonst doppelt)
                 var stack = inv.getItem(i);
                 if (stack != null && !stack.isEmpty()
                         && stack.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {

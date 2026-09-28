@@ -60,7 +60,7 @@ public final class ItemCounterRenderer {
         if (client.player == null || counter.items.isEmpty()) return 0;
         int total = 0;
         var inv = client.player.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) {
+        for (int i = 0; i < net.minecraft.world.entity.player.Inventory.INVENTORY_SIZE; i++) {  // nur Haupt-Inventar; Nebenhand unten extra (sonst doppelt)
             ItemStack stack = inv.getItem(i);
             if (stack == null || stack.isEmpty()) continue;
             Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());

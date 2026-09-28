@@ -135,9 +135,15 @@ public final class MaceHud {
 
     /** Ab welcher Fallhoehe reicht ein Schlag fuer den Kill? -1 = nicht bis 100 m. */
     private static double killHoehe(LocalPlayer p, ItemStack mace, LivingEntity z, float leben) {
-        for (double f = 1.6; f <= 100; f += 0.5) {
-            if (schaden(p, mace, z, f) >= leben) return f;
+        // Schaden waechst mit der Fallhoehe -> binaere Suche (~10 Rechnungen
+        // statt bis zu 200 in jedem Bild), dabei auf 0,1 m genau.
+        double lo = 1.6, hi = 100;
+        if (schaden(p, mace, z, hi) < leben) return -1;
+        if (schaden(p, mace, z, lo) >= leben) return lo;
+        while (hi - lo > 0.1) {
+            double mid = (lo + hi) / 2;
+            if (schaden(p, mace, z, mid) >= leben) hi = mid; else lo = mid;
         }
-        return -1;
+        return hi;
     }
 }

@@ -27,6 +27,8 @@
     "GameJoinMixin",
     "GameModeHookMixin",
     "GammaMixin",
+    "OptionsSaveMixin",
+    "ZoomMouseMixin",
     "HeldItemRendererMixin",
     "HitArmorMixin",
     "HudCameraPlayerMixin",

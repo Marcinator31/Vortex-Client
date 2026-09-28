@@ -46,6 +46,10 @@ import net.minecraft.client.multiplayer.ServerData;
  */
 public final class Social {
 
+    /** Ein gemeinsamer Client: jeder neue startet eigene Threads, bei jedem Neuverbinden einer war Verschwendung. */
+    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+
+
     /** Fest eingebaute Adresse, falls das Spiel ohne Launcher gestartet wird. Leer = aus. */
     public static final String DEFAULT_URL = "";
 
@@ -131,7 +135,7 @@ public final class Social {
         final String name = mc.getUser().getName();
         final String uuid = mc.getUser().getProfileId().toString().replace("-", "");
         final String access = mc.getUser().getAccessToken();
-        HttpClient.newHttpClient().newWebSocketBuilder()
+        HTTP.newWebSocketBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .buildAsync(URI.create(url()), new Listener(name, uuid, access))
                 .whenComplete((sock, err) -> {
@@ -248,7 +252,7 @@ public final class Social {
             body.addProperty("accessToken", access);
             body.addProperty("selectedProfile", uuid);
             body.addProperty("serverId", serverId);
-            HttpResponse<String> r = HttpClient.newHttpClient().send(
+            HttpResponse<String> r = HTTP.send(
                     HttpRequest.newBuilder(URI.create("https://sessionserver.mojang.com/session/minecraft/join"))
                             .timeout(Duration.ofSeconds(15))
                             .header("Content-Type", "application/json")

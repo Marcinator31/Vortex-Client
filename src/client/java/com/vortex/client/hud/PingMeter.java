@@ -62,8 +62,11 @@ public final class PingMeter {
      * actually happens while the module wants it.
      */
     public static synchronized void start() {
-        if (worker != null && worker.isAlive()) return;
+        // running ZUERST setzen: nach stop() schlaeft der alte Faden evtl. noch
+        // und wuerde sonst nach dem Aufwachen enden -- ohne dass ein neuer
+        // startet (Ping blieb dann bis zum Neustart bei "--").
         running = true;
+        if (worker != null && worker.isAlive()) return;
         worker = new Thread(PingMeter::loop, "vortexclient-ping");
         worker.setDaemon(true);
         worker.start();

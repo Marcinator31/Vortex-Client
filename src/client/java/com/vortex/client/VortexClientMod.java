@@ -207,8 +207,15 @@ public class VortexClientMod implements ClientModInitializer {
             // neuen Eingabe-Extraktionsschritt. Die direkte Abfrage stellt sicher,
             // dass die Standardtaste rechte Umschalttaste dennoch im ersten
             // Client-Tick nach dem Druck sicher erkannt wird.
-            boolean rightShiftDown = InputConstants.isKeyDown(
-                    client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+            // Die in den Steuerungs-Optionen belegte Taste -- vorher war hier
+            // Rechts-Shift fest eingetragen, eine andere Belegung wirkte nur
+            // zusaetzlich und Rechts-Shift liess sich nicht abschalten.
+            boolean rightShiftDown = false;
+            try {
+                var gk = KeyMappingHelper.getBoundKeyOf(openClickGuiKey);
+                rightShiftDown = gk.getType() == InputConstants.Type.KEYSYM && gk.getValue() > 0
+                        && InputConstants.isKeyDown(client.getWindow(), gk.getValue());
+            } catch (Throwable ignored) { }
             if (rightShiftDown && !clickGuiKeyWasDown) {
                 openClickGui = true;
             }
@@ -218,8 +225,7 @@ public class VortexClientMod implements ClientModInitializer {
                 // Erst der Startbildschirm, von dort aus zu den Mods --
                 // wie bei grossen PvP-Clients.
                 client.gui.setScreen(new com.vortex.client.gui.HomeScreen());
-                System.out.println("[vortexclient] ClickGUI opened via Right Shift.");
-            }
+                            }
 
             while (openHudEditorKey.consumeClick()) {
                 client.gui.setScreen(new com.vortex.client.gui.HudEditorScreen());

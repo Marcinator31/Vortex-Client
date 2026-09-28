@@ -451,11 +451,15 @@ public class CommunityScreen extends Screen {
                 String content = com.vortex.client.community.CommunityApi.get(
                         SITE + "/api/presets/" + e.shareCode() + "/download");
 
-                Macro m = MacroManager.importFrom(content);
-                status = (m == null)
-                        ? "That does not read as a macro."
-                        : "Imported: " + m.name + " -- no key bound yet.";
-                com.vortex.client.core.ConfigManager.save();
+                // Makroliste und Speichern gehoeren auf den Spielfaden (der
+                // Makro-Manager liest die Liste jeden Tick).
+                Minecraft.getInstance().execute(() -> {
+                    Macro m = MacroManager.importFrom(content);
+                    status = (m == null)
+                            ? "That does not read as a macro."
+                            : "Imported: " + m.name + " -- no key bound yet.";
+                    com.vortex.client.core.ConfigManager.save();
+                });
             } catch (Throwable pvpErr) {
                 status = "Import failed.";
                 com.vortex.client.core.Errors.report("Community.import", pvpErr);
