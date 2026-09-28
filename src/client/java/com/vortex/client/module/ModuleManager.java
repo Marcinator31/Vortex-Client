@@ -117,6 +117,13 @@ public final class ModuleManager {
         // --- 4.4.0 ---
         register(new com.vortex.client.module.modules.SpeedometerModule());
         register(new com.vortex.client.module.modules.MaceHudModule());   // 4.7.0
+        // --- 4.11.0 ---
+        register(new com.vortex.client.module.modules.LightLevelModule());
+        register(new com.vortex.client.module.modules.ChatFilterModule());
+        register(new com.vortex.client.module.modules.SoundControlModule());
+        register(new com.vortex.client.module.modules.BetterTooltipsModule());
+        register(new com.vortex.client.module.modules.ExplosionTimerModule());
+        register(new com.vortex.client.module.modules.AutoGGModule());
         // --- 4.9.0 ---
         register(new com.vortex.client.module.modules.CooldownHudModule());
         register(new com.vortex.client.module.modules.InventoryHudModule());

@@ -44,6 +44,7 @@ public final class CombatFx {
 
     /** Aus GameModeHookMixin: Moment des Schlags. */
     public static void schlag(Entity target) {
+        try { AutoGG.schlag(target); } catch (Throwable e) { com.vortex.client.core.Errors.report("AutoGG.hit", e); }
         if (!(target instanceof LivingEntity le)) return;
         Hit h = new Hit();
         h.at = System.currentTimeMillis();

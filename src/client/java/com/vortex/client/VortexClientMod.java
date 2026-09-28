@@ -116,6 +116,12 @@ public class VortexClientMod implements ClientModInitializer {
         try { com.vortex.client.beta.BetaTest.register(); } catch (Throwable pvpErr) { com.vortex.client.core.Errors.report("BetaTest", pvpErr); }
         com.vortex.client.command.ClientCommands.register();
         com.vortex.client.command.FriendCommands.register();
+        // 4.11.0 -- jedes einzeln, ein Fehler legt nicht die anderen lahm
+        try { com.vortex.client.hud.LightOverlay.register(); } catch (Throwable e) { com.vortex.client.core.Errors.report("LightOverlay", e); }
+        try { com.vortex.client.hud.ChatFilter.register(); } catch (Throwable e) { com.vortex.client.core.Errors.report("ChatFilter", e); }
+        try { com.vortex.client.hud.BetterTooltips.register(); } catch (Throwable e) { com.vortex.client.core.Errors.report("BetterTooltips", e); }
+        try { com.vortex.client.hud.AutoGG.register(); } catch (Throwable e) { com.vortex.client.core.Errors.report("AutoGG", e); }
+        try { com.vortex.client.command.ListCommands.register(); } catch (Throwable e) { com.vortex.client.core.Errors.report("ListCommands", e); }
 
         // Beim Beenden des Spiels alle Einstellungen speichern.
         // Sicherheit: Wenn der Spieler die Welt verlaesst / disconnected, die

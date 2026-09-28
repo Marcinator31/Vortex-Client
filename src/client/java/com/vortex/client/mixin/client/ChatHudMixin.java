@@ -34,6 +34,8 @@ public abstract class ChatHudMixin {
             var mod = com.vortex.client.module.ModuleManager.INSTANCE.get(
                     com.vortex.client.module.modules.ChatModule.class);
             if (message == null) return message;
+            // Chat Filter: gleiche Zeilen zusammenfassen, Namen/Woerter hervorheben
+            message = com.vortex.client.hud.ChatFilter.verarbeiten((ChatComponent) (Object) this, message);
             if (mod == null || !mod.isEnabled()) return message;
 
             if (!mod.timestamps.get()) {

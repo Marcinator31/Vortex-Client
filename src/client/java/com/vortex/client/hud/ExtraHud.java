@@ -73,6 +73,9 @@ public final class ExtraHud {
         InventoryHud.render(ctx, mc);
         DamageNumbers.render(ctx, mc);
         PearlTracker.render(ctx, mc);
+        // 4.11.0: jedes fuer sich, damit ein Fehler nicht die anderen mitnimmt
+        try { ExplosionTimer.render(ctx, mc); } catch (Throwable e) { com.vortex.client.core.Errors.report("ExplosionTimer", e); }
+        try { LightOverlay.render(ctx, mc); } catch (Throwable e) { com.vortex.client.core.Errors.report("LightOverlay.hud", e); }
     }
 
     // ----------------------------------------------------------------------

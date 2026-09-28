@@ -54,6 +54,8 @@
     "OutlineHideMixin",
     "ParticleManagerMixin",
     "SkinOverrideMixin",
+    "SoundVolumeMixin",
+    "TooltipSlotAccessor",
     "SlotLockDropMixin",
     "StreamerTextMixin",
     "ZoomFovMixin",

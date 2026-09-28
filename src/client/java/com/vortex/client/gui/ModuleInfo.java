@@ -77,6 +77,12 @@ public final class ModuleInfo {
         put("Chunk Borders", "Shows the edges of the chunk you are standing in.");
         put("Cooldown HUD", "Cooldowns as bars with seconds: ender pearl, wind charge, chorus fruit, goat horn, your shield after an axe hit and everything else with a cooldown.");
         put("Inventory HUD", "Your inventory on screen, so you see totems, pearls and potions without pressing E.");
+        put("Light Level Overlay", "Marks spots where monsters can spawn: red = any time, yellow = only at night. Numbers style shows the block light.");
+        put("Chat Filter", "Highlights your name, friends and your own words (with a ping when someone mentions you), hides filtered words and stacks repeated lines as (x3). Words: /vchat highlight add <word>, /vchat filter add <word>.");
+        put("Sound Control", "Volume for single sounds in percent, 0 mutes. Anything not on a slider: /vsound recent, then /vsound set <id> <percent>.");
+        put("Better Tooltips", "Compact enchantments, food and saturation values, durability as a number and a map preview when you point at a map.");
+        put("Explosion Timer", "Countdown above lit TNT, TNT minecarts and hissing creepers. The creeper time is an estimate.");
+        put("Auto GG", "Says gg after a kill or at the end of a round. Own message per server: /autogg set <text> ({name} = opponent), /autogg default <text>.");
         put("Damage Numbers", "Floating damage numbers above hit players and mobs. Calculated from the health the server sends -- servers that hide health show wrong or no numbers.");
         put("Hit & Kill Effects", "Your own sound on every confirmed hit, plus a sound and an effect (lightning, totem, flames, hearts, blood ...) when you kill someone. Only you see and hear it.");
         put("Pearl Tracker", "Shows where other players' ender pearls will land: line, marker and a note with name and distance. Some servers forbid this in their rules.");
