@@ -622,15 +622,6 @@ public final class ConfigManager {
             lines.add("__gui__\tspalten\t"
                     + com.vortex.client.gui.GuiState.serializeSpalten());
 
-            // Farbschema mitspeichern (Pseudo-Modul "__theme__"), damit die
-            // gewaehlten Farben einen Neustart ueberleben.
-            for (com.vortex.client.core.setting.ColorSetting c
-                    : com.vortex.client.gui.Theme.INSTANCE.all()) {
-                lines.add("__theme__\t" + c.getName() + "\t" + c.serialize());
-            }
-            // Deckkraft ist eine Zahl, keine Farbe -- eigene Zeile.
-            lines.add("__theme__\t" + com.vortex.client.gui.Theme.INSTANCE.opacity.getName()
-                    + "\t" + com.vortex.client.gui.Theme.INSTANCE.opacity.serialize());
 
             // Fremde Zeilen unveraendert zurueckschreiben.
             for (String fremd : FREMDE_ZEILEN) {
@@ -774,8 +765,11 @@ public final class ConfigManager {
                     continue;
                 }
 
-                // Sonderfall: Farbschema.
-                if (modName.equals("__theme__")) {
+                // Sonderfall: Farbschema. Seit 4.9.8 gibt es keinen Theme-Editor
+                // mehr -- gespeicherte Farben werden nicht mehr geladen, damit
+                // niemand auf alten, nicht mehr aenderbaren Farben festsitzt.
+                if (modName.equals("__theme__")) continue;
+                if (modName.equals("__theme_alt__")) {
                     if (settingName.equals(
                             com.vortex.client.gui.Theme.INSTANCE.opacity.getName())) {
                         com.vortex.client.gui.Theme.INSTANCE.opacity.deserialize(value);

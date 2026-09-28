@@ -463,15 +463,6 @@ public class ClickGui extends Screen {
         ctx.text(this.font, Component.literal("Preset"),
                 x + PAD + 70, y + 6, fade(0xFF74747F, openAnim), false);
 
-        // Knopf zum Design-Menue (Farben der Oberflaeche).
-        String design = "Theme";
-        int dw = this.font.width(design) + 14;
-        int dx = px + 6;
-        boolean dHov = inRect(mx, my, dx, y + 17, dw, 13);
-        roundRect(ctx, dx, y + 17, dw, 13, fade(dHov ? mix(C_INNER, accent, 0.4f) : C_INNER, openAnim));
-        ctx.text(this.font, Component.literal(design),
-                dx + 7, y + 20, fade(dHov ? C_TEXT : 0xFF9A9AA6, openAnim), false);
-        hits.add(new Hit(dx, y + 17, dw, 13, Act.THEME, null, null, null));
 
         if (search != null) {
             int sx = search.getX() - 16;
@@ -577,8 +568,7 @@ public class ClickGui extends Screen {
         int bx = x + PAD;
         Object[][] bereiche = {
             {"Waypoints", Section.WAYPOINTS}, {"Macros", Section.MACROS},
-            {"Skins", Section.SKINS}, {"Keys", Section.KEYS},
-            {"Theme", Section.DESIGN}
+            {"Skins", Section.SKINS}, {"Keys", Section.KEYS}
         };
         for (Object[] b : bereiche) {
             String label = (String) b[0];
@@ -979,13 +969,6 @@ public class ClickGui extends Screen {
                         mx, my, accent, t, Act.SECTION, "openSkins");
                 break;
             }
-            case DESIGN: {
-                cy = seitenKopf(ctx, cx, cy, "Theme",
-                        "Customise the interface colours", t);
-                cy = aktionsZeile(ctx, cx, cy, cw, "Open theme editor",
-                        mx, my, accent, t, Act.THEME, null);
-                break;
-            }
             default:
                 break;
         }
@@ -1284,8 +1267,7 @@ public class ClickGui extends Screen {
                     if (favView && !GuiState.hasFavorites()) favView = false;
                     break;
                 case THEME:
-                    Minecraft.getInstance().gui.setScreen(new ThemeScreen(this));
-                    break;
+                    break;   // Theme-Editor entfernt (4.9.8)
                 case PRESET: {
                     // Wechselt das Preset: sichert den aktuellen Stand und laedt
                     // den anderen Satz. Aufgeklappte Karten schliessen, damit die
