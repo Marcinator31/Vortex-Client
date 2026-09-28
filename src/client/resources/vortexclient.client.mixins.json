@@ -28,6 +28,8 @@
     "GameModeHookMixin",
     "GammaMixin",
     "FreecamCullMixin",
+    "FreecamOverlayMixin",
+    "FreecamScreenEffectMixin",
     "OptionsSaveMixin",
     "ZoomMouseMixin",
     "HeldItemRendererMixin",

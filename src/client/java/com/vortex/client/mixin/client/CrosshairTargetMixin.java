@@ -41,12 +41,6 @@ public abstract class CrosshairTargetMixin {
         Minecraft client = Minecraft.getInstance();
         LocalPlayer player = client.player;
         if (player == null) return;
-        // Ist der Spieler selbst die Kamera-Entity (Normalfall seit 4.9.4),
-        // rechnet Minecraft das Ziel schon vom Spieler aus -- inklusive
-        // Wesen. Der Ersatz unten kannte nur Bloecke: man schlug durch einen
-        // Gegner hindurch auf den Block dahinter. Das sieht kein Server so
-        // von einem normalen Client.
-        if (client.getCameraEntity() == player) return;
 
         try {
             // Reichweite des Spielers (Survival ~4.5). Block-Raycast vom echten

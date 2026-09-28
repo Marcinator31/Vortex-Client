@@ -84,10 +84,7 @@ public final class Freecam {
         pitch += (float) (cursorDeltaY * 0.15);
         if (pitch > 90f) pitch = 90f;
         if (pitch < -90f) pitch = -90f;
-        // KEIN "yaw %= 360": Minecraft laesst den Winkel frei weiterlaufen.
-        // Mit "Rotate Player" wurde der Sprung von 359,9 auf 0 sonst an den
-        // Server geschickt -- genau diesen 360-Grad-Sprung suchen Anti-Cheats
-        // (z. B. Grim "AimModulo360").
+        yaw %= 360f;
     }
 
     /** Schaltet die Freecam an/aus. Beim Anschalten startet sie an der Spielerposition. */
@@ -132,12 +129,7 @@ public final class Freecam {
         // Seit 4.6.1 NUR noch fuer "Render Anchor". "Show Player" braucht
         // keine eigene Kamera-Entity mehr (CameraMixin: detached) -- der
         // Spieler bleibt Kamera und schickt weiter seine Pakete.
-        // Seit 4.9.4 NIE mehr: war die eigene Kamera-Entity aktiv, galt der
-        // Spieler nicht mehr als Kamera -- und Minecraft schickt dann KEINE
-        // Bewegungspakete mehr (LocalPlayer.isControlledCamera). Ein Spieler,
-        // der verstummt, ist fuer jeden Anti-Cheat auffaellig. Der Grund fuer
-        // die Entity (Rendern unter der Erde) ist durch FreecamCullMixin weg.
-        boolean brauchtKamera = false;
+        boolean brauchtKamera = schalter("Render Anchor", false);
         if (!brauchtKamera) {
             cameraEntity = null;
             return;
@@ -194,18 +186,19 @@ public final class Freecam {
         }
     }
 
-    /**
-     * Den Spieler waehrend der Freecam festhalten?
-     *
-     * STANDARD NEIN. Festhalten heisst: Rueckstoss, Wasserstroemung, Eis,
-     * Kolben usw. werden verschluckt, notfalls wird zurueckgesetzt. Genau das
-     * pruefen Anti-Cheats wie Grim: sie rechnen die Bewegung nach -- ein
-     * Spieler, der Rueckstoss bekommt und stehen bleibt, ist "Anti-Knockback".
-     * Ohne Festhalten verhaelt sich der Koerper exakt wie bei jemandem, der
-     * einfach keine Taste drueckt.
-     */
-    public static boolean halteFest() {
-        return active && schalter("Hold Position", false);
+    /** Freecam: Verdeckungsberechnung aus (FreecamCullMixin). */
+    public static boolean ohneCulling() {
+        return active && schalter("No Culling", true);
+    }
+
+    /** Freecam: kein Nebel (MixinFogRenderer). */
+    public static boolean ohneNebel() {
+        return active && schalter("No Fog", true);
+    }
+
+    /** Freecam: keine Bildschirm-Overlays des Spielers (Kuerbis, Feuer, Wasser, Block im Kopf ...). */
+    public static boolean ohneOverlays() {
+        return active && schalter("Hide Overlays", true);
     }
 
     /** Fuer die Eingabe-Mixins: soll der Spieler waehrend der Freecam schleichen? */
@@ -290,11 +283,6 @@ public final class Freecam {
                 freecamSpieler = null;
             }
 
-            if (active && !halteFest()) {
-                // Der Spieler muss die Kamera bleiben (sonst sendet er nichts).
-                if (mc.getCameraEntity() != mc.player) mc.setCameraEntity(mc.player);
-                return;
-            }
             if (active) {
                 // Erste Sperre: der FreecamMoveMixin faengt den Bewegungsvektor
                 // ab, BEVOR er angewendet wird. Zweite Sperre: die Tasten werden
@@ -351,7 +339,7 @@ public final class Freecam {
         //
         // Nur bei ECHTER Aenderung handeln: sonst wuerde die Entity in jedem
         // Bild neu erzeugt.
-        boolean brauchtJetzt = false;   // Render Anchor abgeschafft (siehe spawnCameraEntity)
+        boolean brauchtJetzt = schalter("Render Anchor", false);
         if (brauchtJetzt && cameraEntity == null) {
             spawnCameraEntity(mc);
         } else if (!brauchtJetzt && cameraEntity != null) {

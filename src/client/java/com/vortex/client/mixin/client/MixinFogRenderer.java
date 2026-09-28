@@ -59,7 +59,11 @@ public class MixinFogRenderer {
     private static void klaeren(FogData data, FogType fogType) {
         if (data == null || fogType == null) return;
         boolean remove;
-        if (fogType == FogType.LAVA) {
+        // Freecam: Nebel (auch Blindheit/Dunkelheit des Spielers, Nether-Dunst,
+        // Wasser) nimmt der Kamera sonst die halbe Sicht.
+        if (com.vortex.client.freecam.Freecam.ohneNebel()) {
+            remove = true;
+        } else if (fogType == FogType.LAVA) {
             remove = isEnabled(ClearLavaModule.class);
         } else if (fogType == FogType.WATER) {
             remove = isEnabled(ClearWaterModule.class);
