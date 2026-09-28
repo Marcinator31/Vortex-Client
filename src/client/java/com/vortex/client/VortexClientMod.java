@@ -113,6 +113,7 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.waypoint.WaypointActions.register();
         com.vortex.client.gui.RestartButton.register();
         com.vortex.client.freecam.Freecam.registerSafety();
+        try { com.vortex.client.beta.BetaTest.register(); } catch (Throwable pvpErr) { com.vortex.client.core.Errors.report("BetaTest", pvpErr); }
         com.vortex.client.command.ClientCommands.register();
         com.vortex.client.command.FriendCommands.register();
 

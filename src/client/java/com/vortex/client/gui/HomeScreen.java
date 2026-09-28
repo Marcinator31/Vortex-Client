@@ -377,7 +377,10 @@ public class HomeScreen extends Screen {
         int rcW = Math.max(150, Math.min(190, W / 4 + 10));
         int rcX = x0 + W - 12 - rcW;
         int tx0 = x0 + 12, tW = rcX - 10 - tx0;
-        int gap = 7, cols = 3, rows = 4;
+        // Beta-Test: eigene Zeile, solange der Launcher eine Checkliste mitgibt.
+        int[] beta = com.vortex.client.beta.BetaTest.aktiv() ? com.vortex.client.beta.BetaTest.fortschritt() : new int[]{0, 0, 0};
+        boolean mitBeta = beta[1] > 0;
+        int gap = 7, cols = 3, rows = mitBeta ? 5 : 4;
         int tileW = (tW - (cols - 1) * gap) / cols;
         int tileH = (bodyBottom - bodyTop - (rows - 1) * gap) / rows;
 
@@ -406,6 +409,13 @@ public class HomeScreen extends Screen {
             {"bots", "Bots", bots > 0 ? bots + " bots ready" : "Needs the Plus Addon", BOTS, 1, (Runnable) () -> m0.gui.setScreen(new BotScreen(this))},
             {"theme", "Theme", "Colours of the client", -1, 1, (Runnable) () -> m0.gui.setScreen(new ThemeScreen(this))},
         };
+        if (mitBeta) {
+            Object[][] mehr = java.util.Arrays.copyOf(kacheln, kacheln.length + 1);
+            mehr[kacheln.length] = new Object[]{"beta", "Beta test", beta[0] + " of " + beta[1] + " checked"
+                    + (beta[2] > 0 ? "  \u00b7  " + beta[2] + " bug(s) open" : "  \u00b7  check what works, report what doesn't"),
+                    -2, 3, (Runnable) () -> m0.gui.setScreen(new com.vortex.client.beta.BetaScreen(this))};
+            kacheln = mehr;
+        }
         int col = 0, row = 0, idx = 0;
         for (Object[] k : kacheln) {
             int span = (Integer) k[4];
@@ -432,6 +442,15 @@ public class HomeScreen extends Screen {
             boolean flach = tileH < 46;
             int ix = x + 10, iy = yy + lift + (flach ? (tileH - 14) / 2 : 10);
             if (sym >= 0) symbol2(ctx, SYMBOLE[sym], ix, iy, icoCol);
+            else if (sym == -2) {
+                // Haken-Symbol fuer den Beta-Test
+                ctx.fill(ix, iy, ix + 14, iy + 14, VortexStyle.fade(0x404ADE80, al));
+                ctx.fill(ix + 3, iy + 7, ix + 5, iy + 9, icoCol);
+                ctx.fill(ix + 5, iy + 9, ix + 7, iy + 11, icoCol);
+                ctx.fill(ix + 7, iy + 7, ix + 9, iy + 9, icoCol);
+                ctx.fill(ix + 9, iy + 5, ix + 11, iy + 7, icoCol);
+                ctx.fill(ix + 11, iy + 3, ix + 13, iy + 5, icoCol);
+            }
             else palette(ctx, ix, iy, al);
             String titel = (String) k[1], unter = (String) k[2];
             if (flach) {
