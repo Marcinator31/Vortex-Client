@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # ganze Historie + Tags: "Was ist neu" seit der letzten Version
 
       # JDK 25 -- Minecraft 26.x requires Java 25.
       # build.gradle setzt VERSION_25; mit JDK 21 bricht der Compiler mit
@@ -96,21 +98,29 @@ jobs:
           echo "Jar: $JAR  ->  Release $TAG"
           # "Was ist neu" fuer die Spieler: die Commit-Nachrichten dieses Pushs
           # (ohne technische Zeilen). Der Launcher zeigt sie nach dem Update an.
+          export TAG
           python3 - > "$RUNNER_TEMP/notes.md" <<'PY'
           import json, os, re, subprocess
           try:
               commits = json.loads(os.environ.get("COMMITS") or "null") or []
           except Exception:
               commits = []
-          msgs = [c.get("message", "") for c in commits] or [
-              subprocess.run(["git", "log", "-1", "--pretty=%B"], capture_output=True, text=True).stdout]
+          # Alle Commits seit der letzten ANDEREN Version -- so gehen die
+          # Neuerungen nicht verloren, wenn dieselbe Version nachgebaut wird.
+          tag = os.environ.get("TAG", "")
+          git = lambda *a: subprocess.run(["git", *a], capture_output=True, text=True).stdout
+          prev = [t for t in git("tag", "--merged", "HEAD", "--sort=-creatordate").split() if t.startswith("v") and t != tag]
+          msgs = []
+          if prev:
+              msgs = [m for m in git("log", f"{prev[0]}..HEAD", "--pretty=%B%x00").split("\x00") if m.strip()]
+          msgs = msgs or [c.get("message", "") for c in commits] or [git("log", "-1", "--pretty=%B")]
           lines = []
           for m in msgs:
               for l in m.splitlines():
                   l = l.strip()
                   if not l or "claude.ai/code" in l:
                       continue
-                  if re.match(r"(?i)^(co-authored-by|claude-session|signed-off-by|add files via upload|merge )", l):
+                  if re.match(r"(?i)^(co-authored-by|claude-session|signed-off-by|add files via upload|merge |ci:)", l) or "[skip ci]" in l:
                       continue
                   lines.append(l if l.startswith("-") else "- " + l)
           print("\n".join(dict.fromkeys(lines)) or "- Verbesserungen und Fehlerbehebungen")
