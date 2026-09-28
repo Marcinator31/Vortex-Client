@@ -64,7 +64,7 @@ jobs:
               exit 0
             fi
             # Compiler-Fehler als Anmerkungen (sichtbar ohne das ganze Log)
-            grep -E '^/.*\.java:[0-9]+: error: ' build.log | head -20 | sed -E 's#^/home/runner/work/[^/]+/[^/]+/##; s#^([^:]+):([0-9]+): error: (.*)$#::error file=\1,line=\2::\3#' || true
+            grep -A3 -E '^/.*\.java:[0-9]+: error: ' build.log | head -60 | sed 's/^/::error::/' || true
             grep -A6 'What went wrong' build.log | head -14 | sed 's/^/::error::/' || true
             if [ "$attempt" -lt 3 ]; then
               echo "Failed -- waiting 20 seconds before retrying."

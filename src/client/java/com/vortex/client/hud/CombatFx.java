@@ -17,7 +17,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
@@ -147,8 +146,7 @@ public final class CombatFx {
     /** Ein Blitz nur fuer dich: visualOnly, eigene negative ID (kollidiert nie mit Server-IDs). */
     private static void lightning(ClientLevel level, double x, double y, double z) {
         try {
-            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
-            if (bolt == null) return;
+            LightningBolt bolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
             bolt.setVisualOnly(true);
             bolt.setId(nextId--);
             bolt.snapTo(x, y, z);
