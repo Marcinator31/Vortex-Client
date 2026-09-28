@@ -452,7 +452,7 @@ public final class Freecam {
     private static void info(net.minecraft.client.gui.GuiGraphicsExtractor ctx) {
         if (!active || !schalter("Show Info", true)) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui || mc.font == null) return;
+        if (mc.player == null || mc.font == null) return;
         double dx = x - mc.player.getX(), dy = y - mc.player.getEyeY(), dz = z - mc.player.getZ();
         int abstand = (int) Math.sqrt(dx * dx + dy * dy + dz * dz);
         String t = String.format(java.util.Locale.ROOT, "Freecam  \u00a77%.1f b/s  \u00b7  %d m", tempo(), abstand);
