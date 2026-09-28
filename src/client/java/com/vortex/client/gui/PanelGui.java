@@ -724,10 +724,11 @@ public class PanelGui extends Screen {
 
                 for (Setting s : m.getSettings()) {
                     if (s == m.getEnabledSetting()) continue;
-                    if (sy + EINST_H > oben && sy < unten) {
+                    int eh = einstHoehe(s, spalteB - 14);
+                    if (sy + eh > oben && sy < unten) {
                         zeichneEinstellung(ctx, m, s, x + 8, sy, spalteB - 14, a);
                     }
-                    sy += EINST_H;
+                    sy += eh;
                 }
                 if (hatZuruecksetzbare(m) && sy + EINST_H > oben && sy < unten) {
                     zeichneReset(ctx, m, x + 8, sy, spalteB - 14, a);
@@ -746,8 +747,10 @@ public class PanelGui extends Screen {
         int dim = VortexStyle.fade(VortexStyle.TEXT_DIM, a);
         int txt = VortexStyle.fade(VortexStyle.TEXT, a);
         int akz = VortexStyle.fade(VortexStyle.akzent(0.5f), a);
-        if (mx >= x && mx < x + w && my >= y && my < y + EINST_H) {
-            ctx.fill(x - 2, y, x + w + 2, y + EINST_H,
+        int eh = einstHoehe(s, w);
+        java.util.List<String> namen = nameZeilen(s, w);
+        if (mx >= x && mx < x + w && my >= y && my < y + eh) {
+            ctx.fill(x - 2, y, x + w + 2, y + eh,
                     VortexStyle.fade(VortexStyle.HOV, a * 0.7f));
         }
 
@@ -760,8 +763,7 @@ public class PanelGui extends Screen {
         // uebrig bleibt.
 
         if (s instanceof BooleanSetting b) {
-            String name = kuerzen(s.getName(), w - 16 - 8);
-            ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
+            nameZeichnen(ctx, namen, x + 2, y + 3, dim);
             // Kleiner Schalter statt Kaestchen, der Knauf gleitet.
             float an = weich(einstAnim.getOrDefault(s, b.get() ? 1f : 0f),
                     b.get() ? 1f : 0f, 16f, letzteDt);
@@ -772,16 +774,15 @@ public class PanelGui extends Screen {
             int kx = bx + 1 + (int) (an * 9f);
             ctx.fill(kx, y + 3, kx + 6, y + 11,
                     VortexStyle.fade(VortexStyle.mix(0xFFB8B2CC, 0xFFFFFFFF, an), a));
-            treffer.add(new Treffer(x, y, w, EINST_H, Art.BOOL, m, s));
+            treffer.add(new Treffer(x, y, w, eh, Art.BOOL, m, s));
 
         } else if (s instanceof NumberSetting n) {
             String wert = zahl(n);
             int wertB = this.font.width(wert);
-            String name = kuerzen(s.getName(), w - wertB - 8);
-            ctx.text(this.font, Component.literal(name), x + 2, y + 1, dim, false);
+            nameZeichnen(ctx, namen, x + 2, y + 1, dim);
             ctx.text(this.font, Component.literal(wert), x + w - wertB, y + 1, txt, false);
             // Schiene unter dem Text
-            int ty = y + 11;
+            int ty = y + eh - 3;
             ctx.fill(x + 2, ty, x + w, ty + 2, VortexStyle.fade(VortexStyle.TRACK, a));
             double ziel = (n.get() - n.getMin()) / Math.max(1e-9, n.getMax() - n.getMin());
             ziel = Math.max(0, Math.min(1, ziel));
@@ -796,21 +797,19 @@ public class PanelGui extends Screen {
                     VortexStyle.fade(VortexStyle.akzent(0f), a), VortexStyle.fade(VortexStyle.akzent(1f), a));
             // Knauf am Ende der Fuellung
             ctx.fill(fx - 2, ty - 2, fx + 2, ty + 4, VortexStyle.fade(0xFFFFFFFF, a));
-            treffer.add(new Treffer(x + 2, y, w - 2, EINST_H, Art.NUM, m, s));
+            treffer.add(new Treffer(x + 2, y, w - 2, eh, Art.NUM, m, s));
 
         } else if (s instanceof ModeSetting mode) {
             // Der Wert darf hoechstens die halbe Breite nehmen -- sonst bliebe
             // fuer den Namen nichts.
             String wert = kuerzen(String.valueOf(mode.get()), Math.max(24, w / 2));
             int wertB = this.font.width(wert);
-            String name = kuerzen(s.getName(), w - wertB - 8);
-            ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
+            nameZeichnen(ctx, namen, x + 2, y + 3, dim);
             ctx.text(this.font, Component.literal(wert), x + w - wertB, y + 3, akz, false);
-            treffer.add(new Treffer(x, y, w, EINST_H, Art.MODUS, m, s));
+            treffer.add(new Treffer(x, y, w, eh, Art.MODUS, m, s));
 
         } else if (s instanceof ColorSetting c) {
-            String name = kuerzen(s.getName(), w - 12 - 8);
-            ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
+            nameZeichnen(ctx, namen, x + 2, y + 3, dim);
             int bx = x + w - 12;
             ctx.fill(bx, y + 2, bx + 10, y + 12, VortexStyle.fade(0xFF000000, a));
             // Verlauf: das Kaestchen zeigt ihn (laufend, wenn animiert)
@@ -818,7 +817,7 @@ public class PanelGui extends Screen {
                 ctx.fill(bx + 1 + i, y + 3, bx + 2 + i, y + 11,
                         VortexStyle.fade(c.at((i + 0.5f) / 8f) | 0xFF000000, a));
             }
-            treffer.add(new Treffer(x, y, w, EINST_H, Art.FARBE, m, s));
+            treffer.add(new Treffer(x, y, w, eh, Art.FARBE, m, s));
 
         } else if (s instanceof KeySetting k) {
             // Taste als kleine Kappe rechts. Nicht belegt heisst hier kurz
@@ -835,9 +834,8 @@ public class PanelGui extends Screen {
                     VortexStyle.fade(lauscht ? VortexStyle.akzent(0.5f) : VortexStyle.LINE, a));
             ctx.text(this.font, Component.literal(wert), kx + 4, y + 3,
                     lauscht ? txt : (k.isBound() ? txt : dim), false);
-            String name = kuerzen(s.getName(), w - kappeB - 8);
-            ctx.text(this.font, Component.literal(name), x + 2, y + 3, dim, false);
-            treffer.add(new Treffer(x, y, w, EINST_H, Art.TASTE, m, s));
+            nameZeichnen(ctx, namen, x + 2, y + 3, dim);
+            treffer.add(new Treffer(x, y, w, eh, Art.TASTE, m, s));
         }
     }
 
@@ -1113,11 +1111,61 @@ public class PanelGui extends Screen {
         return false;
     }
 
+    // ------------------------------------------------------------------
+    // Lange Einstellungsnamen: umbrechen statt abschneiden
+    // ------------------------------------------------------------------
+    //
+    // Vorher wurde jeder Name auf eine Zeile gekuerzt ("Glowstone Sh.."). Bei
+    // schmalen Spalten war so die Haelfte vieler Namen nicht lesbar. Jetzt
+    // bekommt ein zu langer Name eine zweite Zeile, die Einstellung wird
+    // entsprechend hoeher.
+
+    /** Platz, den der Wert rechts braucht. */
+    private int wertBreite(Setting s, int w) {
+        if (s instanceof BooleanSetting) return 16;
+        if (s instanceof NumberSetting n) return this.font.width(zahl(n));
+        if (s instanceof ModeSetting mode) return this.font.width(kuerzen(String.valueOf(mode.get()), Math.max(24, w / 2)));
+        if (s instanceof ColorSetting) return 12;
+        if (s instanceof KeySetting k) {
+            String wert = k.isListening() ? "..." : (k.isBound() ? kuerzen(k.getKeyName(), Math.max(20, w / 2 - 8)) : "None");
+            return this.font.width(wert) + 8;
+        }
+        return 0;
+    }
+
+    /** Der Name in hoechstens zwei Zeilen, passend links neben den Wert. */
+    private java.util.List<String> nameZeilen(Setting s, int w) {
+        String name = s.getName();
+        int platz = Math.max(20, w - wertBreite(s, w) - 8);
+        if (this.font.width(name) <= platz) return java.util.List.of(name);
+        StringBuilder eins = new StringBuilder();
+        String[] woerter = name.split(" ");
+        int i = 0;
+        for (; i < woerter.length; i++) {
+            String probe = eins.length() == 0 ? woerter[i] : eins + " " + woerter[i];
+            if (this.font.width(probe) > platz && eins.length() > 0) break;
+            eins = new StringBuilder(probe);
+        }
+        String zwei = String.join(" ", java.util.Arrays.copyOfRange(woerter, i, woerter.length));
+        if (zwei.isEmpty()) return java.util.List.of(kuerzen(eins.toString(), platz));
+        // Zweite Zeile darf die ganze Breite nutzen (der Wert steht oben).
+        return java.util.List.of(kuerzen(eins.toString(), platz), kuerzen(zwei, w - 4));
+    }
+
+    private int einstHoehe(Setting s, int w) {
+        return EINST_H + (nameZeilen(s, w).size() - 1) * 9;
+    }
+
+    private void nameZeichnen(GuiGraphicsExtractor ctx, java.util.List<String> zeilen, int x, int y, int farbe) {
+        for (int i = 0; i < zeilen.size(); i++) {
+            ctx.text(this.font, Component.literal(zeilen.get(i)), x, y + i * 9, farbe, false);
+        }
+    }
+
     private int einstellungsHoehe(Module m) {
-        int n = 0;
-        for (Setting s : m.getSettings()) if (s != m.getEnabledSetting()) n++;
-        if (hatZuruecksetzbare(m)) n++;   // Zeile "Reset"
-        int h = n * EINST_H + 2 * INNEN_RAND;
+        int h = 2 * INNEN_RAND;
+        for (Setting s : m.getSettings()) if (s != m.getEnabledSetting()) h += einstHoehe(s, spalteB - 14);
+        if (hatZuruecksetzbare(m)) h += EINST_H;   // Zeile "Reset"
         if (m instanceof com.vortex.client.module.HasOwnScreen) h += AUSWAHL_H + 2;
         return h;
     }

@@ -330,8 +330,8 @@ public class HomeScreen extends Screen {
         boolean mitBeta = beta[1] > 0;
 
         int W = Math.min(this.width - 40, 470);
-        int kachelH = 40, gap = 6, modsH = 38;
-        int H = 14 + 26 + 12 + modsH + gap + 2 * kachelH + gap + (mitBeta ? 22 + gap : 0) + 12 + 16 + 10;
+        int kachelH = 30, gap = 6, modsH = 34;
+        int H = 12 + 22 + 10 + modsH + gap + 2 * kachelH + gap + (mitBeta ? 22 + gap : 0) + 8 + 14 + 8;
         int x0 = (this.width - W) / 2;
         int y0 = (this.height - H) / 2 + Math.round((1f - a) * 6f);
 
@@ -339,21 +339,11 @@ public class HomeScreen extends Screen {
         rund(ctx, x0, y0, W, H, VortexStyle.fade(0xF50E0B16, a), 6);
         VortexStyle.akzentLinie(ctx, x0 + 8, y0, W - 16, a);
 
-        // --- Kopf -------------------------------------------------------------
-        int ky = y0 + 14;
-        zeichneLogo(ctx, x0 + 14, ky, 24, a);
-        ctx.text(this.font, Component.literal("Vortex Client"), x0 + 46, ky + 3, VortexStyle.fade(VortexStyle.TEXT, a), false);
-        if (!VERSION.isEmpty()) {
-            ctx.text(this.font, Component.literal("v" + VERSION), x0 + 46, ky + 14, VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
-        }
-        String info = mc.getFps() + " FPS";
-        int ping = ping(mc);
-        if (ping >= 0) info += "  \u00b7  " + ping + " ms";
-        ctx.text(this.font, Component.literal(info), x0 + W - 14 - this.font.width(info), ky + 8,
-                VortexStyle.fade(VortexStyle.TEXT_DIM, a), false);
-        int cy = ky + 26 + 6;
-        ctx.fill(x0 + 12, cy, x0 + W - 12, cy + 1, VortexStyle.fade(VortexStyle.LINE, a));
-        cy += 6;
+        // --- Kopf: nur Logo und Name -------------------------------------------
+        int ky = y0 + 12;
+        zeichneLogo(ctx, x0 + 14, ky, 20, a);
+        ctx.text(this.font, Component.literal("Vortex Client"), x0 + 42, ky + 6, VortexStyle.fade(VortexStyle.TEXT, a), false);
+        int cy = ky + 22 + 10;
 
         // --- Mods (Hauptknopf) ---------------------------------------------------
         int aktiv = 0, alle = 0, bots = 0;
@@ -368,8 +358,8 @@ public class HomeScreen extends Screen {
         int grundMods = VortexStyle.mix(VortexStyle.mix(VortexStyle.CARD, accent, 0.28f), accent, 0.22f * hm);
         rund(ctx, ix, cy, iw, modsH, VortexStyle.fade(grundMods, a * st0), 5);
         symbol2(ctx, SYMBOLE[MODS], ix + 12, cy + (modsH - 14) / 2, VortexStyle.fade(0xFFFFFFFF, a * st0));
-        ctx.text(this.font, Component.literal("Mods"), ix + 34, cy + 9, VortexStyle.fade(0xFFFFFFFF, a * st0), false);
-        ctx.text(this.font, Component.literal(aktiv + " of " + alle + " active"), ix + 34, cy + 21,
+        ctx.text(this.font, Component.literal("Mods"), ix + 34, cy + 7, VortexStyle.fade(0xFFFFFFFF, a * st0), false);
+        ctx.text(this.font, Component.literal(aktiv + " of " + alle + " active"), ix + 34, cy + 19,
                 VortexStyle.fade(0xFFD9D2F0, a * st0), false);
         String open = "Open  >";
         ctx.text(this.font, Component.literal(open), ix + iw - 12 - this.font.width(open), cy + (modsH - 8) / 2,
@@ -402,11 +392,9 @@ public class HomeScreen extends Screen {
             float h = hover(key, over(kx, kyy, kw, kachelH), dt);
             rund(ctx, kx, kyy, kw, kachelH, VortexStyle.fade(VortexStyle.mix(VortexStyle.CARD, accent, 0.04f + 0.16f * h), al), 4);
             int ico = VortexStyle.mix(VortexStyle.mix(accent, 0xFFFFFFFF, 0.3f), 0xFFFFFFFF, h);
-            symbol(ctx, SYMBOLE[(Integer) k[3]], kx + 9, kyy + 9, VortexStyle.fade(ico, al));
-            ctx.text(this.font, Component.literal(cut((String) k[1], kw - 26)), kx + 22, kyy + 9,
+            symbol(ctx, SYMBOLE[(Integer) k[3]], kx + 9, kyy + (kachelH - 7) / 2, VortexStyle.fade(ico, al));
+            ctx.text(this.font, Component.literal(cut((String) k[1], kw - 26)), kx + 22, kyy + (kachelH - 8) / 2,
                     VortexStyle.fade(VortexStyle.TEXT, al), false);
-            ctx.text(this.font, Component.literal(cut((String) k[2], kw - 16)), kx + 9, kyy + 24,
-                    VortexStyle.fade(0xFF8E88A6, al), false);
             if (key.equals("friends") && neu > 0) {
                 ctx.fill(kx + kw - 9, kyy + 6, kx + kw - 5, kyy + 10, VortexStyle.fade(VortexStyle.VIOLETT, al));
             }
@@ -428,30 +416,24 @@ public class HomeScreen extends Screen {
             cy += 22 + gap;
         }
 
-        // --- Fuss --------------------------------------------------------------
-        cy += 4;
-        ctx.fill(x0 + 12, cy, x0 + W - 12, cy + 1, VortexStyle.fade(VortexStyle.LINE, a));
-        int fy = cy + 8;
-        ctx.text(this.font, Component.literal("ESC to close"), x0 + 14, fy + 4, VortexStyle.fade(VortexStyle.TEXT_DIM, a * 0.7f), false);
+        // --- Fuss: zwei leise Textknoepfe rechts ----------------------------------
+        int fy = cy + 2;
         int rx = x0 + W - 12;
         rx = fussKnopf(ctx, rx, fy, "Restart", true, a, dt, () -> { frageNeustart = true; fehler = null; });
-        fussKnopf(ctx, rx - 6, fy, "Community", false, a, dt, () -> mc.gui.setScreen(new CommunityScreen(this)));
+        fussKnopf(ctx, rx - 4, fy, "Community", false, a, dt, () -> mc.gui.setScreen(new CommunityScreen(this)));
         if (fehler != null) {
             ctx.text(this.font, Component.literal(fehler), (this.width - this.font.width(fehler)) / 2,
                     Math.min(this.height - 11, y0 + H + 6), VortexStyle.fade(0xFFF87171, a), false);
         }
     }
 
-    /** Kleiner Textknopf im Fuss, rechtsbuendig an x. Gibt die linke Kante zurueck. */
+    /** Leiser Textknopf im Fuss, rechtsbuendig an x. Gibt die linke Kante zurueck. */
     private int fussKnopf(GuiGraphicsExtractor ctx, int rechts, int y, String text, boolean rot, float a, float dt, Runnable run) {
-        int w = this.font.width(text) + 16, x = rechts - w;
-        float h = hover("f:" + text, over(x, y, w, 16), dt);
-        int grund = rot ? VortexStyle.mix(VortexStyle.INNER, 0xFFB91C1C, 0.12f + 0.4f * h)
-                        : VortexStyle.mix(VortexStyle.INNER, VortexStyle.HOV, h);
-        rund(ctx, x, y, w, 16, VortexStyle.fade(grund, a), 4);
-        int farbe = rot ? VortexStyle.mix(0xFFFCA5A5, 0xFFFFFFFF, h) : VortexStyle.mix(VortexStyle.TEXT_DIM, VortexStyle.TEXT, h);
-        ctx.text(this.font, Component.literal(text), x + 8, y + 4, VortexStyle.fade(farbe, a), false);
-        hits.add(new Hit(x, y, w, 16, run));
+        int w = this.font.width(text) + 12, x = rechts - w;
+        float h = hover("f:" + text, over(x, y, w, 14), dt);
+        int farbe = rot ? VortexStyle.mix(0xFFB98A93, 0xFFFCA5A5, h) : VortexStyle.mix(VortexStyle.TEXT_DIM, VortexStyle.TEXT, h);
+        ctx.text(this.font, Component.literal(text), x + 6, y + 3, VortexStyle.fade(farbe, a), false);
+        hits.add(new Hit(x, y, w, 14, run));
         return x;
     }
 
