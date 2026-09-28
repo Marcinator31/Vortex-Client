@@ -150,6 +150,12 @@ public final class CombatFx {
             @SuppressWarnings("unchecked")
             EntityType<LightningBolt> type = (EntityType<LightningBolt>) net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
                     .getValue(net.minecraft.resources.Identifier.withDefaultNamespace("lightning_bolt"));
+            var key = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type);
+            if (type == null || key == null || !key.getPath().startsWith("lightning")) {
+                // Registry kennt den Blitz nicht (anderer Name?): Ersatz statt eines falschen Wesens
+                burst(level, ParticleTypes.END_ROD, x, y + 1, z, 30, 0.2);
+                return;
+            }
             LightningBolt bolt = new LightningBolt(type, level);
             bolt.setVisualOnly(true);
             bolt.setId(nextId--);
