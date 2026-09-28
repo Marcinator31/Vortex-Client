@@ -26,7 +26,11 @@ public final class Friends {
     private static final java.util.Map<String, String> ANZEIGE = new ConcurrentHashMap<>();
 
     public static boolean istFreundName(String name) {
-        return name != null && NAMEN.contains(name.toLowerCase(Locale.ROOT));
+        if (name == null) return false;
+        if (NAMEN.contains(name.toLowerCase(Locale.ROOT))) return true;
+        // Vortex-Freunde (Freundesliste im Launcher/Spiel) zaehlen auch, wenn gewollt.
+        FriendsModule m = ModuleManager.INSTANCE.get(FriendsModule.class);
+        return m != null && m.vortexFriends.get() && com.vortex.client.social.Social.isFriendName(name);
     }
 
     public static boolean istFreund(Entity e) {

@@ -31,6 +31,13 @@ public class VortexClientMod implements ClientModInitializer {
 
     private static KeyMapping openClickGuiKey;
     private static KeyMapping openHudEditorKey;
+    private static KeyMapping friendsKey;
+    private static boolean friendsKeyWasDown;
+
+    /** Anzeigename der Freunde-Taste (fuer Hinweise wie "druecke O"). */
+    public static String friendsKeyName() {
+        return friendsKey == null ? "O" : friendsKey.getTranslatedKeyMessage().getString();
+    }
 
     /** Fallback-Flankenerkennung, falls 26.2 die KeyMapping-Queue nicht fuellt. */
     private static boolean clickGuiKeyWasDown;
@@ -103,6 +110,7 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.gui.RestartButton.register();
         com.vortex.client.freecam.Freecam.registerSafety();
         com.vortex.client.command.ClientCommands.register();
+        com.vortex.client.command.FriendCommands.register();
 
         // Beim Beenden des Spiels alle Einstellungen speichern.
         // Sicherheit: Wenn der Spieler die Welt verlaesst / disconnected, die
@@ -160,6 +168,12 @@ public class VortexClientMod implements ClientModInitializer {
             "key.vortexclient.hudeditor", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_CONTROL, CATEGORY));
 
+        // Keybind: O oeffnet die Freunde (4.8.0).
+        friendsKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.vortexclient.friends", InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_O, CATEGORY));
+        com.vortex.client.social.Social.register();
+
         // (deaktiviert) Accounts-Knopf im Hauptmenue -- siehe Hinweis oben.
 
         // Einmalige Zustands-Synchronisation: Module, die standardmaessig an
@@ -205,6 +219,19 @@ public class VortexClientMod implements ClientModInitializer {
 
             while (openHudEditorKey.consumeClick()) {
                 client.gui.setScreen(new com.vortex.client.gui.HudEditorScreen());
+            }
+
+            // Freunde: ueber die Queue und zusaetzlich direkt abgefragt (wie oben).
+            boolean openFriends = false;
+            while (friendsKey.consumeClick()) openFriends = true;
+            try {
+                int fk = KeyMappingHelper.getBoundKeyOf(friendsKey).getValue();
+                boolean down = fk > 0 && InputConstants.isKeyDown(client.getWindow(), fk);
+                if (down && !friendsKeyWasDown) openFriends = true;
+                friendsKeyWasDown = down;
+            } catch (Throwable ignored) { }
+            if (openFriends && client.gui.screen() == null) {
+                client.gui.setScreen(new com.vortex.client.gui.FriendsScreen(null));
             }
 
             // --- Module toggle keys ---

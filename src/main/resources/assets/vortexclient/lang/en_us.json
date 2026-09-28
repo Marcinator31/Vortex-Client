@@ -1,6 +1,7 @@
 {
 	"key.vortexclient.clickgui": "Open Vortex Menu",
 	"key.vortexclient.hudeditor": "Open HUD Editor",
+	"key.vortexclient.friends": "Open Friends",
 	"category.vortexclient": "Vortex Client",
 	"category.vortexclient.main": "Vortex Client",
 	"key.categories.vortexclient.main": "Vortex Client",

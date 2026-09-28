@@ -22,6 +22,8 @@ public class FriendsModule extends Module implements com.vortex.client.module.Ex
     public final ColorSetting color = new ColorSetting("Friend Color", 0xFF55FFFF);
     public final BooleanSetting middleClick = new BooleanSetting("Middle Click To Add", true);
     public final BooleanSetting protect = new BooleanSetting("Protect From Combat Modules", true);
+    /** Freunde aus dem Vortex-Freundessystem gelten hier auch als Freunde. */
+    public final BooleanSetting vortexFriends = new BooleanSetting("Include Vortex Friends", true);
 
     public FriendsModule() {
         super("Friends", Category.MISC);
@@ -29,6 +31,7 @@ public class FriendsModule extends Module implements com.vortex.client.module.Ex
         addSetting(color);
         addSetting(middleClick);
         addSetting(protect);
+        addSetting(vortexFriends);
     }
 
     @Override public String extraKey() { return "__friends__"; }

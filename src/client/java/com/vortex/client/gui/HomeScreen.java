@@ -43,10 +43,10 @@ public class HomeScreen extends Screen {
 
     // --- Eintraege ------------------------------------------------------------
     private static final int MODS = 0, BOTS = 1, PRESETS = 2, WAYPOINTS = 3, MACROS = 4,
-            WARDROBE = 5, KEYS = 6, HUD = 7, COMMUNITY = 8, RESTART = 9;
+            WARDROBE = 5, KEYS = 6, HUD = 7, COMMUNITY = 8, FRIENDS = 9, RESTART = 10;
     private static final String[] NAMEN = {
         "Mods", "Bots", "Presets", "Waypoints", "Macros", "Wardrobe", "Keybinds", "HUD Editor",
-        "Community", "Restart Game"
+        "Community", "Friends", "Restart Game"
     };
     /** Anzahl der Eintraege -- ueberall statt einer festen Zahl benutzt. */
     private static final int N = NAMEN.length;
@@ -74,6 +74,8 @@ public class HomeScreen extends Screen {
             "1111111", "1111111", "1.....1", "1.11..1", "1.....1", "1....11", "1111111" },
         { // Community: zwei Personen
             ".1...1.", "111.111", ".1...1.", ".......", "111.111", "1111111", "1111111" },
+        { // Friends: Sprechblase
+            "1111111", "1.....1", "1.1.1.1", "1.....1", "1111111", ".11....", ".1....." },
         { // Restart: Kreispfeil
             "..111.1", ".1...11", "1...111", "1......", "1.....1", ".1...1.", "..111.." },
     };
@@ -350,6 +352,7 @@ public class HomeScreen extends Screen {
         if (in(flaeche[HUD]))       { mc.gui.setScreen(new HudEditorScreen()); return true; }
         if (in(flaeche[PRESETS]))   { mc.gui.setScreen(new PresetScreen(this)); return true; }
         if (in(flaeche[COMMUNITY])) { mc.gui.setScreen(new CommunityScreen(this)); return true; }
+        if (in(flaeche[FRIENDS]))   { mc.gui.setScreen(new FriendsScreen(this)); return true; }
         if (in(flaeche[RESTART]))   { frageNeustart = true; fehler = null; return true; }
         return false;
     }
