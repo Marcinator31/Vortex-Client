@@ -134,7 +134,7 @@ public final class FriendCommands {
         List<JsonObject> inv = Social.invites();
         if (inv.isEmpty()) { src.sendError(Component.literal("No open invite.")); return 0; }
         JsonObject last = inv.get(inv.size() - 1);
-        Social.answerInvite(Social.str(last, "id"), accept).exceptionally(e -> fail(src, e));
+        Social.answerInvite(Social.str(last, "id"), accept).exceptionally(e -> { fail(src, e); return null; });
         if (!accept) say(src, "§7Invite declined.");
         return 1;
     }
