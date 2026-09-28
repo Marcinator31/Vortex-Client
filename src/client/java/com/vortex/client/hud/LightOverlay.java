@@ -95,6 +95,17 @@ public final class LightOverlay {
         }
     }
 
+    private static EntityType<?> zombie;
+
+    /** Ueber die Registry statt ueber das Feld: die EntityType-Felder gibt es in 26.2 so nicht mehr. */
+    private static EntityType<?> zombie() {
+        if (zombie == null) {
+            zombie = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
+                    .getValue(net.minecraft.resources.Identifier.withDefaultNamespace("zombie"));
+        }
+        return zombie;
+    }
+
     private static List<Stelle> scannen(ClientLevel level, BlockPos mitte, int r, int h, boolean sichere) {
         List<Stelle> out = new ArrayList<>();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -113,7 +124,7 @@ public final class LightOverlay {
                     if (!st.getCollisionShape(level, pos).isEmpty() || !st.getFluidState().isEmpty()) continue;
                     unten.set(x, y - 1, z);
                     BlockState bo = level.getBlockState(unten);
-                    if (!bo.isValidSpawn(level, unten, EntityType.ZOMBIE)) continue;
+                    if (!bo.isValidSpawn(level, unten, zombie())) continue;
                     oben.set(x, y + 1, z);
                     BlockState ob = level.getBlockState(oben);
                     if (!ob.getCollisionShape(level, oben).isEmpty() || !ob.getFluidState().isEmpty()) continue;
