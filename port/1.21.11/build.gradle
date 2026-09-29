@@ -1,0 +1,56 @@
+// Build fuer Minecraft 1.21.11 -- erzeugt von tools/port.py aus dem
+// 26.2-Quelltext. 1.21.11 ist noch verschleiert: deshalb das klassische
+// fabric-loom mit Mojang-Namen (officialMojangMappings) und Java 21.
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories { }
+
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        "vortexclient" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.compilerArgs += ['-Xmaxerrs', '10000']
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${base.archivesName.get()}" }
+    }
+}

@@ -185,9 +185,14 @@ public final class RadarRenderer {
                                       int dotX, int dotY, double scale) {
         try {
             var type = living.getType();
+            //#if 26.2
             var eggHolder = net.minecraft.world.item.SpawnEggItem.byId(type);
             if (eggHolder.isEmpty()) return false;
             var egg = eggHolder.get().value();
+            //#else
+            //$ var egg = net.minecraft.world.item.SpawnEggItem.byId(type);
+            //$ if (egg == null) return false;
+            //#endif
             // Icon-Groesse klein halten (5px Basis), damit der Radar
             // uebersichtlich bleibt und sich die Icons nicht gegenseitig
             // (und den Mittel-Pfeil) verdecken.

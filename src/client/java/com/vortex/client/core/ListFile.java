@@ -32,7 +32,7 @@ public final class ListFile {
     }
 
     private Path pfad() {
-        return FabricLoader.getInstance().getConfigDir().resolve("vortexclient").resolve(name);
+        return ConfigManager.dataDir().resolve(name);
     }
 
     /** Neu lesen, wenn die Datei sich seit dem letzten Lesen geaendert hat. */

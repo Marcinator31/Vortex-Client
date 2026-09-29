@@ -26,6 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer {
 
+    //#if 26.2
     @Inject(method = "setupFog", at = @At("RETURN"))
     private void pvpclient$removeFog(Camera camera, int renderDistance,
                                      DeltaTracker tickCounter, float skyDarkness,
@@ -55,6 +56,36 @@ public class MixinFogRenderer {
         } catch (Throwable ignored) {
         }
     }
+
+    //#else
+    //$ /**
+    //$  * 1.21.11: setupFog rechnet die Werte aus und schreibt sie ueber
+    //$  * updateBuffer(..., envStart, envEnd, renderStart, renderEnd, sky, cloud)
+    //$  * in den Grafikspeicher -- dort die Nebel-Abstaende austauschen.
+    //$  */
+    //$ @org.spongepowered.asm.mixin.injection.ModifyArgs(method = "setupFog",
+    //$         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/fog/FogRenderer;updateBuffer(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V"),
+    //$         require = 0)
+    //$ private void vortex$nebel(org.spongepowered.asm.mixin.injection.invoke.arg.Args args) {
+    //$     com.vortex.client.hud.FogCheck.setupLief();
+    //$     com.vortex.client.hud.FogCheck.pufferLief();
+    //$     try {
+    //$         var mc = net.minecraft.client.Minecraft.getInstance();
+    //$         FogData d = new FogData();
+    //$         d.environmentalStart = args.get(3);
+    //$         d.environmentalEnd = args.get(4);
+    //$         d.renderDistanceStart = args.get(5);
+    //$         d.renderDistanceEnd = args.get(6);
+    //$         klaeren(d, mc.gameRenderer.getMainCamera().getFluidInCamera());
+    //$         args.set(3, d.environmentalStart);
+    //$         args.set(4, d.environmentalEnd);
+    //$         args.set(5, d.renderDistanceStart);
+    //$         args.set(6, d.renderDistanceEnd);
+    //$     } catch (Throwable pvpErr) {
+    //$         com.vortex.client.core.Errors.report("MixinFogRenderer", pvpErr);
+    //$     }
+    //$ }
+    //#endif
 
     private static void klaeren(FogData data, FogType fogType) {
         if (data == null || fogType == null) return;

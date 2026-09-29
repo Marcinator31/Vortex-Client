@@ -12,9 +12,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * nach der Kameraextraktion rendert. Anders als getFov() und calculateFov()
  * ist dieser Zustand der tatsächliche Input des LevelRenderer-Renderpasses.
  */
+//#if 26.2
 @Mixin(Camera.class)
+//#else
+//$ @Mixin(net.minecraft.client.renderer.GameRenderer.class)
+//#endif
 public abstract class ZoomFovMixin {
 
+    //#if 26.2
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void vortex$applyZoomToProjection(CameraRenderState state, float partialTick,
                                                CallbackInfo ci) {
@@ -33,5 +38,18 @@ public abstract class ZoomFovMixin {
         } catch (Throwable error) {
             com.vortex.client.core.Errors.report("ZoomFovMixin", error);
         }
+    //#else
+    //$ // 1.21.11: das Sichtfeld kommt aus GameRenderer.getFov -- dort teilen.
+    //$ @Inject(method = "getFov", at = @At("RETURN"), cancellable = true, require = 0)
+    //$ private void vortex$applyZoomToFov(net.minecraft.client.Camera camera, float partialTick, boolean useFovSetting,
+    //$                                    org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Float> cir) {
+    //$     try {
+    //$         com.vortex.client.hud.Zoom.update();
+    //$         float factor = (float) com.vortex.client.hud.Zoom.factor();
+    //$         if (factor > 1.001F) cir.setReturnValue(cir.getReturnValue() / factor);
+    //$     } catch (Throwable error) {
+    //$         com.vortex.client.core.Errors.report("ZoomFovMixin", error);
+    //$     }
+    //#endif
     }
 }

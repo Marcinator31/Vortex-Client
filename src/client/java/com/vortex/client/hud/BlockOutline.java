@@ -52,9 +52,9 @@ public final class BlockOutline {
                 matrices.pushPose();
                 try {
                     matrices.translate(pos.getX() - cam.x, pos.getY() - cam.y, pos.getZ() - cam.z);
-                    collector.submitShapeOutline(matrices, form,
+                    EspRender.shapeOutline(collector, matrices, form,
                             m.throughWalls.get() ? EspRenderLayer.espLines() : EspRenderLayer.depthLines(),
-                            farbe, m.width.getFloat(), true);
+                            farbe, m.width.getFloat());
                 } finally {
                     matrices.popPose();
                 }

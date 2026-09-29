@@ -69,8 +69,14 @@ public abstract class CameraMixin {
         return com.vortex.client.hud.Freelook.aktiv() ? com.vortex.client.hud.Freelook.pitch() : original;
     }
 
+    //#if 26.2
     @Inject(method = "update", at = @At("TAIL"))
     private void pvpclient$freecamUpdate(DeltaTracker deltaTracker, CallbackInfo ci) {
+    //#else
+    //$ @Inject(method = "setup", at = @At("TAIL"))
+    //$ private void pvpclient$freecamUpdate(net.minecraft.world.level.Level level, net.minecraft.world.entity.Entity entity,
+    //$                                      boolean detached, boolean mirrored, float partialTick, CallbackInfo ci) {
+    //#endif
         if (!Freecam.isActive()) return;
         // Bewegung pro Frame berechnen (fluessig, framerate-unabhaengig).
         Freecam.updateFrame();

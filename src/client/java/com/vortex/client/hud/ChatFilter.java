@@ -110,8 +110,8 @@ public final class ChatFilter {
         if (reflFehler) return false;
         try {
             if (alleFeld == null) {
-                alleFeld = feld("allMessages");
-                zeilenFeld = feld("trimmedMessages");
+                alleFeld = feld("allMessages", GuiMessage.class);
+                zeilenFeld = feld("trimmedMessages", GuiMessage.Line.class);
             }
             List<GuiMessage> alle = (List<GuiMessage>) alleFeld.get(chat);
             List<GuiMessage.Line> zeilen = (List<GuiMessage.Line>) zeilenFeld.get(chat);
@@ -119,7 +119,14 @@ public final class ChatFilter {
             GuiMessage vorige = alle.get(0);
             if (!vorige.content().getString().contains(roh)) return false;
             alle.remove(0);
+            //#if 26.2
             while (!zeilen.isEmpty() && zeilen.get(0).parent() == vorige) zeilen.remove(0);
+            //#else
+            //$ // 1.21.11: Zeilen kennen ihre Nachricht nicht. Die neueste Nachricht
+            //$ // liegt vorne; ihre letzte Zeile hat endOfEntry, die davor nicht.
+            //$ if (!zeilen.isEmpty()) zeilen.remove(0);
+            //$ while (!zeilen.isEmpty() && !zeilen.get(0).endOfEntry()) zeilen.remove(0);
+            //#endif
             return true;
         } catch (Throwable e) {
             reflFehler = true;
@@ -128,8 +135,27 @@ public final class ChatFilter {
         }
     }
 
-    private static Field feld(String name) throws NoSuchFieldException {
-        Field f = ChatComponent.class.getDeclaredField(name);
+    /**
+     * Feld per Name -- oder, wenn der Name zur Laufzeit anders heisst (in
+     * verschleierten Fassungen wie 1.21.11), ueber den Typ: die Liste, deren
+     * Elemente vom gesuchten Typ sind.
+     */
+    private static Field feld(String name, Class<?> element) throws NoSuchFieldException {
+        Field f;
+        try {
+            f = ChatComponent.class.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            f = null;
+            for (Field x : ChatComponent.class.getDeclaredFields()) {
+                if (!List.class.isAssignableFrom(x.getType())) continue;
+                if (x.getGenericType() instanceof java.lang.reflect.ParameterizedType pt
+                        && pt.getActualTypeArguments().length == 1 && pt.getActualTypeArguments()[0] == element) {
+                    f = x;
+                    break;
+                }
+            }
+            if (f == null) throw e;
+        }
         f.setAccessible(true);
         return f;
     }

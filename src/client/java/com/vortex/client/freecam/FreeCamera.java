@@ -3,8 +3,9 @@ package com.vortex.client.freecam;
 import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+//#if 26.2
 import net.minecraft.client.multiplayer.chat.ChatAbilities;
-import net.minecraft.client.multiplayer.chat.ChatAbilities;
+//#endif
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.stats.StatsCounter;
 import net.minecraft.world.entity.player.Input;
@@ -38,8 +39,12 @@ public class FreeCamera extends LocalPlayer {
             new StatsCounter(),
             new ClientRecipeBook(),
             Input.EMPTY,
+            //#if 26.2
             false,
             ChatAbilities.NO_RESTRICTIONS
+            //#else
+            //$ false
+            //#endif
         );
         // Durch Bloecke hindurch -- die Kamera soll frei fliegen.
         this.noPhysics = true;

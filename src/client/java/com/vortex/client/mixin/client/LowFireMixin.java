@@ -22,9 +22,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ScreenEffectRenderer.class)
 public class LowFireMixin {
 
+    //#if 26.2
     @Inject(method = "submitFire", at = @At("HEAD"))
     private static void vortex$lowerFire(PoseStack matrices, SubmitNodeCollector collector,
                                          TextureAtlasSprite sprite, CallbackInfo ci) {
+    //#else
+    //$ @Inject(method = "renderFire", at = @At("HEAD"))
+    //$ private static void vortex$lowerFire(PoseStack matrices, net.minecraft.client.renderer.MultiBufferSource collector,
+    //$                                      TextureAtlasSprite sprite, CallbackInfo ci) {
+    //#endif
         LowFireModule module = find();
         if (module != null && module.isEnabled()) {
             matrices.pushPose();
@@ -32,9 +38,15 @@ public class LowFireMixin {
         }
     }
 
+    //#if 26.2
     @Inject(method = "submitFire", at = @At("RETURN"))
     private static void vortex$restoreFirePose(PoseStack matrices, SubmitNodeCollector collector,
                                                 TextureAtlasSprite sprite, CallbackInfo ci) {
+    //#else
+    //$ @Inject(method = "renderFire", at = @At("RETURN"))
+    //$ private static void vortex$restoreFirePose(PoseStack matrices, net.minecraft.client.renderer.MultiBufferSource collector,
+    //$                                             TextureAtlasSprite sprite, CallbackInfo ci) {
+    //#endif
         LowFireModule module = find();
         if (module != null && module.isEnabled()) {
             matrices.popPose();

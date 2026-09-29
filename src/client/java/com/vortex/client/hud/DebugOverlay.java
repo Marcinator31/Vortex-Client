@@ -344,8 +344,13 @@ public final class DebugOverlay {
                 neu.add(new Line(f, ZEILE, "At", (versteckt ? "" : bp.getX() + " " + bp.getY() + " " + bp.getZ() + "   ")
                         + String.format(Locale.ROOT, "%.1f m", abstand) + "   " + b.getDirection().getName(), 0, 0));
                 if (mod.blockStates.get()) {
+                    //#if 26.2
                     st.getValues().limit(4).forEach(v ->
                             neu.add(new Line(f, ZEILE, "  " + v.property().getName(), v.valueName(), 0, 0)));
+                    //#else
+                    //$ st.getValues().entrySet().stream().limit(4).forEach(v ->
+                    //$         neu.add(new Line(f, ZEILE, "  " + v.getKey().getName(), String.valueOf(v.getValue()), 0, 0)));
+                    //#endif
                 }
             } else if (hit instanceof EntityHitResult eh && hit.getType() == HitResult.Type.ENTITY) {
                 kopf(neu, f, kompakt, "LOOKING AT");

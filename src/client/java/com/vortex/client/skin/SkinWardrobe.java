@@ -62,8 +62,7 @@ public final class SkinWardrobe {
 
     /** Ordner, in dem die PNG-Dateien liegen. */
     public static Path skinDir() {
-        return FabricLoader.getInstance().getConfigDir()
-                .resolve("vortexclient").resolve("skins");
+        return com.vortex.client.core.ConfigManager.dataDir().resolve("skins");
     }
 
     private static Path indexFile() {

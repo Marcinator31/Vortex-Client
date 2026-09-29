@@ -56,7 +56,50 @@ public final class ConfigManager {
         } catch (Throwable pvpErr) {
             Errors.report("ConfigManager.migrate", pvpErr);
         }
-        return neu;
+        return gemeinsam(neu);
+    }
+
+    // ------------------------------------------------------------------
+    // Gemeinsamer Ordner fuer alle Minecraft-Versionen (4.12.0)
+    //
+    // Der Launcher gibt -Dvortex.shared.dir mit. Dann benutzen 26.2 und
+    // 1.21.11 DIESELBEN Presets, Waypoints, Makros, Freunde und Listen --
+    // wer in einer Version etwas einstellt, hat es in der anderen auch.
+    // Einstellungen, die es nur in einer Version gibt, bleiben erhalten (der
+    // ConfigManager bewahrt Zeilen unbekannter Module auf).
+    //
+    // Beim ersten Start mit dem gemeinsamen Ordner wird der bisherige Ordner
+    // dieser Instanz hineinkopiert, falls dort noch keine Presets liegen.
+    // Ohne Launcher (Angabe fehlt) bleibt alles wie bisher im Instanzordner.
+
+    private static Path geteilt = null;
+    private static boolean geteiltGeprueft = false;
+
+    private static Path gemeinsam(Path lokal) {
+        if (geteiltGeprueft) return geteilt != null ? geteilt : lokal;
+        geteiltGeprueft = true;
+        String p = System.getProperty("vortex.shared.dir", "").trim();
+        if (p.isEmpty()) return lokal;
+        try {
+            Path ziel = Path.of(p).resolve("vortexclient");
+            Files.createDirectories(ziel);
+            boolean leer = !Files.exists(ziel.resolve("preset1.txt")) && !Files.exists(ziel.resolve("active_preset.txt"));
+            if (leer && Files.isDirectory(lokal)) {
+                try (var stream = Files.walk(lokal)) {
+                    for (Path q : (Iterable<Path>) stream::iterator) {
+                        Path z = ziel.resolve(lokal.relativize(q).toString());
+                        if (Files.isDirectory(q)) Files.createDirectories(z);
+                        else if (!Files.exists(z)) Files.copy(q, z);
+                    }
+                }
+                Errors.note("ConfigManager", "Presets moved to the shared folder -- all Minecraft versions use them now.");
+            }
+            geteilt = ziel;
+            return ziel;
+        } catch (Throwable pvpErr) {
+            Errors.report("ConfigManager.shared", pvpErr);
+            return lokal;
+        }
     }
 
     /** Datei des aktiven Presets: <config>/pvpclient/preset1.txt usw. */

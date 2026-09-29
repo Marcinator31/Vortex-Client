@@ -88,12 +88,45 @@ public final class EspRender {
         matrices.pushPose();
         try {
             matrices.translate(-cam.x, -cam.y, -cam.z);
-            collector.submitShapeOutline(matrices, Shapes.create(box),
+            shapeOutline(collector, matrices, Shapes.create(box),
                     durchWaende ? EspRenderLayer.espLines() : EspRenderLayer.depthLines(),
-                    argb, lineWidth, true);
+                    argb, lineWidth);
         } finally {
             matrices.popPose();
         }
+    }
+
+    /**
+     * Umriss einer Form (alle Kanten). 26.2 hat dafuer submitShapeOutline;
+     * in 1.21.11 gibt es das noch nicht -- dort werden die Kanten selbst als
+     * Linien eingereiht.
+     */
+    public static void shapeOutline(SubmitNodeCollector collector, PoseStack matrices,
+                                    net.minecraft.world.phys.shapes.VoxelShape shape,
+                                    net.minecraft.client.renderer.rendertype.RenderType type,
+                                    int argb, float lineWidth) {
+        //#if 26.2
+        collector.submitShapeOutline(matrices, shape, type, argb, lineWidth, true);
+        //#else
+        //$ collector.submitCustomGeometry(matrices, type, (pose, vertices) ->
+        //$         shape.forAllEdges((x1, y1, z1, x2, y2, z2) ->
+        //$                 kante(pose.pose(), vertices, x1, y1, z1, x2, y2, z2, argb, lineWidth)));
+        //#endif
+    }
+
+    /** Eine Linie in Modellkoordinaten (ohne Kamera-Abzug). */
+    static void kante(org.joml.Matrix4f mat, VertexConsumer lines,
+                      double x1, double y1, double z1, double x2, double y2, double z2,
+                      int argb, float lineWidth) {
+        float r = ((argb >> 16) & 0xFF) / 255.0f, g = ((argb >> 8) & 0xFF) / 255.0f, b = (argb & 0xFF) / 255.0f;
+        float a = ((argb >>> 24) & 0xFF) / 255.0f;
+        if (a == 0f) a = 1f;
+        double dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
+        double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len < 1.0e-6) return;
+        float nx = (float) (dx / len), ny = (float) (dy / len), nz = (float) (dz / len);
+        lines.addVertex(mat, (float) x1, (float) y1, (float) z1).setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(lineWidth);
+        lines.addVertex(mat, (float) x2, (float) y2, (float) z2).setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(lineWidth);
     }
 
     /**

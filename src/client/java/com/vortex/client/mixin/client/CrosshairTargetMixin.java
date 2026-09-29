@@ -31,7 +31,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   updateCrosshairTarget = method_3190 (float tickDelta)
  *   player.raycast        = method_5745 (double, float, boolean) -> HitResult
  */
+//#if 26.2
 @Mixin(Minecraft.class)
+//#else
+//$ @Mixin(net.minecraft.client.renderer.GameRenderer.class)
+//#endif
 public abstract class CrosshairTargetMixin {
 
     @Inject(method = "pick", at = @At("TAIL"))

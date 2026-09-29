@@ -48,50 +48,32 @@ public final class HitColor {
 
     private static boolean setze(Minecraft mc, int argb) {
         try {
-            Object overlay = finde(mc.gameRenderer, "OverlayTexture");
+            // Ueber TYPEN statt Namen suchen: in verschleierten Fassungen
+            // (1.21.11) heissen Felder und Klassen zur Laufzeit anders.
+            Object overlay = finde(mc.gameRenderer, net.minecraft.client.renderer.texture.OverlayTexture.class);
             if (overlay == null) return false;
-            Object dyn = finde(overlay, "DynamicTexture");
-            if (dyn == null) return false;
-            Object bild = dyn.getClass().getMethod("getPixels").invoke(dyn);
+            Object dyn = finde(overlay, net.minecraft.client.renderer.texture.DynamicTexture.class);
+            if (!(dyn instanceof net.minecraft.client.renderer.texture.DynamicTexture tex)) return false;
+            com.mojang.blaze3d.platform.NativeImage bild = tex.getPixels();
             if (bild == null) return false;
-
-            Method setPixel = null;
-            boolean abgr = false;
-            for (Method me : bild.getClass().getMethods()) {
-                if (me.getParameterCount() != 3) continue;
-                Class<?>[] t = me.getParameterTypes();
-                if (t[0] != int.class || t[1] != int.class || t[2] != int.class) continue;
-                if (me.getName().equals("setPixel")) { setPixel = me; abgr = false; break; }
-                if (me.getName().equals("setPixelABGR") || me.getName().equals("setPixelRGBA")) {
-                    setPixel = me;
-                    abgr = true;
-                }
-            }
-            if (setPixel == null) return false;
-
-            int wert = argb;
-            if (abgr) {
-                int a = argb >>> 24, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
-                wert = (a << 24) | (b << 16) | (g << 8) | r;
-            }
-            // Obere Haelfte (Zeilen 0..7) ist die Treffer-Farbe.
+            // Obere Haelfte (Zeilen 0..7) ist die Treffer-Farbe (setPixel = ARGB).
             for (int y = 0; y < 8; y++) {
                 for (int x = 0; x < 16; x++) {
-                    setPixel.invoke(bild, x, y, wert);
+                    bild.setPixel(x, y, argb);
                 }
             }
-            dyn.getClass().getMethod("upload").invoke(dyn);
+            tex.upload();
             return true;
         } catch (Throwable t) {
             return false;
         }
     }
 
-    /** Sucht in obj ein Feld oder eine Methode ohne Parameter, deren Typ so heisst. */
-    private static Object finde(Object obj, String typName) throws Exception {
+    /** Sucht in obj ein Feld oder eine Methode ohne Parameter von diesem Typ. */
+    private static Object finde(Object obj, Class<?> typ) throws Exception {
         for (Class<?> c = obj.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
             for (Field f : c.getDeclaredFields()) {
-                if (f.getType().getSimpleName().equals(typName)) {
+                if (typ.isAssignableFrom(f.getType())) {
                     f.setAccessible(true);
                     Object v = f.get(obj);
                     if (v != null) return v;
@@ -99,7 +81,7 @@ public final class HitColor {
             }
         }
         for (Method me : obj.getClass().getMethods()) {
-            if (me.getParameterCount() == 0 && me.getReturnType().getSimpleName().equals(typName)) {
+            if (me.getParameterCount() == 0 && typ.isAssignableFrom(me.getReturnType())) {
                 Object v = me.invoke(obj);
                 if (v != null) return v;
             }
