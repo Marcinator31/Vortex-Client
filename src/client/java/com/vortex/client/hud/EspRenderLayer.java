@@ -1,7 +1,7 @@
 package com.vortex.client.hud;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-//#if 26.2
+//#if 26
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.platform.CompareOp;
 //#else
@@ -32,7 +32,7 @@ public final class EspRenderLayer {
             RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
                     .withLocation(Identifier.fromNamespaceAndPath("vortexclient", "pipeline/esp_lines"))
                     .withCull(false)
-                    //#if 26.2
+                    //#if 26
                     .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
                     //#else
                     //$ .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).withDepthWrite(false)

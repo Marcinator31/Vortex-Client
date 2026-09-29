@@ -344,7 +344,7 @@ public final class DebugOverlay {
                 neu.add(new Line(f, ZEILE, "At", (versteckt ? "" : bp.getX() + " " + bp.getY() + " " + bp.getZ() + "   ")
                         + String.format(Locale.ROOT, "%.1f m", abstand) + "   " + b.getDirection().getName(), 0, 0));
                 if (mod.blockStates.get()) {
-                    //#if 26.2
+                    //#if 26
                     st.getValues().limit(4).forEach(v ->
                             neu.add(new Line(f, ZEILE, "  " + v.property().getName(), v.valueName(), 0, 0)));
                     //#else

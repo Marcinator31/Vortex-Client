@@ -31,7 +31,7 @@ public class AntiRenderScreen extends SelectionScreen {
             if (id == null) continue;
             if ("minecraft:player".equals(id.toString())) continue;
             var egg = SpawnEggItem.byId(type);
-            //#if 26.2
+            //#if 26
             Item icon = egg.map(holder -> holder.value()).orElse(Items.BARRIER);
             //#else
             //$ Item icon = egg != null ? egg : Items.BARRIER;

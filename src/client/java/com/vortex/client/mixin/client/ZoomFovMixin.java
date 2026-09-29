@@ -12,14 +12,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * nach der Kameraextraktion rendert. Anders als getFov() und calculateFov()
  * ist dieser Zustand der tatsächliche Input des LevelRenderer-Renderpasses.
  */
-//#if 26.2
+//#if 26
 @Mixin(Camera.class)
 //#else
 //$ @Mixin(net.minecraft.client.renderer.GameRenderer.class)
 //#endif
 public abstract class ZoomFovMixin {
 
-    //#if 26.2
+    //#if 26
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void vortex$applyZoomToProjection(CameraRenderState state, float partialTick,
                                                CallbackInfo ci) {

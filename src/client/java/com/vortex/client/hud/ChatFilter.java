@@ -119,7 +119,7 @@ public final class ChatFilter {
             GuiMessage vorige = alle.get(0);
             if (!vorige.content().getString().contains(roh)) return false;
             alle.remove(0);
-            //#if 26.2
+            //#if 26
             while (!zeilen.isEmpty() && zeilen.get(0).parent() == vorige) zeilen.remove(0);
             //#else
             //$ // 1.21.11: Zeilen kennen ihre Nachricht nicht. Die neueste Nachricht

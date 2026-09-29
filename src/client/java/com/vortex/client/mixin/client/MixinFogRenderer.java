@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer {
 
-    //#if 26.2
+    //#if 26
     @Inject(method = "setupFog", at = @At("RETURN"))
     private void pvpclient$removeFog(Camera camera, int renderDistance,
                                      DeltaTracker tickCounter, float skyDarkness,

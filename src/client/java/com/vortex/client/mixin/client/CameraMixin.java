@@ -69,7 +69,7 @@ public abstract class CameraMixin {
         return com.vortex.client.hud.Freelook.aktiv() ? com.vortex.client.hud.Freelook.pitch() : original;
     }
 
-    //#if 26.2
+    //#if 26
     @Inject(method = "update", at = @At("TAIL"))
     private void pvpclient$freecamUpdate(DeltaTracker deltaTracker, CallbackInfo ci) {
     //#else

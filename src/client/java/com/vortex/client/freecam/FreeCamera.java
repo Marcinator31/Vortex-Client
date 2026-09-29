@@ -3,7 +3,7 @@ package com.vortex.client.freecam;
 import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-//#if 26.2
+//#if 26
 import net.minecraft.client.multiplayer.chat.ChatAbilities;
 //#endif
 import net.minecraft.client.player.LocalPlayer;
@@ -39,7 +39,7 @@ public class FreeCamera extends LocalPlayer {
             new StatsCounter(),
             new ClientRecipeBook(),
             Input.EMPTY,
-            //#if 26.2
+            //#if 26
             false,
             ChatAbilities.NO_RESTRICTIONS
             //#else

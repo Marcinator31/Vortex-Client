@@ -185,7 +185,7 @@ public final class RadarRenderer {
                                       int dotX, int dotY, double scale) {
         try {
             var type = living.getType();
-            //#if 26.2
+            //#if 26
             var eggHolder = net.minecraft.world.item.SpawnEggItem.byId(type);
             if (eggHolder.isEmpty()) return false;
             var egg = eggHolder.get().value();
