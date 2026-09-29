@@ -1,4 +1,4 @@
-# Weitere Fassungen: Minecraft 26.1.1 und 1.21.11
+# Weitere Fassungen: Minecraft 26.1.1, 26.1.2 und 1.21.11
 
 Der 26.2-Quelltext in `src/` ist die **einzige** Quelle. Die anderen Fassungen
 werden bei jedem Build daraus erzeugt (`tools/port.py <version> build-port/<version>`)
@@ -29,11 +29,15 @@ Was sich zwischen den Versionen unterscheidet, steht an drei Stellen:
    Der erste Zweig muss 26.2 einschliessen. Es gilt der erste passende Zweig.
 3. `port/<version>/overlay/` -- ganze Dateien, die es nur dort gibt.
 
+`port/26.1.2/basis` enthaelt "26.1.1": 26.1.2 uebernimmt alle Regeln von
+26.1.1 und hat nur eigene gradle.properties. `{ziel}` in replace.tsv wird
+durch die Zielversion ersetzt (z. B. fuer "minecraft" in fabric.mod.json).
+
 Beim Aendern von Code: laeuft ein Port-Build im CI nicht durch, stehen die
-Fehler als Anmerkungen mit dem Praefix `[26.1.1]` bzw. `[1.21.11]` am Lauf.
+Fehler als Anmerkungen mit dem Praefix `[26.1.1]`, `[26.1.2]` bzw. `[1.21.11]` am Lauf.
 Die 26.2-Jar wird trotzdem veroeffentlicht.
 
-26.1.1 ist wie 26.2 unverschleiert (gleiche Namen zur Laufzeit), Java 25.
+26.1.1 und 26.1.2 sind wie 26.2 unverschleiert (gleiche Namen zur Laufzeit), Java 25.
 
 1.21.11 ist zur Laufzeit verschleiert: Reflection ueber Mojang-Namen
 (`getDeclaredField("allMessages")`) oder Klassennamen (`getSimpleName()`)
