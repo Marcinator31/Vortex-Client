@@ -1,6 +1,7 @@
 {
   "required": true,
   "package": "com.vortex.client.mixin.client",
+  "plugin": "com.vortex.client.mixinplugin.VortexMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "AutoReconnectMixin",
@@ -28,6 +29,7 @@
     "GameModeHookMixin",
     "GammaMixin",
     "FreecamCullMixin",
+    "FreecamSmartCullMixin",
     "FreecamOverlayMixin",
     "FreecamScreenEffectMixin",
     "OptionsSaveMixin",
