@@ -66,6 +66,11 @@ jobs:
           echo "=== Fehler/Warnungen zu Mixins ==="; grep -iE "mixin.*(error|fail|warn)|vortexclient.*(error|fail)" run.log run/logs/latest.log 2>/dev/null | head -40 || true
           grep -q "sodium" run/logs/latest.log 2>/dev/null || { echo "::error::Sodium wurde nicht geladen -- Test ohne Aussage"; ERGEBNIS="${ERGEBNIS:-}-ohne-sodium"; }
           echo "Ergebnis: $ERGEBNIS"; echo "**Ergebnis: $ERGEBNIS**" >> "$GITHUB_STEP_SUMMARY"
+          # Kurzfassung als Annotation (ohne Log-Zugriff lesbar)
+          MODS=$(grep -oE "(sodium|iris|vortexclient) [0-9][^ ]*" run/logs/latest.log 2>/dev/null | sort -u | tr '\n' ' ')
+          echo "::notice::Starttest 1.21.11: $ERGEBNIS | Mods: $MODS"
+          U=$(grep -hoE "(InvalidInjectionException|MixinApplyError|MixinTransformerError)[^$]{0,260}" run.log run/logs/latest.log run/crash-reports/*.txt 2>/dev/null | head -n 2 | tr '\n' ' ')
+          [ -n "$U" ] && echo "::error::Ursache: $U"
           if [ "$ERGEBNIS" != ok ]; then
             echo "=== run.log (Ende) ==="; tail -120 run.log
             ls run/crash-reports 2>/dev/null && head -60 run/crash-reports/*.txt
