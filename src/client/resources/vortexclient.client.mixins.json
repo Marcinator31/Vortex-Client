@@ -24,7 +24,6 @@
     "EntityRenderShouldRenderMixin",
     "EntityStatusMixin",
     "FogDataAccessor",
-    "FreecamMoveMixin",
     "GameJoinMixin",
     "GameModeHookMixin",
     "GammaMixin",

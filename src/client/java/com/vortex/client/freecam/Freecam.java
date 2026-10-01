@@ -49,10 +49,6 @@ public final class Freecam {
     /** Leben + Absorption im letzten Tick -- zum Erkennen von Schaden. */
     private static float letztesLeben = -1f;
 
-    // Position des echten Spielers beim Einschalten der Freecam. Solange die
-    // Freecam laeuft, wird der Spieler jeden Tick horizontal hierauf zurueck-
-    // gesetzt -- egal welcher Code-Pfad ihn bewegen wollte.
-    private static double lockX = 0, lockZ = 0;
 
     private Freecam() {}
 
@@ -98,8 +94,6 @@ public final class Freecam {
             velX = velY = velZ = 0;
             yaw = mc.player.getYRot();
             pitch = mc.player.getXRot();
-            lockX = mc.player.getX();
-            lockZ = mc.player.getZ();
             lastFrameNano = System.nanoTime();
             schleichenBeimStart = mc.player.isShiftKeyDown();
             letztesLeben = mc.player.getHealth() + mc.player.getAbsorptionAmount();
@@ -283,29 +277,14 @@ public final class Freecam {
                 freecamSpieler = null;
             }
 
-            if (active) {
-                // Erste Sperre: der FreecamMoveMixin faengt den Bewegungsvektor
-                // ab, BEVOR er angewendet wird. Zweite Sperre: die Tasten werden
-                // neutralisiert. Hier kommt die dritte, als Sicherheitsnetz.
-
-                // Waagerechten Restschwung abbauen.
-                net.minecraft.world.phys.Vec3 v = mc.player.getDeltaMovement();
-                if (v.x != 0.0 || v.z != 0.0) {
-                    mc.player.setDeltaMovement(0.0, v.y, 0.0);
-                }
-
-                // Ist der Spieler trotzdem abgedriftet, zurueckholen -- aber NUR
-                // ab einem spuerbaren Abstand. Ein staendiges Zuruecksetzen bei
-                // jedem Tick erzeugte frueher sichtbares Gleiten, weil die
-                // Zwischenbilder die alte Position noch zeigten. Mit dieser
-                // Schwelle passiert im Normalfall gar nichts.
-                double dx = mc.player.getX() - lockX;
-                double dz = mc.player.getZ() - lockZ;
-                if ((dx * dx + dz * dz) > 0.02) {
-                    mc.player.setPos(lockX, mc.player.getY(), lockZ);
-                }
-                return;
-            }
+            // KEIN Festhalten des Spielers (seit 4.15). Bis 4.14 wurde er in der
+            // Freecam waagerecht eingefroren -- ein Sprint-Sprung oder Elytra-Flug
+            // stoppte mitten in der Luft. Das sieht kein echter Spieler so, und
+            // Anti-Cheats schlagen an. Jetzt werden nur die Tasten neutralisiert
+            // (KeyboardInputMixin): Schwung, Sprung und Gleitflug laufen ganz
+            // normal aus -- wie wenn man die Tasten loslaesst. Gezeichnet wird
+            // der Spieler dort, wo er wirklich ist.
+            if (active) return;
 
             // Freecam aus -> der Spieler muss wieder die aktive Kamera sein.
             if (mc.getCameraEntity() != mc.player) {
