@@ -112,6 +112,9 @@ public class VortexClientMod implements ClientModInitializer {
         com.vortex.client.hud.WaypointRenderer.register();
         com.vortex.client.waypoint.WaypointActions.register();
         com.vortex.client.gui.RestartButton.register();
+        // Vortex-Leiste im Haupt- und Pausenmenue (Host, Social, Wardrobe, Pictures, Settings, Account)
+        try { com.vortex.client.gui.menu.MenuLeiste.register(); } catch (Throwable pvpErr) { com.vortex.client.core.Errors.report("MenuLeiste", pvpErr); }
+        try { com.vortex.client.gui.menu.WeltHosten.register(); } catch (Throwable pvpErr) { com.vortex.client.core.Errors.report("WeltHosten", pvpErr); }
         com.vortex.client.freecam.Freecam.registerSafety();
         try { com.vortex.client.beta.BetaTest.register(); } catch (Throwable pvpErr) { com.vortex.client.core.Errors.report("BetaTest", pvpErr); }
         com.vortex.client.command.ClientCommands.register();

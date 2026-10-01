@@ -18,21 +18,7 @@ public final class RestartButton {
     private RestartButton() {}
 
     public static void register() {
-        // Hauptmenue: Knopf zur Skin-Garderobe.
-        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen)) return;
-            try {
-                Button skins = Button.builder(
-                        Component.literal("Skins"),
-                        b -> net.minecraft.client.Minecraft.getInstance()
-                                .gui.setScreen(new SkinScreen(screen))
-                ).bounds(6, 6, 70, 20).build();
-                Screens.getWidgets(screen).add(skins);
-            } catch (Throwable pvpErr) {
-                com.vortex.client.core.Errors.report("SkinButton", pvpErr);
-            }
-        });
-
+        // Die Skin-Garderobe steht seit der Vortex-Leiste (gui/menu/MenuLeiste) dort als "Wardrobe".
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             if (!(screen instanceof PauseScreen)) return;
             try {
