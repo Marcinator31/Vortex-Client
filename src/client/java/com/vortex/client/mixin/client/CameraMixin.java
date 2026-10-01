@@ -40,6 +40,12 @@ public abstract class CameraMixin {
     @Shadow
     private boolean detached;
 
+    @Shadow
+    protected abstract void move(float vorwaerts, float hoch, float seitlich);
+
+    @Shadow
+    private float getMaxZoom(float abstand) { return abstand; }
+
     /**
      * Freelook: die Kamera bekommt die Freelook-Drehung statt der des Spielers.
      *
@@ -83,6 +89,16 @@ public abstract class CameraMixin {
         // Erst Rotation (berechnet Richtungsvektoren neu), dann Position.
         setRotation(Freecam.getYaw(), Freecam.getPitch());
         setPosition(Freecam.getPos().x, Freecam.getPos().y, Freecam.getPos().z);
+        // F5 BLEIBT F5 (seit 4.14): in der Dritt-Person-Ansicht steht die Kamera
+        // hinter (bzw. bei F5 von vorne: vor) dem Freecam-Punkt -- genau wie
+        // Minecraft es fuer den Spieler macht. Vorher zeigte die Freecam in F5
+        // trotzdem die Ich-Sicht, F5 schien abgeschaltet. getMaxZoom zieht die
+        // Kamera an Waenden heran (Ghost View "Camera Clip" schaltet das ab).
+        var typ = net.minecraft.client.Minecraft.getInstance().options.getCameraType();
+        if (typ != null && !typ.isFirstPerson()) {
+            if (typ.isMirrored()) setRotation(Freecam.getYaw() + 180f, -Freecam.getPitch());
+            move(-getMaxZoom(4.0f), 0f, 0f);
+        }
         // SPIELER SICHTBAR, OHNE ANTI-CHEAT-RISIKO.
         //
         // Vorher brauchte "Show Player" eine eigene Kamera-Entity. Dann galt

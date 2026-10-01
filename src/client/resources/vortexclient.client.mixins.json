@@ -28,6 +28,7 @@
     "GameJoinMixin",
     "GameModeHookMixin",
     "GammaMixin",
+    "FreecamCameraCullMixin",
     "FreecamCullMixin",
     "FreecamSmartCullMixin",
     "FreecamOverlayMixin",
