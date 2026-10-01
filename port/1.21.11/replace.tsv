@@ -3,6 +3,7 @@
 \bGuiGraphicsExtractor\b	GuiGraphics
 \bextractRenderStateWithTooltipAndSubtitles\b	renderWithTooltipAndSubtitles
 \bextractWidgetRenderState\b	renderWidget
+\bextractContents\b	renderContents
 \bextractRenderState\b	render	!LivingEntityRendererMixin.java,!ZoomFovMixin.java
 \bextractBackground\b	renderBackground
 \bextractMenuBackground\b	renderMenuBackground
