@@ -4,7 +4,12 @@
   "plugin": "com.vortex.client.mixinplugin.VortexMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "MenuEingabeStilMixin",
     "MenuKnopfStilMixin",
+    "MenuListeStilMixin",
+    "MenuSchriftBreiteMixin",
+    "MenuSchriftMixin",
+    "MenuSymbolKnopfMixin",
     "MenuTextKnopfStilMixin",
     "TitelGrundMixin",
     "TitelLogoMixin",

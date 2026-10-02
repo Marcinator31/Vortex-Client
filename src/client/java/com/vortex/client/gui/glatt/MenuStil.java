@@ -32,6 +32,7 @@ public final class MenuStil {
     private MenuStil() {}
 
     private static final Map<Object, float[]> HOVER = new WeakHashMap<>();
+    private static final long START = System.nanoTime();
 
     /** Gilt der neue Stil im gerade offenen Bildschirm? */
     public static boolean aktiv() {
@@ -39,7 +40,7 @@ public final class MenuStil {
             if (!com.vortex.client.core.ClientSettings.INSTANCE.modernMenus.get()) return false;
             Screen s = Minecraft.getInstance().gui.screen();
             return s instanceof TitleScreen || s instanceof SelectWorldScreen || s instanceof JoinMultiplayerScreen
-                    || s instanceof PauseScreen;
+                    || s instanceof PauseScreen || s instanceof net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
         } catch (Throwable e) {
             return false;
         }
@@ -54,12 +55,38 @@ public final class MenuStil {
         }
     }
 
+    /**
+     * Text in "Inter" umstellen? Nur Haupt-, Einzelspieler- und
+     * Mehrspielermenue (dort laeuft kein HUD mit, das sich mitveraendern wuerde)
+     * und nur im Render-Thread.
+     */
+    public static boolean textAktiv() {
+        try {
+            if (!com.vortex.client.core.ClientSettings.INSTANCE.modernMenus.get()) return false;
+            Minecraft mc = Minecraft.getInstance();
+            if (!mc.isSameThread()) return false;
+            Screen s = mc.gui.screen();
+            return s instanceof TitleScreen || s instanceof SelectWorldScreen || s instanceof JoinMultiplayerScreen
+                    || s instanceof net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /** Zeichen in Minecrafts Standardschrift auf "Inter" umstellen. */
+    public static net.minecraft.util.FormattedCharSequence umschreiben(net.minecraft.util.FormattedCharSequence seq) {
+        if (seq == null) return null;
+        final net.minecraft.network.chat.FontDescription f = Glatt.Schrift.NORMAL.font(Glatt.skala());
+        return sink -> seq.accept((i, st, cp) ->
+                sink.accept(i, st.getFont().equals(net.minecraft.network.chat.FontDescription.DEFAULT) ? st.withFont(f) : st, cp));
+    }
+
     /** Weicher Hover-Wert 0..1 je Knopf. */
     public static float hover(Object knopf, boolean ueber) {
         float[] z = HOVER.computeIfAbsent(knopf, k -> new float[]{0f, 0f});
-        long jetzt = System.nanoTime();
-        float dt = z[1] == 0f ? 0.016f : Math.min(0.1f, (jetzt / 1e9f) - z[1]);
-        z[1] = jetzt / 1e9f;
+        float jetzt = (System.nanoTime() - START) / 1e9f;
+        float dt = z[1] == 0f ? 0.016f : Math.max(0f, Math.min(0.1f, jetzt - z[1]));
+        z[1] = jetzt;
         float f = 1f - (float) Math.exp(-16f * dt);
         z[0] += ((ueber ? 1f : 0f) - z[0]) * f;
         return z[0];
@@ -100,6 +127,47 @@ public final class MenuStil {
         int farbe = an ? Glatt.mix(0xFFE9E6F2, 0xFFFFFFFF, hv) : 0xFF7A748C;
         Glatt.textMitte(ctx, text, w.getX() + w.getWidth() / 2f, w.getY() + (w.getHeight() - 9) / 2f + 0.5f,
                 Glatt.alpha(farbe, alpha), Schrift.FETT);
+    }
+
+    /** Ausgewaehlter Eintrag einer Liste (Welten, Server). */
+    public static void auswahl(GuiGraphicsExtractor ctx, int x, int y, int w, int h) {
+        int hell = Glatt.mix(akzent(), 0xFFFFFFFF, 0.35f);
+        Glatt.rund(ctx, x, y, w, h, 8, Glatt.alpha(Glatt.mix(0xFF141019, akzent(), 0.35f), 0.55f));
+        Glatt.rahmen(ctx, x, y, w, h, 8, 1, Glatt.alpha(hell, 0.75f));
+    }
+
+    /** Haarfeine Trennlinien ueber und unter einer Liste. */
+    public static void trenner(GuiGraphicsExtractor ctx, int x, int oben, int w, int unten) {
+        Glatt.linieW(ctx, x, x + w, oben, 0x22FFFFFF);
+        Glatt.linieW(ctx, x, x + w, unten, 0x22FFFFFF);
+    }
+
+    /** Eingabefeld-Hintergrund. */
+    public static void eingabe(GuiGraphicsExtractor ctx, AbstractWidget w, int x, int y, int bw, int bh) {
+        boolean fokus = w.isFocused();
+        float hv = hover(w, fokus || w.isHovered());
+        int hell = Glatt.mix(akzent(), 0xFFFFFFFF, 0.35f);
+        float r = Math.min(7f, bh / 2f);
+        Glatt.rund(ctx, x, y, bw, bh, r, w.active ? 0xD80A0810 : 0x900A0810);
+        int kante = fokus ? Glatt.alpha(hell, 0.9f) : Glatt.mix(0x2EFFFFFF, 0x55FFFFFF, hv);
+        Glatt.rahmen(ctx, x, y, bw, bh, r, 1, kante);
+    }
+
+    /**
+     * Symbol-Knopf: bekannte Minecraft-Symbole durch glatte ersetzen.
+     * @return true, wenn gezeichnet (sonst bleibt Minecrafts Bildchen)
+     */
+    public static boolean symbolKnopf(GuiGraphicsExtractor ctx, AbstractWidget w, String pfad, int x, int y, int sw, int sh) {
+        Symbole.Symbol s;
+        if (pfad.contains("language")) s = Symbole.Symbol.GLOBUS;
+        else if (pfad.contains("accessibility")) s = Symbole.Symbol.PERSON;
+        else return false;
+        float[] z = HOVER.get(w);
+        float hv = z == null ? 0f : z[0];
+        int farbe = w.active ? Glatt.mix(0xFFD6D1E6, 0xFFFFFFFF, hv) : 0xFF6F6982;
+        float g = Math.min(sw, sh) + 2;
+        Glatt.symbol(ctx, s, x + (sw - g) / 2f, y + (sh - g) / 2f, g, Glatt.alpha(farbe, Masken.klemme(widgetAlpha(w))));
+        return true;
     }
 
     private static float widgetAlpha(AbstractWidget w) {

@@ -231,7 +231,7 @@ public final class Glatt {
             this.name = name;
         }
 
-        FontDescription font(int s) {
+        public FontDescription font(int s) {
             FontDescription f = fonts[s];
             if (f == null) {
                 f = new FontDescription.Resource(Identifier.fromNamespaceAndPath("vortexclient", name + "_" + s));

@@ -62,3 +62,7 @@ net/minecraft/client/gui/Hud;	net/minecraft/client/gui/Gui;
 json:"ClockTimeMixin",	"ClockTimeMixin",\n    "ClockTimeLegacyMixin",
 \bextractDefaultSprite\b	renderDefaultSprite
 "render\(Lnet/minecraft/client/gui/GuiGraphics;IFI\)V"	"renderLogo(Lnet/minecraft/client/gui/GuiGraphics;IFI)V"	TitelLogoMixin.java
+net([./])minecraft\1client\1renderer\1state\1gui\1GuiTextRenderState\b	net\1minecraft\1client\1gui\1render\1state\1GuiTextRenderState
+\bextractListSeparators\b	renderListSeparators
+\bextractSelection\b	renderSelection
+\bextractSprite\b	renderSprite
