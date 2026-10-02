@@ -175,57 +175,14 @@ public final class HudRenderer {
                     coords.style, coords.color, "XYZ", text, HudStyle.FORM_LABEL_FIRST);
         }
 
-        // --- Potion-Effekte (Box + Icon + Name + Restzeit, wie AppleSkin-Stil) ---
+        // --- Potion-Effekte (Karten mit Restzeit-Balken, weich animiert -- PotionHud) ---
         PotionEffectsModule potions = (PotionEffectsModule) find(PotionEffectsModule.class);
         if (potions != null && potions.isEnabled() && client.player != null) {
-            int lineY = potions.y.getInt();
-            int lineX = potions.x.getInt();
-
-            pushScale(context, lineX, lineY, potions.scale.getFloat());
-            for (var effect : client.player.getActiveEffects()) {
-                // Namen + Stufe vorbereiten (fuer Box-Breite).
-                String key = effect.getDescriptionId();
-                String raw = key.substring(key.lastIndexOf('.') + 1);
-                String name = capitalize(raw.replace('_', ' '));
-                int amp = effect.getAmplifier();
-                if (amp > 0) {
-                    name = name + " " + toRoman(amp + 1);
-                }
-                String time = net.minecraft.world.effect.MobEffectUtil
-                        .formatDuration(effect, 1.0f, 20.0f).getString();
-
-                // Box-Breite: Icon (22) + breiterer der beiden Texte + Rand.
-                int textW = Math.max(
-                        client.font.width(name),
-                        client.font.width(time));
-                int boxW = 24 + textW + 6;
-                int boxH = 22;
-
-                // 1) Dunkler, halbtransparenter Hintergrund-Kasten.
-                context.fill(lineX, lineY, lineX + boxW, lineY + boxH, 0xC0000000);
-
-                // 2) Vanilla-Icon links ueber den GUI-Sprite-Pfad
-                //    "mob_effect/<name>" (drawGuiTexture nimmt einen Identifier).
-                String effId = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
-                        .getKey(effect.getEffect().value()).getPath();
-                var spriteId = Identifier.withDefaultNamespace("mob_effect/" + effId);
-                try {
-                    context.blitSprite(
-                        net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                        spriteId, lineX + 2, lineY + 2, 18, 18);
-                } catch (Throwable ignored) {
-                    // Icon nicht ladbar -> nur Component/Box.
-                }
-
-                // 3) Name oben, Restzeit darunter -- rechts neben dem Icon.
-                context.text(client.font, Component.literal(name),
-                        lineX + 24, lineY + 2, potions.color.get());
-                context.text(client.font, Component.literal(time),
-                        lineX + 24, lineY + 12, 0xFFAAAAAA);
-
-                lineY += boxH + 3; // naechste Box mit kleinem Abstand
+            try {
+                PotionHud.zeichnen(context, client, potions);
+            } catch (Throwable pvpErr) {
+                com.vortex.client.core.Errors.report("PotionHud", pvpErr);
             }
-            popScale(context);
         }
 
         // --- Totem-Counter (Icon + Anzahl im Inventar) ---

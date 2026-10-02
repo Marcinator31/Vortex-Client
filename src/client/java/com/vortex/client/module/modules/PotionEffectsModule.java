@@ -5,7 +5,7 @@ import com.vortex.client.core.setting.NumberSetting;
 import com.vortex.client.hud.HudElement;
 import com.vortex.client.module.Module;
 
-/** Zeigt aktive Trank-Effekte als Liste (Name + Restzeit). */
+/** Zeigt aktive Trank-Effekte als Karten mit Restzeit-Balken (PotionHud). */
 public class PotionEffectsModule extends Module implements HudElement {
 
     public final NumberSetting x = new NumberSetting("X", 4, 0, 1920, 1);
@@ -26,6 +26,6 @@ public class PotionEffectsModule extends Module implements HudElement {
     @Override public NumberSetting hudY() { return y; }
     @Override public NumberSetting hudScale() { return scale; }
     @Override public com.vortex.client.core.setting.ColorSetting hudColor() { return color; }
-    @Override public int hudWidth() { return 100; }
+    @Override public int hudWidth() { return 112; }
     @Override public int hudHeight() { return 26; }
 }
