@@ -9,11 +9,11 @@ import net.minecraft.resources.Identifier;
  *
  * Das Logo besteht aus zwei Teilen, die getrennt als Bild vorliegen:
  *   logo_v     das "V" -- zwei Klingen, Violett und Blau
- *   logo_ring  der Wirbel-Bogen darum, mit auslaufendem Schweif
+ *   logo_ring  der Bogen unter dem V
  *
- * Getrennt, damit sich der Bogen langsam um das V drehen kann: eine Runde
- * in gut elf Sekunden -- ruhig genug, um nicht abzulenken, aber so, dass das
- * Menue lebt. Beim Oeffnen waechst das Logo mit einer kleinen Drehung herein.
+ * Seit 4.18 (neues Logo) steht der Bogen still unter dem V; beim Oeffnen
+ * waechst das Logo herein und der Bogen schwingt mit einer kleinen Drehung
+ * an seinen Platz.
  *
  * logo (beides zusammen, unbewegt) bleibt als Rueckfall, falls das Drehen
  * einmal nicht geht.
@@ -41,7 +41,6 @@ public final class LogoRenderer {
             statisch(ctx, x, y, g, alpha);
             return;
         }
-        float zeit = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         var p = ctx.pose();
         p.pushMatrix();
         try {
@@ -51,7 +50,9 @@ public final class LogoRenderer {
             int h = g / 2;
             // Bogen: dreht sich stetig, beim Oeffnen mit Schwung hinein
             p.pushMatrix();
-            p.rotate(zeit * 0.55f - (1f - e) * 2.2f);
+            // Neues Logo (4.18): der Bogen steht still unter dem V und
+                // schwingt nur beim Oeffnen mit einer kleinen Drehung herein.
+                p.rotate(-(1f - e) * 0.9f);
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, RING, -h, -h, g, g, alpha);
             p.popMatrix();
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, V, -h, -h, g, g, alpha);
