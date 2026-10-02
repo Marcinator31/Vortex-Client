@@ -66,3 +66,4 @@ net([./])minecraft\1client\1renderer\1state\1gui\1GuiTextRenderState\b	net\1mine
 \bextractListSeparators\b	renderListSeparators
 \bextractSelection\b	renderSelection
 \bextractSprite\b	renderSprite
+\bextractListItems\b	renderListItems

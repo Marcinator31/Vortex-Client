@@ -62,6 +62,11 @@ public final class MenuStil {
      */
     public static boolean textAktiv() {
         try {
+            if (inListe > 0) {
+                // Falls eine Liste mit Fehler abbricht, haengt der Zaehler nicht ewig
+                if (System.nanoTime() - listeSeit < 250_000_000L) return false;
+                inListe = 0;
+            }
             if (!com.vortex.client.core.ClientSettings.INSTANCE.modernMenus.get()) return false;
             Minecraft mc = Minecraft.getInstance();
             if (!mc.isSameThread()) return false;
@@ -72,6 +77,17 @@ public final class MenuStil {
             return false;
         }
     }
+
+    /**
+     * Wird gerade eine Liste (Welten, Server) gezeichnet? Deren Eintraege --
+     * Weltname, Servername, MOTD -- bleiben in Minecrafts eigener Schrift,
+     * genau wie die Server sie gestaltet haben (seit 4.18.1).
+     */
+    private static int inListe = 0;
+    private static long listeSeit = 0;
+
+    public static void listeBeginn() { inListe++; listeSeit = System.nanoTime(); }
+    public static void listeEnde() { if (inListe > 0) inListe--; }
 
     /** Zeichen in Minecrafts Standardschrift auf "Inter" umstellen. */
     public static net.minecraft.util.FormattedCharSequence umschreiben(net.minecraft.util.FormattedCharSequence seq) {
