@@ -44,6 +44,11 @@ public class RadarModule extends Module implements HudElement {
     // Bei Spielern Kopf + Name + Entfernung anzeigen.
     public final BooleanSetting playerDetails = new BooleanSetting("Player Details", true);
 
+    // Seit 4.16: Aussehen
+    public final BooleanSetting mobIcons = new BooleanSetting("Mob Icons", true);
+    public final BooleanSetting compass = new BooleanSetting("Compass", true);
+    public final BooleanSetting sweep = new BooleanSetting("Sweep", true);
+
     // --- Warnung bei neuen Spielern ---------------------------------------
     // Beides standardmaessig AUS: ein Radar, der ungefragt Toene macht, ist
     // beim ersten Einschalten eine unangenehme Ueberraschung.
@@ -66,6 +71,9 @@ public class RadarModule extends Module implements HudElement {
         addSetting(showAnimals);
         addSetting(showItems);
         addSetting(playerDetails);
+        addSetting(mobIcons);
+        addSetting(compass);
+        addSetting(sweep);
         addSetting(alertChat);
         addSetting(alertSound);
         addSetting(alertCooldown);
