@@ -133,7 +133,11 @@ public final class PotionHud {
         if (k.icon != null) {
             float ia = a * (k.warnen ? 0.55f + 0.45f * puls : 1f);
             try {
-                ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, k.icon, x + 6, y + 3, 18, 18, ia);
+                // Farbe statt float-Alpha: so blinkt auch Minecrafts eigene Effektanzeige.
+                // (Die float-Variante brachte die Schrift danach durcheinander --
+                // farbige Kaesten um den Text, gesehen im Test-Screenshot.)
+                int weiss = (Math.round(Math.max(0f, Math.min(1f, ia)) * 255f) << 24) | 0xFFFFFF;
+                ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, k.icon, x + 6, y + 3, 18, 18, weiss);
             } catch (Throwable ignored) {
             }
         }
