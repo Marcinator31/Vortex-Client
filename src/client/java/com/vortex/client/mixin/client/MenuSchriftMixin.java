@@ -21,11 +21,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MenuSchriftMixin {
 
     @Shadow @Mutable @Final private FormattedCharSequence text;
+    @Shadow @Mutable @Final private boolean dropShadow;
 
     @Inject(method = "<init>", at = @At("TAIL"), require = 0)
     private void vortex$schrift(CallbackInfo ci) {
         try {
-            if (MenuStil.textAktiv()) this.text = MenuStil.umschreiben(this.text);
+            if (MenuStil.textAktiv()) {
+                this.text = MenuStil.umschreiben(this.text);
+                // Der harte Pixelschatten (1 GUI-Pixel versetzt) passt nicht zu
+                // glatter Schrift -- der Hintergrund ist dort ohnehin abgedunkelt.
+                this.dropShadow = false;
+            }
         } catch (Throwable t) {
             com.vortex.client.core.Errors.report("MenuSchrift", t);
         }

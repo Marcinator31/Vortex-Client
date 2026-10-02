@@ -105,7 +105,7 @@ public final class MenuStil {
         int akz = akzent();
         int hell = Glatt.mix(akz, 0xFFFFFFFF, 0.35f);
         float r = Math.min(8f, bh / 2f);
-        int flaeche = an ? Glatt.mix(0xB8120F1B, Glatt.mix(0xD8120F1B, akz, 0.28f), hv) : 0x70100D16;
+        int flaeche = an ? Glatt.mix(0xCC120F1B, Glatt.mix(0xE0120F1B, akz, 0.28f), hv) : 0x80100D16;
         Glatt.rund(ctx, x, y, bw, bh, r, Glatt.alpha(flaeche, alpha));
         int kante = an ? Glatt.mix(0x2EFFFFFF, Glatt.alpha(hell, 0.85f), hv) : 0x14FFFFFF;
         Glatt.rahmen(ctx, x, y, bw, bh, r, 1, Glatt.alpha(kante, alpha));
