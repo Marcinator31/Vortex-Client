@@ -110,9 +110,9 @@ public final class RadarRenderer {
             // 3) Sweep
             if (mod.sweep.get()) {
                 double winkel = (ms % 4000L) / 4000.0 * Math.PI * 2.0;
-                for (int i = 0; i < 12; i++) {
-                    double a = winkel - i * 0.045;
-                    int alpha = Math.max(0, 90 - i * 8);
+                for (int i = 0; i < 22; i++) {
+                    double a = winkel - i * 0.024;
+                    int alpha = Math.max(0, 80 - i * 4);
                     strahl(context, R, R, R - Q, a, (alpha << 24) | (frame & 0xFFFFFF));
                 }
             }
@@ -252,9 +252,9 @@ public final class RadarRenderer {
     /** Strahl vom Mittelpunkt (fuer den Sweep), Winkel 0 = oben, im Uhrzeigersinn. */
     private static void strahl(GuiGraphicsExtractor c, int cx, int cy, int laenge, double winkel, int farbe) {
         double sx = Math.sin(winkel), sy = -Math.cos(winkel);
-        for (int t = 2; t < laenge; t += 2) {
+        for (int t = 3; t < laenge; t += 3) {
             int x = (int) Math.round(cx + sx * t), y = (int) Math.round(cy + sy * t);
-            c.fill(x, y, x + 2, y + 2, farbe);
+            c.fill(x - 1, y - 1, x + 2, y + 2, farbe);
         }
     }
 
