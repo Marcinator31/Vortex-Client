@@ -33,11 +33,13 @@ public final class ClientSettings {
     public final BooleanSetting moduleTooltips = new BooleanSetting("Module Tooltips", true);
     /** Vor dem Neustart des Spiels nachfragen. */
     public final BooleanSetting confirmRestart = new BooleanSetting("Confirm Restart", true);
+    /** Neues, glattes Aussehen fuer Haupt-, Einzelspieler-, Mehrspieler- und Pausenmenue. */
+    public final BooleanSetting modernMenus = new BooleanSetting("Modern Menus", true);
 
     private ClientSettings() {}
 
     public List<Setting> all() {
-        return List.of(toggleMessage, toggleMessageFor, toggleSound, rightShiftOpens, moduleTooltips, confirmRestart);
+        return List.of(toggleMessage, toggleMessageFor, toggleSound, rightShiftOpens, moduleTooltips, confirmRestart, modernMenus);
     }
 
     /**

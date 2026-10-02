@@ -1,7 +1,5 @@
 package com.vortex.client.gui.menu;
 
-import com.vortex.client.gui.VortexStyle;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -9,8 +7,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
 /**
- * Ein Knopf der Vortex-Leiste im Haupt- und Pausenmenue: dunkle Flaeche,
- * Text links, Pixel-Symbol rechts. Schmale Fenster zeigen nur das Symbol
+ * Ein Knopf der Vortex-Leiste im Haupt- und Pausenmenue: glatte Glasflaeche,
+ * Text links, Symbol rechts. Schmale Fenster zeigen nur das Symbol
  * (der Name kommt dann als Tooltip).
  */
 public class MenuKnopf extends AbstractButton {
@@ -40,25 +38,35 @@ public class MenuKnopf extends AbstractButton {
         zeichnen(g);
     }
 
-    /** Zeichnet den ganzen Knopf selbst (kein Vanilla-Sprite). */
+    /**
+     * Zeichnet den ganzen Knopf selbst (kein Vanilla-Sprite). Seit 4.17 glatt:
+     * runde Glasflaeche, Vektor-Symbol und Schrift "Inter" statt Pixeln.
+     */
     void zeichnen(GuiGraphicsExtractor g) {
         int x = getX(), y = getY(), w = getWidth(), h = getHeight();
-        boolean hover = isHovered() || isFocused();
-        // Rahmen, Flaeche, beim Zeigen ein Akzentstrich links
-        g.fill(x, y, x + w, y + h, 0xFF050408);
-        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, hover ? VortexStyle.HOV : VortexStyle.CARD);
-        g.fill(x + 1, y + 1, x + w - 1, y + 2, hover ? 0x33FFFFFF : 0x18FFFFFF);
-        if (hover) g.fill(x + 1, y + 2, x + 3, y + h - 1, VortexStyle.VIOLETT);
-
-        int farbe = hover ? 0xFFFFFFFF : VortexStyle.TEXT;
-        int sw = MenuSymbole.breite(symbol), sh = MenuSymbole.hoehe(symbol);
+        float hv = com.vortex.client.gui.glatt.MenuStil.grund(g, this);
+        float alpha = Math.max(0f, Math.min(1f, getAlpha()));
+        int farbe = com.vortex.client.gui.glatt.Glatt.mix(0xFFD6D1E6, 0xFFFFFFFF, hv);
+        farbe = com.vortex.client.gui.glatt.Glatt.alpha(farbe, alpha);
+        var sym = symbolFuer(symbol);
+        float sg = 12;
         if (kompakt) {
-            MenuSymbole.zeichnen(g, symbol, x + (w - sw) / 2, y + (h - sh) / 2, farbe);
+            com.vortex.client.gui.glatt.Glatt.symbol(g, sym, x + (w - sg) / 2f, y + (h - sg) / 2f, sg, farbe);
             return;
         }
-        var font = Minecraft.getInstance().font;
-        g.text(font, getMessage(), x + 8, y + (h - 8) / 2, farbe, true);
-        MenuSymbole.zeichnen(g, symbol, x + w - sw - 8, y + (h - sh) / 2, farbe);
+        com.vortex.client.gui.glatt.Glatt.text(g, getMessage().getString(), x + 10, y + (h - 9) / 2f + 0.5f, farbe,
+                com.vortex.client.gui.glatt.Glatt.Schrift.FETT);
+        com.vortex.client.gui.glatt.Glatt.symbol(g, sym, x + w - sg - 9, y + (h - sg) / 2f, sg, farbe);
+    }
+
+    private static com.vortex.client.gui.glatt.Symbole.Symbol symbolFuer(String[] s) {
+        if (s == MenuSymbole.HOST) return com.vortex.client.gui.glatt.Symbole.Symbol.WELLEN;
+        if (s == MenuSymbole.SOCIAL) return com.vortex.client.gui.glatt.Symbole.Symbol.LEUTE;
+        if (s == MenuSymbole.WARDROBE) return com.vortex.client.gui.glatt.Symbole.Symbol.HEMD;
+        if (s == MenuSymbole.PICTURES) return com.vortex.client.gui.glatt.Symbole.Symbol.BILD;
+        if (s == MenuSymbole.SETTINGS) return com.vortex.client.gui.glatt.Symbole.Symbol.ZAHNRAD;
+        if (s == MenuSymbole.ACCOUNT) return com.vortex.client.gui.glatt.Symbole.Symbol.PERSON;
+        return com.vortex.client.gui.glatt.Symbole.Symbol.STERN;
     }
 
     @Override
