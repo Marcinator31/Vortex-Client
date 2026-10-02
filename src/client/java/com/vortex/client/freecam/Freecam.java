@@ -16,7 +16,13 @@ import com.mojang.blaze3d.platform.InputConstants;
  * jeden Frame auf.
  *
  * Die Rotation kommt aus der normalen Spieler-Blickrichtung (die Maus dreht also
- * die Kamera), die Position ist unabhaengig -- der Spieler bleibt stehen.
+ * die Kamera), die Position ist unabhaengig.
+ *
+ * Seit 4.15 wieder der schlanke Stand von vor 4.8 (auf Wunsch): keine
+ * Info-Zeile, kein Mausrad-Tempo, keine Extra-Flugarten ausser "Smooth
+ * Movement", kein Abschalten bei Schaden. Geblieben sind "Show Player",
+ * F5 in der Freecam, die bessere Sicht unter Tage -- und der Spieler wird
+ * NICHT mehr eingefroren (Sprung und Elytra-Flug laufen normal weiter).
  */
 public final class Freecam {
 
@@ -42,12 +48,6 @@ public final class Freecam {
 
     private static long lastFrameNano = 0L;
 
-    /** Mausrad-Faktor auf die eingestellte Geschwindigkeit (bleibt fuer die Sitzung). */
-    private static double radFaktor = 1.0;
-    /** War der Spieler beim Einschalten am Schleichen? Dann bleibt er es. */
-    private static boolean schleichenBeimStart = false;
-    /** Leben + Absorption im letzten Tick -- zum Erkennen von Schaden. */
-    private static float letztesLeben = -1f;
 
 
     private Freecam() {}
@@ -95,8 +95,6 @@ public final class Freecam {
             yaw = mc.player.getYRot();
             pitch = mc.player.getXRot();
             lastFrameNano = System.nanoTime();
-            schleichenBeimStart = mc.player.isShiftKeyDown();
-            letztesLeben = mc.player.getHealth() + mc.player.getAbsorptionAmount();
             // Kamera-Entity spawnen und als aktive Kamera setzen, damit das
             // Rendering (inkl. Cave-Culling) der Freecam folgt.
             spawnCameraEntity(mc);
@@ -185,49 +183,17 @@ public final class Freecam {
         return active && schalter("No Culling", true);
     }
 
-    /** Freecam: kein Nebel (MixinFogRenderer). */
-    public static boolean ohneNebel() {
-        return active && schalter("No Fog", true);
-    }
+    // Seit 4.15 wieder wie vor 4.8: Nebel und Overlays wie im normalen Spiel,
+    // kein Geduckt-Bleiben, Mausrad wechselt den Hotbar-Platz.
+    public static boolean ohneNebel() { return false; }
+    public static boolean ohneOverlays() { return false; }
+    public static boolean schleichen() { return false; }
+    public static boolean onScroll(double amount) { return false; }
 
-    /** Freecam: keine Bildschirm-Overlays des Spielers (Kuerbis, Feuer, Wasser, Block im Kopf ...). */
-    public static boolean ohneOverlays() {
-        return active && schalter("Hide Overlays", true);
-    }
-
-    /** Fuer die Eingabe-Mixins: soll der Spieler waehrend der Freecam schleichen? */
-    public static boolean schleichen() {
-        return active && schleichenBeimStart && schalter("Keep Sneaking", true);
-    }
-
-    /** Aufhellung in der Freecam (GammaMixin). */
+    /** Aufhellung in der Freecam (GammaMixin) -- wie frueher immer an. */
     public static boolean hell() {
-        return active && schalter("Fullbright", true);
+        return active;
     }
-
-    /** Aktuelle Fluggeschwindigkeit in Bloecken pro Sekunde (ohne Sprint). */
-    public static double tempo() {
-        return zahl("Speed", SPEED) * radFaktor;
-    }
-
-    /**
-     * Mausrad in der Freecam: Geschwindigkeit aendern statt Hotbar-Slot.
-     * @return true, wenn das Rad verbraucht wurde
-     */
-    public static boolean onScroll(double amount) {
-        if (!active || amount == 0) return false;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.gui.screen() != null || !schalter("Scroll Changes Speed", true)) return false;
-        radFaktor *= Math.pow(1.25, Math.signum(amount));
-        double basis = Math.max(0.1, zahl("Speed", SPEED));
-        // Ergebnis zwischen 0,5 und 200 Bloecken pro Sekunde.
-        radFaktor = Math.max(0.5 / basis, Math.min(200.0 / basis, radFaktor));
-        infoBis = System.currentTimeMillis() + 1500;
-        return true;
-    }
-
-    /** Bis wann die Info-Zeile hervorgehoben wird (nach einer Aenderung). */
-    private static long infoBis = 0;
 
     /**
      * Sicherheitsnetz gegen "Spieler haengt fest".
@@ -239,14 +205,6 @@ public final class Freecam {
      * Dieser Tick-Check setzt das automatisch zurueck.
      */
     public static void registerSafety() {
-        try {
-            net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementAfter(
-                    net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MISC_OVERLAYS,
-                    net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "freecam_info"),
-                    (ctx, tick) -> info(ctx));
-        } catch (Throwable pvpErr) {
-            com.vortex.client.core.Errors.report("Freecam.hud", pvpErr);
-        }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
                 .END_CLIENT_TICK.register(mc -> {
             if (mc.player == null) return;
@@ -262,16 +220,6 @@ public final class Freecam {
                     beenden(mc.player.isDeadOrDying() ? "Off -- you died." : null);
                     return;
                 }
-                // Schaden: sofort zurueck in den eigenen Koerper. Wer in der
-                // Freecam angegriffen wird, merkt es sonst erst, wenn es zu
-                // spaet ist.
-                float leben = mc.player.getHealth() + mc.player.getAbsorptionAmount();
-                if (letztesLeben >= 0 && leben < letztesLeben - 0.01f && schalter("Disable On Damage", true)) {
-                    letztesLeben = -1f;
-                    beenden("Off -- you took damage.");
-                    return;
-                }
-                letztesLeben = leben;
             } else {
                 freecamWelt = null;
                 freecamSpieler = null;
@@ -367,15 +315,9 @@ public final class Freecam {
             // Vorwaerts-Vektor (inkl. Pitch fuers Hoch-/Runterfliegen beim Blicken).
             // "Horizontal Movement": wie Kreativ-Flug -- W bleibt auf der Hoehe,
             // hoch und runter nur mit Springen/Schleichen.
-            if (schalter("Horizontal Movement", false)) {
-                fx = -Math.sin(yawRad);
-                fy = 0;
-                fz = Math.cos(yawRad);
-            } else {
-                fx = -Math.sin(yawRad) * Math.cos(pitchRad);
-                fy = -Math.sin(pitchRad);
-                fz =  Math.cos(yawRad) * Math.cos(pitchRad);
-            }
+            fx = -Math.sin(yawRad) * Math.cos(pitchRad);
+            fy = -Math.sin(pitchRad);
+            fz =  Math.cos(yawRad) * Math.cos(pitchRad);
             // Rechts-Vektor (horizontal), korrekt = (-cos(yaw), -sin(yaw)).
             // Herleitung: rechts = forward um 90 Grad gedreht in der XZ-Ebene
             // -> (-fz, fx) bei pitch 0. So zeigt D wirklich nach rechts.
@@ -383,7 +325,7 @@ public final class Freecam {
             rz = -Math.sin(yawRad);
 
             // Geschwindigkeit aus den Modul-Einstellungen (in der GUI regelbar).
-            double speed = zahl("Speed", SPEED) * radFaktor;
+            double speed = zahl("Speed", SPEED);
             double sprintFactor = zahl("Sprint Multiplier", SPRINT_MULT);
             if (mc.options.keySprint.isDown()) speed *= sprintFactor;
             accel = speed;
@@ -436,27 +378,6 @@ public final class Freecam {
             cameraEntity.yOld = y;
             cameraEntity.zOld = z;
         }
-    }
-
-    /**
-     * Kleine Zeile oben in der Mitte: Tempo und Abstand zum eigenen Koerper.
-     * Der Abstand zaehlt: nur Chunks in Sichtweite des SPIELERS werden
-     * geladen -- fliegt man zu weit, endet die Welt.
-     */
-    private static void info(net.minecraft.client.gui.GuiGraphicsExtractor ctx) {
-        if (!active || !schalter("Show Info", true)) return;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.font == null) return;
-        double dx = x - mc.player.getX(), dy = y - mc.player.getEyeY(), dz = z - mc.player.getZ();
-        int abstand = (int) Math.sqrt(dx * dx + dy * dy + dz * dz);
-        String t = String.format(java.util.Locale.ROOT, "Freecam  \u00a77%.1f b/s  \u00b7  %d m", tempo(), abstand);
-        int grenze = mc.options.getEffectiveRenderDistance() * 16;
-        if (abstand > grenze - 16) t += "  \u00a7c(edge of loaded world)";
-        boolean hervor = System.currentTimeMillis() < infoBis;
-        int w = mc.font.width(t);
-        int sx = (ctx.guiWidth() - w) / 2;
-        ctx.fill(sx - 4, 3, sx + w + 4, 15, hervor ? 0xC0301A4A : 0x80000000);
-        ctx.text(mc.font, net.minecraft.network.chat.Component.literal(t), sx, 5, 0xFFE8DDFF, false);
     }
 
     private static boolean isDown(Minecraft mc, int key) {
