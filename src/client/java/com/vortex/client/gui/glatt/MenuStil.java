@@ -195,15 +195,16 @@ public final class MenuStil {
     public static void titelLogo(GuiGraphicsExtractor ctx, int breite, float y, float alpha) {
         if (alpha <= 0.01f) return;
         String name = "Vortex Client";
-        float lg = 38;
+        float lg = 50;
         float tw = Glatt.breite(name, Schrift.GROSS);
         float gesamt = lg + 12 + tw;
         float x = (breite - gesamt) / 2f;
         Glatt.licht(ctx, x + lg / 2f, y + lg / 2f, lg * 1.4f, Glatt.alpha(VortexStyle.VIOLETT, alpha * 0.35f));
         Glatt.logo(ctx, x, y, lg, alpha, 1f);
-        Glatt.text(ctx, name, x + lg + 12, y + 6, Glatt.alpha(0xFFFFFFFF, alpha), Schrift.GROSS);
+        float ty = y + (lg - 36) / 2f;
+        Glatt.text(ctx, name, x + lg + 10, ty, Glatt.alpha(0xFFFFFFFF, alpha), Schrift.GROSS);
         String unter = "Minecraft " + mcVersion();
-        Glatt.text(ctx, unter, x + lg + 13, y + 29, Glatt.alpha(0xFFB9B2D0, alpha), Schrift.NORMAL);
+        Glatt.text(ctx, unter, x + lg + 11, ty + 23, Glatt.alpha(0xFFB9B2D0, alpha), Schrift.NORMAL);
     }
 
     private static String mcVersion() {

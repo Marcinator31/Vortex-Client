@@ -178,9 +178,12 @@ public class HomeScreen extends Screen {
         float cy = y0 + 16;
 
         // --- Kopf ------------------------------------------------------------------
-        float logoG = m.kompakt ? 22 : 28;
-        Glatt.logo(ctx, ix, cy, logoG, a, a);
-        float tx = ix + logoG + 10;
+        // Das Logo-Bild hat Rand fuer den Schein -- deshalb groesser als der
+        // Kopf und etwas nach links versetzt.
+        float logoG = m.kompakt ? 30 : 38;
+        float kopfH = m.kompakt ? 22 : 28;
+        Glatt.logo(ctx, ix - logoG * 0.08f, cy + (kopfH - logoG) / 2f, logoG, a, a);
+        float tx = ix + logoG * 0.86f + 6;
         if (m.kompakt) {
             Glatt.text(ctx, "Vortex Client", tx, cy + 4, Glatt.alpha(TEXT, a), Schrift.TITEL);
         } else {
@@ -189,7 +192,7 @@ public class HomeScreen extends Screen {
             Glatt.text(ctx, unter, tx, cy + 18, Glatt.alpha(TEXT_LEISE, a), Schrift.NORMAL);
         }
         // Schliessen
-        float zs = 24, zx = x0 + W - pad - zs, zy = cy + (logoG - zs) / 2f;
+        float zs = 24, zx = x0 + W - pad - zs, zy = cy + (kopfH - zs) / 2f;
         float hz = hover("zu", over(zx, zy, zs, zs), dt);
         Glatt.kreis(ctx, zx + zs / 2, zy + zs / 2, zs, Glatt.alpha(0xFFFFFFFF, a * (0.04f + 0.08f * hz)));
         Glatt.symbol(ctx, Symbol.KREUZ, zx + 6, zy + 6, 12, Glatt.alpha(Glatt.mix(TEXT_LEISE, TEXT, hz), a));
