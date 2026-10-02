@@ -4,6 +4,11 @@
   "plugin": "com.vortex.client.mixinplugin.VortexMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "MenuKnopfStilMixin",
+    "MenuTextKnopfStilMixin",
+    "TitelGrundMixin",
+    "TitelLogoMixin",
+    "TitelSplashMixin",
     "AutoReconnectMixin",
     "BiomeAccessSeedAccessor",
     "BlockEntityHideMixin",

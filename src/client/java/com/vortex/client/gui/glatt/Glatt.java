@@ -220,7 +220,9 @@ public final class Glatt {
         /** Hervorgehoben, Inter SemiBold 9. */
         FETT("fett"),
         /** Ueberschrift, Inter Bold 13 (Grundlinie 3 Einheiten tiefer). */
-        TITEL("titel");
+        TITEL("titel"),
+        /** Schriftzug, Inter Bold 22 (Grundlinie bei 17). */
+        GROSS("gross");
 
         final String name;
         private final FontDescription[] fonts = new FontDescription[9];

@@ -60,3 +60,5 @@ net/minecraft/client/gui/Hud;	net/minecraft/client/gui/Gui;
 "submitBlockOutline"	"renderBlockOutline"	OutlineHideMixin.java
 "alignWithEntity"	"setup"	CameraMixin.java
 json:"ClockTimeMixin",	"ClockTimeMixin",\n    "ClockTimeLegacyMixin",
+\bextractDefaultSprite\b	renderDefaultSprite
+"render\(Lnet/minecraft/client/gui/GuiGraphics;IFI\)V"	"renderLogo(Lnet/minecraft/client/gui/GuiGraphics;IFI)V"	TitelLogoMixin.java

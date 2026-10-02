@@ -239,7 +239,7 @@ public class HomeScreen extends Screen {
         int neu = com.vortex.client.social.Social.data() == null ? 0 : com.vortex.client.social.Social.unreadTotal();
         Object[][] kacheln = {
             // {Schluessel, Titel, Untertitel, Symbol, Aktion}
-            {"hud", "HUD Editor", "Move elements", Symbol.HUD, (Runnable) () -> mc.gui.setScreen(new HudEditorScreen())},
+            {"hud", "HUD Editor", "Edit layout", Symbol.HUD, (Runnable) () -> mc.gui.setScreen(new HudEditorScreen())},
             {"presets", "Presets", presetKurz(), Symbol.REGLER, (Runnable) () -> mc.gui.setScreen(new PresetScreen(this))},
             {"waypoints", "Waypoints", anzahl(() -> com.vortex.client.waypoint.WaypointManager.all().size(), "marker"), Symbol.NADEL, (Runnable) () -> mc.gui.setScreen(new WaypointScreen(this))},
             {"macros", "Macros", anzahl(() -> com.vortex.client.macro.MacroManager.all().size(), "macro"), Symbol.BLITZ, (Runnable) () -> mc.gui.setScreen(new MacroScreen(this))},
@@ -420,7 +420,7 @@ public class HomeScreen extends Screen {
     }
 
     private static String anzahl(java.util.function.IntSupplier n, String wort) {
-        try { int z = n.getAsInt(); return z == 0 ? "No " + wort + "s yet" : z + " " + wort + (z == 1 ? "" : "s"); }
+        try { int z = n.getAsInt(); return z == 0 ? "None yet" : z + " " + wort + (z == 1 ? "" : "s"); }
         catch (Throwable e) { return ""; }
     }
 
