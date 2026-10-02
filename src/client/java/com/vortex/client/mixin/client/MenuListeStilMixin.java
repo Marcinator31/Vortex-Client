@@ -46,6 +46,17 @@ public abstract class MenuListeStilMixin {
         original.call(ctx, x0, y0, x1, y1, farbe);
     }
 
+    /** Eintraege (Weltname, Servername, MOTD) in Minecrafts Originalschrift lassen. */
+    @Inject(method = "extractListItems", at = @At("HEAD"), require = 0)
+    private void vortex$listeBeginn(GuiGraphicsExtractor ctx, int mx, int my, float delta, CallbackInfo ci) {
+        MenuStil.listeBeginn();
+    }
+
+    @Inject(method = "extractListItems", at = @At("RETURN"), require = 0)
+    private void vortex$listeEnde(GuiGraphicsExtractor ctx, int mx, int my, float delta, CallbackInfo ci) {
+        MenuStil.listeEnde();
+    }
+
     @Inject(method = "extractListSeparators", at = @At("HEAD"), cancellable = true, require = 0)
     private void vortex$trenner(GuiGraphicsExtractor ctx, CallbackInfo ci) {
         try {
