@@ -310,7 +310,6 @@ public final class Glatt {
             Masken.Maske ring = logoTeil(LOGO_RING, n);
             if (v == null || ring == null) throw new IllegalStateException("logo");
             float e = 1f - (float) Math.pow(1f - Masken.klemme(oeffnen), 3);
-            float zeit = (System.currentTimeMillis() % 3_600_000L) / 1000f;
             int farbe = (Math.round(Masken.klemme(alpha) * 255f) << 24) | 0xFFFFFF;
             Matrix3x2fStack p = pixel(ctx, s);
             try {
@@ -318,7 +317,9 @@ public final class Glatt {
                 float k = 0.80f + 0.20f * e;
                 p.scale(k, k);
                 p.pushMatrix();
-                p.rotate(zeit * 0.55f - (1f - e) * 2.2f);
+                // Neues Logo (4.18): der Bogen steht still unter dem V und
+                // schwingt nur beim Oeffnen mit einer kleinen Drehung herein.
+                p.rotate(-(1f - e) * 0.9f);
                 ctx.blit(RenderPipelines.GUI_TEXTURED, ring.id, -n / 2, -n / 2, 0f, 0f, n, n, n, n, farbe);
                 p.popMatrix();
                 ctx.blit(RenderPipelines.GUI_TEXTURED, v.id, -n / 2, -n / 2, 0f, 0f, n, n, n, n, farbe);
