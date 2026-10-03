@@ -278,6 +278,12 @@ public final class ConfigManager {
         writeActive();
         Path file = configFile();
         if (Files.exists(file)) {
+            // Erst alle Modul-Werte auf Werkszustand, DANN das Preset laden.
+            // Sonst blieb alles, was in der Preset-Datei fehlt (Module, die es
+            // beim letzten Speichern dieses Presets noch nicht gab, Addon-Module,
+            // die damals nicht geladen waren), auf dem Stand des VORIGEN Presets
+            // -- abgeschaltete Module waren nach dem Wechsel wieder an (4.18.2).
+            resetModuleWerte();
             load();
         } else {
             // Neues, noch nie benutztes Preset: FRISCH anfangen.
@@ -297,6 +303,24 @@ public final class ConfigManager {
             // alten Presets nicht ins neue kopieren; globale bleiben.
             FREMDE_ZEILEN.removeIf(z -> !istGlobal(z));
             save();
+        }
+    }
+
+    /** Wie resetModules, aber ohne onEnable/onDisable -- load() wendet danach selbst an. */
+    private static void resetModuleWerte() {
+        for (Module m : ModuleManager.INSTANCE.getModules()) {
+            try {
+                for (Setting st : m.getSettings()) {
+                    if (st == m.getToggleKey()) continue;
+                    st.resetToDefault();
+                }
+                if (m instanceof com.vortex.client.module.ExtraData ed
+                        && !"__friends__".equals(ed.extraKey())) {
+                    ed.clearExtra();
+                }
+            } catch (Throwable pvpErr) {
+                Errors.report("ConfigManager.resetModuleWerte:" + m.getName(), pvpErr);
+            }
         }
     }
 
