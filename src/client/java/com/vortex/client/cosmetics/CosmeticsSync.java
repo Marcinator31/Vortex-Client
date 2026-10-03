@@ -66,6 +66,12 @@ public final class CosmeticsSync {
         }
     }
 
+    /** Eigenes Emote an die anderen Vortex-Spieler schicken (der Server reicht es weiter). */
+    static void emoteGespielt(String id) {
+        if (Social.conn() != Social.Conn.ONLINE || !serverKannEs) return;
+        Social.request("emote.play", Social.args("emote", id)).whenComplete((r, e) -> { if (e != null) pruefeFehler(e); });
+    }
+
     /** Aus Cosmetics.speichern: geaenderte Auswahl hochladen. */
     static void geaendert() {
         if (Social.conn() == Social.Conn.ONLINE && serverKannEs) hochladen();

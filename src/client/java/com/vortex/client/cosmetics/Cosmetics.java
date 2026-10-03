@@ -58,6 +58,7 @@ public final class Cosmetics {
         net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRenderEvents.ALLOW_CAPE_RENDER.register(s -> !capePhysik());
         Partikel.register();
         CosmeticsSync.register();
+        Emotes.register();
     }
 
     public static Path ordner() {

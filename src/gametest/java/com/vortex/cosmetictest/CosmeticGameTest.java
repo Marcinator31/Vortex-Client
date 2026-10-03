@@ -142,6 +142,20 @@ public class CosmeticGameTest implements FabricClientGameTest {
             srv.runCommand("tp @a 0.5 ~ 0.5 0 0");
             ctx.waitTicks(20);
 
+            // Emotes: jedes einmal von vorne (die Kamera springt dafuer selbst nach vorne)
+            waehle(ctx, "", "", "");
+            for (String e : com.vortex.client.cosmetics.Emotes.alle().keySet()) {
+                ctx.runOnClient(mc -> com.vortex.client.cosmetics.Emotes.spielen(e));
+                ctx.waitTicks(16);
+                ctx.takeScreenshot("emote-" + e);
+                ctx.waitTicks(70);
+            }
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+            ctx.runOnClient(mc -> { if (mc.gui.hud.isHidden()) mc.gui.hud.toggle(); mc.gui.setScreen(new com.vortex.client.cosmetics.EmoteRadScreen()); });
+            ctx.waitTicks(10);
+            ctx.takeScreenshot("emote-wheel");
+            ctx.runOnClient(mc -> { mc.gui.setScreen(null); if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle(); });
+
             // Alles zusammen + Partikel
             waehle(ctx, EigenesCape.ID, "crown", "hearts");
             ctx.waitTicks(40);
