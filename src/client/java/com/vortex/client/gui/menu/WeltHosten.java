@@ -101,6 +101,13 @@ public final class WeltHosten {
 
     public static boolean e4mcDa() { return FabricLoader.getInstance().isModLoaded("e4mc"); }
 
+    /**
+     * e4mc und Krypton zusammen: Einzelspielerwelten oeffnen sich nicht mehr
+     * (Welt startet und schliesst sofort, e4mc-Issues #298/#307). Dann wird
+     * e4mc gar nicht erst angeboten -- der Launcher schaltet es sonst wieder aus.
+     */
+    public static boolean e4mcMoeglich() { return !FabricLoader.getInstance().isModLoaded("krypton"); }
+
     /** Welt oeffnen. Spielmodus und Cheats wie in der Welt eingestellt. */
     public static boolean oeffnen() {
         IntegratedServer s = server();
@@ -170,6 +177,10 @@ public final class WeltHosten {
     public static boolean neustartNoetig() { return installiert; }
 
     public static void e4mcInstallieren() {
+        if (!e4mcMoeglich()) {
+            installStatus = "e4mc cannot be used with Krypton -- together they stop singleplayer worlds from opening.";
+            return;
+        }
         if (installStatus != null && !installiert) return;   // laeuft schon
         installStatus = "Downloading e4mc...";
         Thread t = new Thread(() -> {
