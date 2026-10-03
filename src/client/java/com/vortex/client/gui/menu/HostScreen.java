@@ -68,7 +68,7 @@ public class HostScreen extends Screen {
                 }).bounds(bx + restW / 2 + 2, y, restW / 2 - 2, 20).build());
             }
         }
-        if (!WeltHosten.e4mcDa()) {
+        if (!WeltHosten.e4mcDa() && WeltHosten.e4mcMoeglich()) {
             boolean fertig = WeltHosten.neustartNoetig();
             addRenderableWidget(Button.builder(Component.literal(fertig ? "Restart game now" : "Install e4mc"), b -> {
                 if (WeltHosten.neustartNoetig()) {
@@ -111,7 +111,9 @@ public class HostScreen extends Screen {
             g.text(this.font, anzeigen, x + 2, y, e4mc != null || !WeltHosten.e4mcDa() ? 0xFF7EE2A0 : VortexStyle.TEXT_DIM, false);
             y += 16;
             if (e4mc != null) y = zeilen(g, "Works from anywhere. Same Wi-Fi: " + WeltHosten.lanAdresse(), x, y, VortexStyle.TEXT_DIM);
-            else if (!WeltHosten.e4mcDa()) y = zeilen(g, "Only works in your own network. Install e4mc so friends can join from anywhere.", x, y, VortexStyle.TEXT_DIM);
+            else if (!WeltHosten.e4mcDa()) y = zeilen(g, WeltHosten.e4mcMoeglich()
+                    ? "Only works in your own network. Install e4mc so friends can join from anywhere."
+                    : "Only works in your own network. (e4mc for friends far away does not work together with Krypton -- or host from the Vortex launcher.)", x, y, VortexStyle.TEXT_DIM);
             List<String> spieler = WeltHosten.spieler();
             y += 2;
             y = zeilen(g, "Players " + spieler.size() + " / " + (WeltHosten.MAX_FREUNDE + 1) + ": " + String.join(", ", spieler), x, y, VortexStyle.TEXT);
