@@ -161,6 +161,11 @@ public class CosmeticsScreen extends Screen {
         if (reiter == Reiter.PARTICLES) {
             partikelOptionen(g, lx, ly, lw, mouseX, mouseY);
             ly += 26; lh -= 26;
+        } else if (reiter == Reiter.CAPES) {
+            boolean an = Cosmetics.capePhysik();
+            knopf(g, lx, ly, Math.min(170, lw), 18, "Cape physics: " + (an ? "On" : "Off"), mouseX, mouseY,
+                    () -> Cosmetics.setzeCapePhysik(!Cosmetics.capePhysik()), an);
+            ly += 26; lh -= 26;
         }
         int spalten = lw >= 260 ? 2 : 1, kw = (lw - (spalten - 1) * 6) / spalten, kh = 34;
         List<Kachel> liste = kacheln();
@@ -281,6 +286,12 @@ public class CosmeticsScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         scroll -= (float) vertical * 24f;
         return true;
+    }
+
+    /** Vorschau auf einen Winkel drehen (Grad; 160 = schraeg von vorne). Auch fuer den Cosmetics-Test. */
+    public void vorschauDrehen(float grad, float neigen) {
+        drehung = grad;
+        neigung = neigen;
     }
 
     @Override
