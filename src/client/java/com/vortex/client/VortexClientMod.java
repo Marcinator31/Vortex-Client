@@ -59,6 +59,8 @@ public class VortexClientMod implements ClientModInitializer {
 
         // Im Launcher gewaehltes Cape.
         com.vortex.client.cosmetics.ActiveCape.init();
+        // Huete und Partikel (Cosmetics-Menue in der Vortex-Leiste)
+        try { com.vortex.client.cosmetics.Cosmetics.register(); } catch (Throwable pvpErr) { com.vortex.client.core.Errors.report("Cosmetics", pvpErr); }
 
         // HUD-Rendering anmelden.
         HudRenderer.register();

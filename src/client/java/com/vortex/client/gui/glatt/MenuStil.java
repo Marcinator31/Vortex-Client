@@ -205,6 +205,35 @@ public final class MenuStil {
         int akz = akzent();
         Glatt.licht(ctx, breite * 0.5f, hoehe * 0.12f, Math.max(breite, hoehe) * 0.45f,
                 Glatt.alpha(Glatt.mix(akz, VortexStyle.VIOLETT, 0.5f), 0.16f));
+        titelBewegung(ctx, breite, hoehe);
+    }
+
+    private static final long TITEL_START = System.nanoTime();
+
+    /**
+     * Ruhige Bewegung im Hauptmenue: zwei Lichter in Vortex-Violett und -Blau
+     * wandern langsam, kleine Funken steigen auf. Alles aus der Zeit
+     * berechnet -- kein Zustand, nichts zu aktualisieren.
+     */
+    private static void titelBewegung(GuiGraphicsExtractor ctx, int breite, int hoehe) {
+        float t = (System.nanoTime() - TITEL_START) / 1_000_000_000f;
+        float r = Math.max(breite, hoehe) * 0.32f;
+        Glatt.licht(ctx, breite * (0.22f + 0.08f * (float) Math.sin(t * 0.13f)), hoehe * (0.7f + 0.1f * (float) Math.cos(t * 0.11f)),
+                r, Glatt.alpha(VortexStyle.VIOLETT, 0.10f));
+        Glatt.licht(ctx, breite * (0.78f + 0.08f * (float) Math.cos(t * 0.09f)), hoehe * (0.35f + 0.12f * (float) Math.sin(t * 0.12f)),
+                r, Glatt.alpha(VortexStyle.BLAU, 0.09f));
+        for (int i = 0; i < 26; i++) {
+            // Feste "Zufallswerte" je Funke, damit nichts flackert
+            float a = (float) ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1;
+            float b = (float) ((Math.sin(i * 78.233) * 12543.1234) % 1 + 1) % 1;
+            float tempo = 0.025f + b * 0.04f;
+            float phase = (t * tempo + a) % 1f;
+            float x = breite * a + (float) Math.sin(t * 0.7f + i) * 14f;
+            float y = hoehe * (1.05f - phase * 1.15f);
+            float sicht = (float) Math.sin(phase * Math.PI);
+            int farbe = i % 3 == 0 ? VortexStyle.BLAU : VortexStyle.VIOLETT;
+            Glatt.kreis(ctx, x, y, 1.6f + b * 1.6f, Glatt.alpha(Glatt.mix(farbe, 0xFFFFFFFF, 0.35f), 0.55f * sicht));
+        }
     }
 
     /** Vortex-Logo mit Schriftzug, mittig, Oberkante y. */

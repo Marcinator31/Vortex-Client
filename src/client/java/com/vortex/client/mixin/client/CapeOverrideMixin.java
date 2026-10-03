@@ -30,17 +30,17 @@ public abstract class CapeOverrideMixin {
     @Inject(method = "getSkin", at = @At("RETURN"), cancellable = true, require = 0)
     private void vortex$applyCustomCape(CallbackInfoReturnable<PlayerSkin> cir) {
         try {
-            Identifier capeTexture = ActiveCape.textureId();
-            if (capeTexture == null) return;
-
             Minecraft client = Minecraft.getInstance();
             if (client == null || client.player == null || client.getConnection() == null) return;
 
-            // Nur der eigene Eintrag. Ohne diese Pruefung traegt jeder Spieler
-            // dasselbe Cape -- und zwar nur bei dir auf dem Bildschirm.
+            // Eigener Eintrag: das gewaehlte Cape (ActiveCape). Andere Spieler:
+            // ihr Vortex-Cape vom Freunde-Server (FremdeCapes), sonst bleibt ihr eigenes.
             PlayerInfo localInfo = client.getConnection()
                     .getPlayerInfo(client.player.getName().getString());
-            if (localInfo == null || localInfo != (Object) this) return;
+            Identifier capeTexture = localInfo == (Object) this
+                    ? ActiveCape.textureId()
+                    : com.vortex.client.cosmetics.FremdeCapes.textur(((PlayerInfo) (Object) this).getProfile().id());
+            if (capeTexture == null) return;
 
             PlayerSkin original = cir.getReturnValue();
             if (original == null) return;
