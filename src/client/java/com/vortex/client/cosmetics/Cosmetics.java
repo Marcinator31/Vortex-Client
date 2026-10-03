@@ -39,6 +39,7 @@ public final class Cosmetics {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile Auswahl eigene = null;
     private static volatile boolean partikelErstePerson = false;
+    private static volatile boolean capePhysik = true;
     private static final Map<UUID, Auswahl> FREMDE = new ConcurrentHashMap<>();
 
     /** Einmal beim Start: Hut-Ebene am Spieler-Renderer und Partikel anmelden. */
@@ -50,10 +51,14 @@ public final class Cosmetics {
         //#endif
             if (renderer instanceof net.minecraft.client.renderer.entity.player.AvatarRenderer<?> spieler) {
                 helfer.register(new HutEbene(spieler));
+                helfer.register(new CapeEbene(spieler));
             }
         });
+        // Vanilla-Cape aus, wenn unser bewegliches Cape es zeichnet
+        net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRenderEvents.ALLOW_CAPE_RENDER.register(s -> !capePhysik());
         Partikel.register();
         CosmeticsSync.register();
+        Emotes.register();
     }
 
     public static Path ordner() {
@@ -81,6 +86,7 @@ public final class Cosmetics {
                 a = new Auswahl(text(o, "cape"), text(o, "hat"), text(o, "particles"),
                         o.has("particleDensity") ? Math.max(1, Math.min(3, o.get("particleDensity").getAsInt())) : 2);
                 partikelErstePerson = o.has("particlesFirstPerson") && o.get("particlesFirstPerson").getAsBoolean();
+                capePhysik = !o.has("capePhysics") || o.get("capePhysics").getAsBoolean();
             }
         } catch (Throwable t) {
             com.vortex.client.core.Errors.report("Cosmetics.laden", t);
@@ -104,6 +110,7 @@ public final class Cosmetics {
             o.addProperty("particles", neu.partikel());
             o.addProperty("particleDensity", neu.dichte());
             o.addProperty("particlesFirstPerson", erstePerson);
+            o.addProperty("capePhysics", capePhysik);
             Files.createDirectories(ordner());
             Path tmp = datei().resolveSibling("cosmetics.json.tmp");
             Files.writeString(tmp, GSON.toJson(o), StandardCharsets.UTF_8);
@@ -113,6 +120,17 @@ public final class Cosmetics {
         }
         if (!alt.cape().equals(neu.cape())) ActiveCape.neuLaden();
         CosmeticsSync.geaendert();
+    }
+
+    /** Realistische Capes (CapeEbene) statt der starren Vanilla-Platte -- gilt fuer alle Capes, die du siehst. */
+    public static boolean capePhysik() {
+        if (eigene == null) laden();
+        return capePhysik;
+    }
+
+    public static void setzeCapePhysik(boolean an) {
+        capePhysik = an;
+        speichern(eigene(), partikelErstePerson());
     }
 
     /** Auswahl anderer Spieler (vom Server). null = entfernen. */

@@ -374,6 +374,12 @@ public final class Social {
 
     private static void onEvent(String ev, JsonObject d) {
         switch (ev) {
+            // Emote eines anderen Vortex-Spielers (Cosmetics)
+            case "emote" -> {
+                String h = str(d, "uuid").replace("-", "");
+                try { com.vortex.client.cosmetics.Emotes.fremd(new java.util.UUID(Long.parseUnsignedLong(h.substring(0, 16), 16), Long.parseUnsignedLong(h.substring(16), 16)), str(d, "emote")); }
+                catch (Exception ignored) { }
+            }
             case "state" -> data = d;
             case "self" -> {
                 selfPresence = obj(d, "presence");

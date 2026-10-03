@@ -20,7 +20,7 @@ import java.util.List;
  * Vortex-Verzeichnis oder ein eigenes Bild (EigenesCape).
  */
 public class CosmeticsScreen extends Screen {
-    private enum Reiter { CAPES, HATS, PARTICLES }
+    private enum Reiter { CAPES, HATS, PARTICLES, EMOTES }
 
     private record Kachel(String id, String name, String unter) {}
     private record Flaeche(int x, int y, int w, int h, Runnable aktion) {
@@ -82,6 +82,9 @@ public class CosmeticsScreen extends Screen {
                     case WOLKE -> "Cloud around you";
                 }));
             }
+            case EMOTES -> {
+                for (Emotes.Emote e : Emotes.alle().values()) k.add(new Kachel(e.id(), e.name(), "Click to play -- or press " + emoteTaste()));
+            }
         }
         return k;
     }
@@ -92,7 +95,12 @@ public class CosmeticsScreen extends Screen {
             case CAPES -> a.cape();
             case HATS -> a.hut();
             case PARTICLES -> a.partikel();
+            case EMOTES -> "";
         };
+    }
+
+    private static String emoteTaste() {
+        return com.vortex.client.VortexClientMod.emoteKeyName();
     }
 
     private void waehle(String id) {
@@ -112,10 +120,12 @@ public class CosmeticsScreen extends Screen {
             return;
         }
         meldung = null;
+        if (reiter == Reiter.EMOTES) { Emotes.spielen(id); return; }
         Cosmetics.Auswahl neu = switch (reiter) {
             case CAPES -> new Cosmetics.Auswahl(id, a.hut(), a.partikel(), a.dichte());
             case HATS -> new Cosmetics.Auswahl(a.cape(), id, a.partikel(), a.dichte());
             case PARTICLES -> new Cosmetics.Auswahl(a.cape(), a.hut(), id, a.dichte());
+            case EMOTES -> a;
         };
         Cosmetics.speichern(neu, Cosmetics.partikelErstePerson());
     }
@@ -139,8 +149,8 @@ public class CosmeticsScreen extends Screen {
         // Reiter links
         int ry = fy + 40;
         for (Reiter r : Reiter.values()) {
-            String name = switch (r) { case CAPES -> "Capes"; case HATS -> "Hats"; case PARTICLES -> "Particles"; };
-            Symbole.Symbol sym = switch (r) { case CAPES -> Symbole.Symbol.HEMD; case HATS -> Symbole.Symbol.STERN; case PARTICLES -> Symbole.Symbol.BLITZ; };
+            String name = switch (r) { case CAPES -> "Capes"; case HATS -> "Hats"; case PARTICLES -> "Particles"; case EMOTES -> "Emotes"; };
+            Symbole.Symbol sym = switch (r) { case CAPES -> Symbole.Symbol.HEMD; case HATS -> Symbole.Symbol.STERN; case PARTICLES -> Symbole.Symbol.BLITZ; case EMOTES -> Symbole.Symbol.PERSON; };
             boolean an = r == reiter, hov = !an && mouseX >= fx + 10 && mouseX < fx + 100 && mouseY >= ry && mouseY < ry + 22;
             if (an || hov) Glatt.rund(g, fx + 10, ry, 90, 22, 6, an ? 0x338B5CF6 : 0x18FFFFFF);
             if (an) Glatt.rund(g, fx + 10, ry + 5, 2.5f, 12, 1.2f, AKZENT);
@@ -160,6 +170,11 @@ public class CosmeticsScreen extends Screen {
         int lx = fx + 110, lw = px - lx - 10, ly = fy + 40, lh = fh - 52;
         if (reiter == Reiter.PARTICLES) {
             partikelOptionen(g, lx, ly, lw, mouseX, mouseY);
+            ly += 26; lh -= 26;
+        } else if (reiter == Reiter.CAPES) {
+            boolean an = Cosmetics.capePhysik();
+            knopf(g, lx, ly, Math.min(170, lw), 18, "Cape physics: " + (an ? "On" : "Off"), mouseX, mouseY,
+                    () -> Cosmetics.setzeCapePhysik(!Cosmetics.capePhysik()), an);
             ly += 26; lh -= 26;
         }
         int spalten = lw >= 260 ? 2 : 1, kw = (lw - (spalten - 1) * 6) / spalten, kh = 34;
@@ -281,6 +296,12 @@ public class CosmeticsScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         scroll -= (float) vertical * 24f;
         return true;
+    }
+
+    /** Vorschau auf einen Winkel drehen (Grad; 160 = schraeg von vorne). Auch fuer den Cosmetics-Test. */
+    public void vorschauDrehen(float grad, float neigen) {
+        drehung = grad;
+        neigung = neigen;
     }
 
     @Override

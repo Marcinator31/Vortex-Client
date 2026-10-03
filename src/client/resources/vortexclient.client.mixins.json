@@ -4,6 +4,7 @@
   "plugin": "com.vortex.client.mixinplugin.VortexMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "EmoteMixin",
     "MenuEingabeStilMixin",
     "MenuKnopfStilMixin",
     "MenuListeStilMixin",

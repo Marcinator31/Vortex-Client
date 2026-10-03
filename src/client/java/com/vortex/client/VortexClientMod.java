@@ -33,8 +33,13 @@ public class VortexClientMod implements ClientModInitializer {
     private static KeyMapping openHudEditorKey;
     private static KeyMapping friendsKey;
     private static boolean friendsKeyWasDown;
+    private static KeyMapping emoteKey;
 
     /** Anzeigename der Freunde-Taste (fuer Hinweise wie "druecke O"). */
+    public static String emoteKeyName() {
+        return emoteKey == null ? "B" : emoteKey.getTranslatedKeyMessage().getString();
+    }
+
     public static String friendsKeyName() {
         return friendsKey == null ? "O" : friendsKey.getTranslatedKeyMessage().getString();
     }
@@ -193,6 +198,11 @@ public class VortexClientMod implements ClientModInitializer {
             GLFW.GLFW_KEY_O, CATEGORY));
         com.vortex.client.social.Social.register();
 
+        // Keybind: B oeffnet das Emote-Rad (Cosmetics).
+        emoteKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.vortexclient.emotes", InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_B, CATEGORY));
+
         // (deaktiviert) Accounts-Knopf im Hauptmenue -- siehe Hinweis oben.
 
         // Einmalige Zustands-Synchronisation: Module, die standardmaessig an
@@ -246,6 +256,10 @@ public class VortexClientMod implements ClientModInitializer {
 
             while (openHudEditorKey.consumeClick()) {
                 client.gui.setScreen(new com.vortex.client.gui.HudEditorScreen());
+            }
+
+            while (emoteKey.consumeClick()) {
+                if (client.gui.screen() == null && client.player != null) client.gui.setScreen(new com.vortex.client.cosmetics.EmoteRadScreen());
             }
 
             // Freunde: ueber die Queue und zusaetzlich direkt abgefragt (wie oben).

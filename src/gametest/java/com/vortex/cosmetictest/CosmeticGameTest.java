@@ -76,6 +76,86 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ctx.waitTicks(60);
             fotos(ctx, "cape-vortex-blue");
 
+            // Cape-Physik: unsymmetrisches Bild (links rot + weisse Ecke oben links, rechts blau),
+            // einmal mit dem Vanilla-Cape (Physik aus) als Vergleich, einmal mit unserem
+            Path seiten = Path.of(System.getProperty("java.io.tmpdir"), "vortex-cape-sides.png");
+            ctx.runOnClient(mc -> {
+                try {
+                    BufferedImage img = new BufferedImage(400, 640, BufferedImage.TYPE_INT_RGB);
+                    Graphics2D g = img.createGraphics();
+                    g.setColor(new Color(0xD02030)); g.fillRect(0, 0, 200, 640);
+                    g.setColor(new Color(0x2050D0)); g.fillRect(200, 0, 200, 640);
+                    g.setColor(Color.WHITE); g.fillRect(0, 0, 120, 120);
+                    g.setColor(Color.YELLOW); g.fillRect(0, 560, 400, 80);
+                    g.dispose();
+                    ImageIO.write(img, "png", seiten.toFile());
+                } catch (Exception e) { throw new RuntimeException(e); }
+                String fehler = EigenesCape.bauen(seiten);
+                if (fehler != null) throw new AssertionError("Cape picture failed: " + fehler);
+            });
+            waehle(ctx, EigenesCape.ID, "", "");
+            ctx.runOnClient(mc -> ActiveCape.neuLaden());
+            ctx.waitTicks(20);
+            ctx.runOnClient(mc -> Cosmetics.setzeCapePhysik(false));
+            fotos(ctx, "physics-off-vanilla");
+            ctx.runOnClient(mc -> Cosmetics.setzeCapePhysik(true));
+            fotos(ctx, "physics-on");
+            // Seitenansicht in der Menue-Vorschau
+            for (boolean an : new boolean[] { false, true }) {
+                ctx.runOnClient(mc -> {
+                    Cosmetics.setzeCapePhysik(an);
+                    CosmeticsScreen sc = new CosmeticsScreen(null);
+                    mc.gui.setScreen(sc);
+                    sc.vorschauDrehen(90f, 0f);
+                });
+                ctx.waitTicks(10);
+                ctx.takeScreenshot("physics-side-" + (an ? "on" : "off"));
+                ctx.runOnClient(mc -> mc.gui.setScreen(null));
+            }
+            // Seitenansicht in Bewegung: Spieler wird geschoben, waehrend die Vorschau offen ist
+            for (boolean an : new boolean[] { false, true }) {
+                ctx.runOnClient(mc -> {
+                    Cosmetics.setzeCapePhysik(an);
+                    CosmeticsScreen sc = new CosmeticsScreen(null);
+                    mc.gui.setScreen(sc);
+                    sc.vorschauDrehen(90f, 0f);
+                });
+                for (int i = 0; i < 20; i++) {
+                    ctx.runOnClient(mc -> mc.player.setDeltaMovement(0, mc.player.getDeltaMovement().y, 0.28));
+                    ctx.waitTick();
+                }
+                ctx.takeScreenshot("physics-side-moving-" + (an ? "on" : "off"));
+                ctx.runOnClient(mc -> mc.gui.setScreen(null));
+                srv.runCommand("tp @a 0.5 ~ 0.5 0 0");
+                ctx.waitTicks(20);
+            }
+            ctx.runOnClient(mc -> Cosmetics.setzeCapePhysik(true));
+            // Laufen: das Cape weht und wellt sich
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            ctx.getInput().holdKey(o -> o.keyUp);
+            ctx.waitTicks(25);
+            ctx.takeScreenshot("physics-walking-1");
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("physics-walking-2");
+            ctx.getInput().releaseKey(o -> o.keyUp);
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+            srv.runCommand("tp @a 0.5 ~ 0.5 0 0");
+            ctx.waitTicks(20);
+
+            // Emotes: jedes einmal von vorne (die Kamera springt dafuer selbst nach vorne)
+            waehle(ctx, "", "", "");
+            for (String e : com.vortex.client.cosmetics.Emotes.alle().keySet()) {
+                ctx.runOnClient(mc -> com.vortex.client.cosmetics.Emotes.spielen(e));
+                ctx.waitTicks(16);
+                ctx.takeScreenshot("emote-" + e);
+                ctx.waitTicks(70);
+            }
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+            ctx.runOnClient(mc -> { if (mc.gui.hud.isHidden()) mc.gui.hud.toggle(); mc.gui.setScreen(new com.vortex.client.cosmetics.EmoteRadScreen()); });
+            ctx.waitTicks(10);
+            ctx.takeScreenshot("emote-wheel");
+            ctx.runOnClient(mc -> { mc.gui.setScreen(null); if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle(); });
+
             // Alles zusammen + Partikel
             waehle(ctx, EigenesCape.ID, "crown", "hearts");
             ctx.waitTicks(40);
