@@ -57,7 +57,8 @@ public class HutEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
         float z0 = q.z0() / 16f, z1 = q.z1() / 16f;
         int c = q.farbe();
         // Seiten etwas dunkler als oben -- wie bei Minecraft-Bloecken, sonst wirkt es flach
-        int seite = dunkler(c, 0.82f), unten = dunkler(c, 0.6f);
+        // Leuchtende Teile (Heiligenschein, Edelsteine) ueberall gleich hell
+        int seite = q.leuchtet() ? c : dunkler(c, 0.82f), unten = q.leuchtet() ? c : dunkler(c, 0.6f);
         flaeche(p, vc, licht, c, 0, -1, 0, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);       // oben (y0 ist oben)
         flaeche(p, vc, licht, unten, 0, 1, 0, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);    // unten
         flaeche(p, vc, licht, seite, 0, 0, -1, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);   // vorne
@@ -80,9 +81,13 @@ public class HutEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
         float[][] e = richtig
                 ? new float[][] { {ax, ay, az}, {bx, by, bz}, {cx, cy, cz}, {dx, dy, dz} }
                 : new float[][] { {ax, ay, az}, {dx, dy, dz}, {cx, cy, cz}, {bx, by, bz} };
+        // Leuchtend: Minecraft schattiert Flaechen nach ihrer Normale (seitlich ~70 %
+        // hell) -- mit einer Normale nach oben bleibt jede Seite voll hell.
+        boolean hell = licht == HELL;
         for (float[] v : e) {
             vc.addVertex(p, v[0], v[1], v[2]).setColor(farbe).setUv(0.5f, 0.5f)
-                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(licht).setNormal(p, nx, ny, nz);
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(licht)
+                    .setNormal(p, hell ? 0 : nx, hell ? -1 : ny, hell ? 0 : nz);
         }
     }
 

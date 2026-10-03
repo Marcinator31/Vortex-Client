@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Hauptmenue: ruhiger Verlauf ueber dem Panorama, unter den Knoepfen (siehe MenuStil). */
+/** Hauptmenue: ruhiger Verlauf ueber dem Panorama und dein Charakter, unter den Knoepfen (siehe MenuStil, TitelFigur). */
 @Mixin(TitleScreen.class)
 public abstract class TitelGrundMixin extends Screen {
 
@@ -23,7 +23,11 @@ public abstract class TitelGrundMixin extends Screen {
             require = 0)
     private void vortex$grund(GuiGraphicsExtractor ctx, int mx, int my, float delta, CallbackInfo ci) {
         try {
-            if (MenuStil.titel()) MenuStil.titelGrund(ctx, this.width, this.height);
+            if (MenuStil.titel()) {
+                MenuStil.titelGrund(ctx, this.width, this.height);
+                // Dein Charakter mit Cosmetics links neben den Knoepfen
+                com.vortex.client.cosmetics.TitelFigur.zeichnen(ctx, this.width, this.height, mx, my);
+            }
         } catch (Throwable t) {
             com.vortex.client.core.Errors.report("TitelGrund", t);
         }

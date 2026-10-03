@@ -129,6 +129,7 @@ public final class Cosmetics {
 
     /** Auswahl fuer die Entity mit dieser Id (aus dem Renderzustand). */
     public static Auswahl fuerEntity(int id) {
+        if (id == TitelFigur.ID) return eigene();   // Figur im Hauptmenue (ohne Welt)
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return Auswahl.LEER;
         Entity e = mc.level.getEntity(id);

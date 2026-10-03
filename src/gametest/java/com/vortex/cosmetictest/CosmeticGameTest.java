@@ -90,11 +90,15 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ctx.waitTicks(40);
             ctx.takeScreenshot("menu-cosmetics");
             ctx.runOnClient(mc -> mc.gui.setScreen(null));
-            waehle(ctx, "", "", "");
+            // Fuers Hauptmenue: eigenes Cape, Krone, Herzen
+            waehle(ctx, EigenesCape.ID, "crown", "hearts");
+            ctx.runOnClient(mc -> ActiveCape.neuLaden());
         }
         // Hauptmenue mit der Vortex-Leiste
-        ctx.waitTicks(40);
+        ctx.waitTicks(60);
         ctx.takeScreenshot("title-screen");
+        ctx.waitTicks(30);
+        ctx.takeScreenshot("title-screen-later");
     }
 
     private static void waehle(ClientGameTestContext ctx, String cape, String hut, String partikel) {
