@@ -105,9 +105,10 @@ public class HostingOptionsScreen extends Screen {
                     LauncherHosting.spieler(p.name(), "kick");
                     meldung = p.name() + " was kicked.";
                 }).bounds(bx, py, 40, 18).build());
-                bx -= 58;
+                int opW = Math.max(this.font.width("Remove OP"), this.font.width("Make OP")) + 12;
+                bx -= opW + 4;
                 addRenderableWidget(Button.builder(Component.literal(p.op() ? "Remove OP" : "Make OP"),
-                        b -> LauncherHosting.spieler(p.name(), p.op() ? "deop" : "op")).bounds(bx, py, 54, 18).build());
+                        b -> LauncherHosting.spieler(p.name(), p.op() ? "deop" : "op")).bounds(bx, py, opW, 18).build());
             }
             py += 22;
         }
@@ -171,7 +172,7 @@ public class HostingOptionsScreen extends Screen {
         if (s.spieler.size() > MAX_ZEILEN) g.text(this.font, "+" + (s.spieler.size() - MAX_ZEILEN) + " more -- see the launcher", x, py, VortexStyle.TEXT_DIM, false);
 
         int uy = fy + fh - 28;
-        String unten = meldung != null ? meldung : s.neustart ? "Some changes need a restart." : null;
+        String unten = meldung != null ? meldung : s.neustart ? "Restart needed." : null;
         if (unten != null) {
             int maxW = s.neustart ? FENSTER_W - 28 - 70 - 116 : FENSTER_W - 28 - 76;
             int ty = uy + 6;
