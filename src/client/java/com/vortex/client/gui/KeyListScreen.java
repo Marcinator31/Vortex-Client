@@ -87,6 +87,7 @@ addRenderableWidget(search);
         entries.clear();
 
         for (Module m : ModuleManager.INSTANCE.getModules()) {
+            if (com.vortex.client.core.CleanModules.versteckt(m)) continue;
             KeySetting k = m.getToggleKey();
             if (k != null && k.isBound()) {
                 entries.add(new Entry("Module", m.getName(), k.getKeyCode(), k.getKeyName()));
