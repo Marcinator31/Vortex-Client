@@ -1101,7 +1101,10 @@ public class PanelGui extends Screen {
     // ======================================================================
 
     private List<Module> module(Module.Category c) {
-        return ModuleManager.INSTANCE.getByCategory(c);
+        List<Module> l = ModuleManager.INSTANCE.getByCategory(c);
+        // Clean Modules: Cheats und Bots gibt es nicht
+        if (com.vortex.client.core.CleanModules.aktiv()) l.removeIf(com.vortex.client.core.CleanModules::versteckt);
+        return l;
     }
 
     private List<Module> gefiltert(Module.Category c) {

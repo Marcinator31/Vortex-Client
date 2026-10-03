@@ -35,11 +35,13 @@ public final class ClientSettings {
     public final BooleanSetting confirmRestart = new BooleanSetting("Confirm Restart", true);
     /** Neues, glattes Aussehen fuer Haupt-, Einzelspieler-, Mehrspieler- und Pausenmenue. */
     public final BooleanSetting modernMenus = new BooleanSetting("Modern Menus", true);
+    /** Cheats und Bots verstecken und ausschalten, Chat leeren (siehe CleanModules). */
+    public final BooleanSetting cleanModules = new BooleanSetting("Clean Modules", false);
 
     private ClientSettings() {}
 
     public List<Setting> all() {
-        return List.of(toggleMessage, toggleMessageFor, toggleSound, rightShiftOpens, moduleTooltips, confirmRestart, modernMenus);
+        return List.of(cleanModules, toggleMessage, toggleMessageFor, toggleSound, rightShiftOpens, moduleTooltips, confirmRestart, modernMenus);
     }
 
     /**

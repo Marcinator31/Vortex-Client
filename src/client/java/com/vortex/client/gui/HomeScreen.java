@@ -202,6 +202,7 @@ public class HomeScreen extends Screen {
         // --- Mods-Karte --------------------------------------------------------------
         int aktiv = 0, alle = 0, bots = 0;
         for (Module mod : ModuleManager.INSTANCE.getModules()) {
+            if (com.vortex.client.core.CleanModules.versteckt(mod)) continue;
             if (mod.getCategory() == Module.Category.BOTS) { bots++; continue; }
             alle++;
             if (mod.isEnabled()) aktiv++;
@@ -251,14 +252,21 @@ public class HomeScreen extends Screen {
             {"bots", "Bots", bots > 0 ? bots + " bots" : "Plus Addon", Symbol.ROBOTER, (Runnable) () -> mc.gui.setScreen(new BotScreen(this))},
             {"keys", "Keybinds", "All keys", Symbol.TASTATUR, (Runnable) () -> mc.gui.setScreen(new KeyListScreen(this))},
         };
+        // Clean Modules: keine Bots-Kachel. Die letzte Reihe wird dann
+        // breiter verteilt, damit keine Luecke auffaellt.
+        if (com.vortex.client.core.CleanModules.aktiv()) {
+            kacheln = java.util.Arrays.stream(kacheln).filter(k -> !"bots".equals(k[0])).toArray(Object[][]::new);
+        }
         float gap = 8;
         int sp = m.spalten;
-        float kw = (iw - (sp - 1) * gap) / sp;
         float kh = m.kachelH;
         for (int i = 0; i < kacheln.length; i++) {
             Object[] k = kacheln[i];
+            int reihe = i / sp;
+            int inReihe = Math.min(sp, kacheln.length - reihe * sp);
+            float kw = (iw - (inReihe - 1) * gap) / inReihe;
             float kx = ix + (i % sp) * (kw + gap);
-            float ky = cy + (i / sp) * (kh + gap);
+            float ky = cy + reihe * (kh + gap);
             float al = a * einblenden(2 + i);
             String key = (String) k[0];
             float h = hover(key, over(kx, ky, kw, kh), dt);

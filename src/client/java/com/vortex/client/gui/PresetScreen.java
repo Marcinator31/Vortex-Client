@@ -275,6 +275,7 @@ public class PresetScreen extends Screen {
     private String zaehle() {
         int an = 0, alle = 0;
         for (var m : com.vortex.client.module.ModuleManager.INSTANCE.getModules()) {
+            if (com.vortex.client.core.CleanModules.versteckt(m)) continue;
             alle++;
             if (m.isEnabled()) an++;
         }

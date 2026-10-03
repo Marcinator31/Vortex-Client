@@ -259,6 +259,13 @@ public class VortexClientMod implements ClientModInitializer {
                 client.gui.setScreen(new com.vortex.client.gui.FriendsScreen(null));
             }
 
+            // --- Clean Modules: Cheats/Bots aus halten, beim Einschalten Chat leeren ---
+            try {
+                com.vortex.client.core.CleanModules.tick(client);
+            } catch (Throwable cleanErr) {
+                com.vortex.client.core.Errors.report("CleanModules", cleanErr);
+            }
+
             // --- Module toggle keys ---
             //
             // Every module carries its own key, unbound by default. This is the
@@ -272,6 +279,8 @@ public class VortexClientMod implements ClientModInitializer {
                     for (var module : ModuleManager.INSTANCE.getModules()) {
                         int code = module.getToggleKey().getKeyCode();
                         if (code == org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN) continue;
+                        // Clean Modules: Tasten von Cheats/Bots tun nichts
+                        if (com.vortex.client.core.CleanModules.versteckt(module)) continue;
                         boolean down = com.mojang.blaze3d.platform.InputConstants.isKeyDown(
                                 client.getWindow(), code);
                         boolean was = Boolean.TRUE.equals(toggleKeyDown.get(module.getName()));
