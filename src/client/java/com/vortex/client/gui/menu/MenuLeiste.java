@@ -21,7 +21,8 @@ import java.util.List;
  * Vortex-Bildschirm oeffnet.
  *
  * "Host" gibt es nur im Pausenmenue einer Einzelspielerwelt (vorher gibt
- * es nichts zu hosten).
+ * es nichts zu hosten). Hostet der Launcher die Welt, steht dort stattdessen
+ * "Hosting" ({@link HostingOptionsScreen}).
  *
  * Platz: rechts neben dem Vanilla-Menue. Ist Essential installiert (hat
  * rechts eine eigene Leiste), steht unsere links. Ist das Fenster zu schmal
@@ -51,7 +52,10 @@ public final class MenuLeiste {
     private static void anlegen(Screen screen, int breite, int hoehe, boolean pause) {
         Minecraft mc = Minecraft.getInstance();
         List<Eintrag> eintraege = new ArrayList<>();
-        if (pause && mc.hasSingleplayerServer()) {
+        if (pause && LauncherHosting.aktiv()) {
+            // Der Launcher hostet diese Welt (Paper-Server) -- seine Einstellungen hier
+            eintraege.add(new Eintrag("Hosting", MenuSymbole.HOST, () -> mc.gui.setScreen(new HostingOptionsScreen(screen))));
+        } else if (pause && mc.hasSingleplayerServer()) {
             eintraege.add(new Eintrag("Host", MenuSymbole.HOST, () -> mc.gui.setScreen(new HostScreen(screen))));
         }
         eintraege.add(new Eintrag("Social", MenuSymbole.SOCIAL, () -> mc.gui.setScreen(new FriendsScreen(screen))));
