@@ -41,6 +41,7 @@ public final class ActiveCape {
     private static Identifier textureId = null;
     private static boolean geladen = false;
     private static boolean laeuft = false;
+    private static int zaehler = 0;
 
     private ActiveCape() {}
 
@@ -50,6 +51,19 @@ public final class ActiveCape {
     }
 
     public static synchronized void init() {
+        ensureLoaded();
+    }
+
+    /** Nach einer neuen Auswahl im Cosmetics-Menue: altes Cape weg, neues laden. */
+    public static synchronized void neuLaden() {
+        Identifier alt = textureId;
+        textureId = null;
+        geladen = false;
+        if (alt != null) {
+            Minecraft.getInstance().execute(() -> {
+                try { Minecraft.getInstance().getTextureManager().release(alt); } catch (Throwable ignored) { }
+            });
+        }
         ensureLoaded();
     }
 
@@ -63,15 +77,10 @@ public final class ActiveCape {
         t.start();
     }
 
-    /** Liest die Auswahl aus der Launcher-Datei. Die hat genau ein Feld. */
+    /** Liest die Auswahl aus cosmetics.json (seit dem Cosmetics-Menue mit weiteren Feldern). */
     private static String leseAuswahl() {
         try {
-            Path datei = FabricLoader.getInstance().getConfigDir()
-                    .resolve("vortex-client").resolve("cosmetics.json");
-            if (!Files.exists(datei)) return null;
-            String json = Files.readString(datei, StandardCharsets.UTF_8);
-            Matcher m = Pattern.compile("\"cape\"\\s*:\\s*\"([^\"]+)\"").matcher(json);
-            return m.find() ? m.group(1) : null;
+            return Cosmetics.eigene().cape();
         } catch (Throwable pvpErr) {
             com.vortex.client.core.Errors.report("ActiveCape.leseAuswahl", pvpErr);
             return null;
@@ -88,6 +97,13 @@ public final class ActiveCape {
         laeuft = true;
         try {
             byte[] daten = null;
+            // Eigenes Bild (EigenesCape) liegt nur lokal
+            if (EigenesCape.ID.equals(capeId)) {
+                if (!Files.exists(EigenesCape.datei())) return;
+                final byte[] eigen = Files.readAllBytes(EigenesCape.datei());
+                Minecraft.getInstance().execute(() -> melde(eigen));
+                return;
+            }
             Path cache = cacheDatei(capeId);
 
             // NETZ ZUERST, Zwischenspeicher nur als Rueckfall.
@@ -122,7 +138,27 @@ public final class ActiveCape {
         }
     }
 
-    private static String sucheTexturAdresse(String id) {
+    /** Alle Capes im Verzeichnis als {id, name} (fuer das Cosmetics-Menue). Laedt aus dem Netz. */
+    public static java.util.List<String[]> katalog() {
+        java.util.List<String[]> out = new java.util.ArrayList<>();
+        byte[] roh = lade(CATALOGUE);
+        if (roh == null) return out;
+        try {
+            var capes = com.google.gson.JsonParser.parseString(new String(roh, StandardCharsets.UTF_8))
+                    .getAsJsonObject().getAsJsonArray("capes");
+            for (var e : capes) {
+                var o = e.getAsJsonObject();
+                if (!o.has("id")) continue;
+                out.add(new String[] { o.get("id").getAsString(), o.has("name") ? o.get("name").getAsString() : o.get("id").getAsString() });
+            }
+        } catch (Throwable pvpErr) {
+            com.vortex.client.core.Errors.report("ActiveCape.katalog", pvpErr);
+        }
+        return out;
+    }
+
+    /** Textur-Adresse eines Capes im Verzeichnis (auch fuer andere Spieler, FremdeCapes). */
+    static String sucheTexturAdresse(String id) {
         byte[] roh = lade(CATALOGUE);
         if (roh == null) return null;
         String json = new String(roh, StandardCharsets.UTF_8);
@@ -133,7 +169,7 @@ public final class ActiveCape {
         return tex.find() ? tex.group(1) : null;
     }
 
-    private static byte[] lade(String url) {
+    static byte[] lade(String url) {
         try {
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .header("User-Agent", "VortexClient")
@@ -159,16 +195,20 @@ public final class ActiveCape {
             try (InputStream in = new java.io.ByteArrayInputStream(daten)) {
                 image = NativeImage.read(in);
             }
-            // 64x32 ist Pflicht: bei anderer Groesse sitzen die Flaechen falsch.
-            if (image.getWidth() != 64 || image.getHeight() != 32) {
+            // Seitenverhaeltnis 2:1 und Vielfaches von 64x32 (z. B. 512x256 fuer
+            // eigene Bilder) -- bei anderer Form sitzen die Flaechen falsch.
+            int w = image.getWidth(), h = image.getHeight();
+            if (w % 64 != 0 || w != h * 2 || w > 2048) {
                 image.close();
                 com.vortex.client.core.Errors.note("ActiveCape",
                         capeId + ": falsche Groesse (erwartet 64x32, ist "
                                 + image.getWidth() + "x" + image.getHeight() + ")");
                 return;
             }
+            // Jedes Mal eine neue Kennung: sonst behaelt Minecraft nach einem
+            // Wechsel des eigenen Bildes die alte Textur im Speicher.
             Identifier id = Identifier.fromNamespaceAndPath(
-                    "vortexclient", "cape/" + safe(capeId));
+                    "vortexclient", "cape/" + safe(capeId) + "_" + (++zaehler));
             var tm = Minecraft.getInstance().getTextureManager();
             tm.register(id, new DynamicTexture(() -> "vortexclient-cape", image));
             textureId = id;

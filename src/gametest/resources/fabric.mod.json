@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "vortex-cosmetic-tests",
+  "version": "1.0.0",
+  "name": "Vortex Cosmetics Test",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["com.vortex.cosmetictest.CosmeticGameTest"]
+  },
+  "depends": { "vortexclient": "*" }
+}

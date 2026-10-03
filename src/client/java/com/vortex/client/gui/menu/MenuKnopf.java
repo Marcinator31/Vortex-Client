@@ -63,6 +63,7 @@ public class MenuKnopf extends AbstractButton {
         if (s == MenuSymbole.HOST) return com.vortex.client.gui.glatt.Symbole.Symbol.WELLEN;
         if (s == MenuSymbole.SOCIAL) return com.vortex.client.gui.glatt.Symbole.Symbol.LEUTE;
         if (s == MenuSymbole.WARDROBE) return com.vortex.client.gui.glatt.Symbole.Symbol.HEMD;
+        if (s == MenuSymbole.COSMETICS) return com.vortex.client.gui.glatt.Symbole.Symbol.STERN;
         if (s == MenuSymbole.PICTURES) return com.vortex.client.gui.glatt.Symbole.Symbol.BILD;
         if (s == MenuSymbole.SETTINGS) return com.vortex.client.gui.glatt.Symbole.Symbol.ZAHNRAD;
         if (s == MenuSymbole.ACCOUNT) return com.vortex.client.gui.glatt.Symbole.Symbol.PERSON;

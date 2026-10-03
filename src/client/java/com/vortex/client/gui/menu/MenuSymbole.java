@@ -36,6 +36,15 @@ public final class MenuSymbole {
             ".######.",
             ".######.",
     };
+    /** Stern: Cosmetics. */
+    public static final String[] COSMETICS = {
+            "....#.....",
+            "...###....",
+            "##########",
+            ".#######..",
+            "..##.##...",
+            ".##...##..",
+    };
     /** Bilderrahmen mit Bergen: Screenshots. */
     public static final String[] PICTURES = {
             "##########",

@@ -1,0 +1,22 @@
+// Cosmetics-Test in einem echten Minecraft (Fabric Client-Gametest).
+//
+// Nur aktiv mit  ./gradlew runClientGameTest -PcosmeticTests  -- der normale
+// Build bleibt unberuehrt. Der Test erstellt eine Welt, setzt jeden Hut, ein
+// Test-Cape-Bild und Partikel und macht davon Screenshots (build/run/...).
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "vortex-cosmetic-tests"
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+    }
+}
+
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output + sourceSets.client.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.client.output
+    }
+}

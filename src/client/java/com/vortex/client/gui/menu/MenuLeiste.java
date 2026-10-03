@@ -60,6 +60,7 @@ public final class MenuLeiste {
         }
         eintraege.add(new Eintrag("Social", MenuSymbole.SOCIAL, () -> mc.gui.setScreen(new FriendsScreen(screen))));
         eintraege.add(new Eintrag("Wardrobe", MenuSymbole.WARDROBE, () -> mc.gui.setScreen(new SkinScreen(screen))));
+        eintraege.add(new Eintrag("Cosmetics", MenuSymbole.COSMETICS, () -> mc.gui.setScreen(new com.vortex.client.cosmetics.CosmeticsScreen(screen))));
         eintraege.add(new Eintrag("Pictures", MenuSymbole.PICTURES, () -> mc.gui.setScreen(new PicturesScreen(screen))));
         eintraege.add(new Eintrag("Settings", MenuSymbole.SETTINGS, () -> mc.gui.setScreen(new HomeScreen())));
         eintraege.add(new Eintrag("Account", MenuSymbole.ACCOUNT, () -> mc.gui.setScreen(new AccountScreen())));

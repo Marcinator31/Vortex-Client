@@ -7,7 +7,8 @@ import net.minecraft.network.chat.Component;
 /**
  * Eigene Client-Befehle (laufen nur lokal, gehen NICHT an den Server).
  *
- *   /relaunch  -- startet das Spiel neu
+ *   /relaunch    -- startet das Spiel neu
+ *   /reportcape  -- meldet das Cape-Bild eines Spielers (Freunde-Server)
  */
 public final class ClientCommands {
 
@@ -27,6 +28,27 @@ public final class ClientCommands {
                         }
                         return 1;
                     }));
+
+            // /reportcape <name> -- unpassendes Cape-Bild melden
+            dispatcher.register(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("reportcape")
+                    .then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument("name",
+                            com.mojang.brigadier.arguments.StringArgumentType.word())
+                    .executes(ctx -> {
+                        String n = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name");
+                        var mc = net.minecraft.client.Minecraft.getInstance();
+                        var info = mc.getConnection() == null ? null : mc.getConnection().getPlayerInfo(n);
+                        if (info == null) {
+                            ctx.getSource().sendError(Component.literal(n + " is not on this server."));
+                            return 0;
+                        }
+                        var src = ctx.getSource();
+                        com.vortex.client.social.Social.request("cosmetics.report", com.vortex.client.social.Social.args(
+                                "uuid", info.getProfile().id().toString().replace("-", ""))).whenComplete((r, e) ->
+                                src.sendFeedback(Component.literal(e == null
+                                        ? "Thanks -- the cape picture of " + n + " was reported."
+                                        : "Could not report: " + com.vortex.client.social.Social.errorOf(e))));
+                        return 1;
+                    })));
 
             // /friend add|remove <name>, /friend list -- Freundesliste
             dispatcher.register(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("friend")
