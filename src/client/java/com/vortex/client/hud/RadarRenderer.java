@@ -1,5 +1,6 @@
 package com.vortex.client.hud;
 
+import com.vortex.client.gui.glatt.Glatt;
 import com.vortex.client.module.ModuleManager;
 import com.vortex.client.module.modules.RadarModule;
 import net.minecraft.client.Minecraft;
@@ -25,9 +26,11 @@ import net.minecraft.world.entity.player.Player;
  *  - Fluessig: Positionen und Blickrichtung werden zwischen den Ticks
  *    interpoliert, neu auftauchende Entities blenden ein.
  *
- * Gezeichnet wird in halben Pixeln (Pose 1/2): Kreise und Linien sind damit
- * auf normalen GUI-Skalen deutlich glatter als vorher (Pixel-Treppen). Das
- * ist auch schneller: der alte Rahmen bestand aus Hunderten Einzelpixeln.
+ * Seit 4.20.1: Scheibe, Ringe und Punkte sind geglaettete Texturen aus dem
+ * Glatt-Werkzeug, der Sweep sind gedrehte Balken. Vorher bestand der Radar
+ * aus weit ueber tausend 1-Pixel-Streifen pro Bild -- das kostete viel FPS.
+ * Nur kleine Formen (Pfeil, Hoehen-Dreieck, Kopf + Name) laufen noch in
+ * halben Pixeln (Pose 1/2).
  */
 public final class RadarRenderer {
 
@@ -64,42 +67,39 @@ public final class RadarRenderer {
     private static void renderInner(GuiGraphicsExtractor context, Minecraft client) {
         if (client.player == null || client.level == null) return;
 
-        RadarModule mod = (RadarModule) module();
+        RadarModule mod = ModuleManager.INSTANCE.get(RadarModule.class);
         if (mod == null || !mod.isEnabled()) { SEIT.clear(); return; }
 
         double scale = mod.scale.get();
+        float gross = (float) Math.max(1.0, scale);
         int diameter = (int) Math.round(mod.baseDiameter() * scale);
         int left = mod.x.getInt();
         int top = mod.y.getInt();
         int frame = mod.color.get() | 0xFF000000;
         float pt = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         long ms = System.currentTimeMillis();
+        int px = Glatt.skala();
 
         var m = context.pose();
         m.pushMatrix();
         try {
             m.translate(left, top);
-            m.scale(1f / Q, 1f / Q);
-            int D = diameter * Q;
-            int R = D / 2;
+            // Ab hier GUI-Einheiten relativ zur linken oberen Ecke des Radars.
+            // Kreise und Ringe sind fertige, geglaettete Texturen (eine bis
+            // vier Kacheln je Form) -- frueher waren es Hunderte 1-Pixel-
+            // Streifen pro Bild, zusammen ueber tausend Zeichenbefehle.
+            float D = diameter, R = D / 2f;
 
             // 1) Scheibe mit leichtem Verlauf nach innen
-            disc(context, R, R, R, 0xB80B0D12);
-            disc(context, R, R, Math.round(R * 0.72f), 0x14FFFFFF);
-            disc(context, R, R, Math.round(R * 0.38f), 0x0AFFFFFF);
-            // Fadenkreuz und Entfernungsringe
+            Glatt.kreis(context, R, R, D, 0xB80B0D12);
+            Glatt.kreis(context, R, R, D * 0.72f, 0x14FFFFFF);
+            Glatt.kreis(context, R, R, D * 0.38f, 0x0AFFFFFF);
+            // Fadenkreuz (haarfein) und Entfernungsringe
             int kreuz = 0x16FFFFFF;
-            for (int iy = 0; iy < D; iy++) {
-                double yy = iy + 0.5 - R;
-                if (Math.abs(yy) >= R - Q) continue;
-                if (Math.abs(yy) < 0.6) {
-                    int w = (int) Math.floor(Math.sqrt(R * (double) R - yy * yy)) - Q;
-                    context.fill(R - w, iy, R + w, iy + 1, kreuz);
-                }
-            }
-            context.fill(R, Q, R + 1, D - Q, kreuz);
-            ring(context, R, R, Math.round(R / 3f), 1, 0x1EFFFFFF);
-            ring(context, R, R, Math.round(R * 2f / 3f), 1, 0x1EFFFFFF);
+            Glatt.flaeche(context, 1, R, D - 1, R + 1f / px, kreuz);
+            Glatt.flaeche(context, R, 1, R + 1f / px, D - 1, kreuz);
+            ring(context, R, R / 3f, 1, 0x1EFFFFFF);
+            ring(context, R, R * 2f / 3f, 1, 0x1EFFFFFF);
 
             // 2) Blickrichtung (interpoliert) -> Basisvektoren "Blick = oben"
             float yaw = client.player.getViewYRot(pt);
@@ -107,29 +107,29 @@ public final class RadarRenderer {
             double rightX = -Math.cos(yawRad), rightZ = -Math.sin(yawRad);
             double fwdX = -Math.sin(yawRad), fwdZ = Math.cos(yawRad);
 
-            // 3) Sweep
+            // 3) Sweep: ein Faecher aus gedrehten, schmalen Balken
             if (mod.sweep.get()) {
                 double winkel = (ms % 4000L) / 4000.0 * Math.PI * 2.0;
-                for (int i = 0; i < 22; i++) {
-                    double a = winkel - i * 0.024;
+                for (int i = 0; i < 20; i++) {
+                    double a = winkel - i * 0.026;
                     int alpha = Math.max(0, 80 - i * 4);
-                    strahl(context, R, R, R - Q, a, (alpha << 24) | (frame & 0xFFFFFF));
+                    strahl(context, R, R - 1.5f, (float) a, px, (alpha << 24) | (frame & 0xFFFFFF));
                 }
             }
 
-            // 4) Rahmen (aussen dunkel, innen in Rahmenfarbe)
-            ring(context, R, R, R, Q, 0xC0000000);
-            ring(context, R, R, R - Q, Q, frame);
+            // 4) Rahmen (aussen dunkel, innen in Rahmenfarbe), je 1 GUI-Pixel
+            ring(context, R, R, px, 0xC0000000);
+            ring(context, R, R - 1, px, frame);
 
             // 5) Kompass
             if (mod.compass.get()) {
                 String[] namen = {"N", "E", "S", "W"};
                 double[][] richt = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
-                float ts = (float) (Q * 0.5 * Math.max(1.0, scale));
+                float ts = 0.5f * gross;
                 for (int i = 0; i < 4; i++) {
                     double sx = richt[i][0] * rightX + richt[i][1] * rightZ;
                     double sy = richt[i][0] * fwdX + richt[i][1] * fwdZ;
-                    double rr = R - 5.5 * Q * Math.max(1.0, scale);
+                    double rr = R - 5.5 * gross;
                     float tx = (float) (R + sx * rr), ty = (float) (R - sy * rr);
                     int w = client.font.width(namen[i]);
                     m.pushMatrix();
@@ -144,7 +144,7 @@ public final class RadarRenderer {
             // 6) Entities
             double maxRange = mod.range.get();
             net.minecraft.world.phys.Vec3 ich = client.player.getPosition(pt);
-            double f = (R - 2.0 * Q) / maxRange;
+            double f = (R - 2.0) / maxRange;
             JETZT.clear();
             for (Entity e : com.vortex.client.core.EntityCache.all()) {
                 if (e == client.player || !e.isAlive()) continue;
@@ -182,36 +182,45 @@ public final class RadarRenderer {
                 double sRight = dx * rightX + dz * rightZ;
                 double sUp = dx * fwdX + dz * fwdZ;
                 float ex = (float) (R + sRight * f), ey = (float) (R - sUp * f);
-                int ix = Math.round(ex), iy = Math.round(ey);
 
                 boolean playerWithHead = isPlayer && mod.playerDetails.get() && e instanceof AbstractClientPlayer;
                 boolean gezeichnet = false;
                 if (useEgg && e instanceof net.minecraft.world.entity.LivingEntity living) {
-                    disc(context, ix, iy, (int) Math.round(3.5 * Q * scale), mitAlpha((farbe & 0xFFFFFF) | 0x50000000, ein));
-                    gezeichnet = drawMobEgg(context, living, ix, iy, scale);
+                    Glatt.kreis(context, ex, ey, (float) (7.0 * scale), mitAlpha((farbe & 0xFFFFFF) | 0x50000000, ein));
+                    gezeichnet = drawMobEgg(context, living, ex, ey, scale);
                 }
                 if (!gezeichnet && !playerWithHead) {
-                    int r = (int) Math.round(1.6 * Q * Math.max(1.0, scale));
-                    disc(context, ix, iy, r + 1, mitAlpha(0xD0000000, ein));
-                    disc(context, ix, iy, r, mitAlpha(farbe, ein));
+                    float r = 1.6f * gross;
+                    Glatt.kreis(context, ex, ey, 2 * r + 1, mitAlpha(0xD0000000, ein));
+                    Glatt.kreis(context, ex, ey, 2 * r, mitAlpha(farbe, ein));
                 }
-                // Hoehe: deutlich ueber/unter dir?
+                // Kleine Formen (Hoehen-Pfeil, Kopf + Name) in halben Pixeln
+                int ix = Math.round(ex * Q), iy = Math.round(ey * Q);
                 double dy = pos.y - ich.y;
-                if (Math.abs(dy) > 3.0) {
-                    int s = (int) Math.round(1.2 * Q * Math.max(1.0, scale));
-                    int off = (int) Math.round(4.0 * Q * Math.max(1.0, scale));
-                    dreieck(context, ix + off, iy, s, dy > 0, mitAlpha(0xE6FFFFFF, ein));
-                }
-                if (playerWithHead) {
-                    drawPlayerInfo(context, client, (AbstractClientPlayer) e, ix, iy, dist, farbe, ein, scale);
+                if (Math.abs(dy) > 3.0 || playerWithHead) {
+                    m.pushMatrix();
+                    m.scale(1f / Q, 1f / Q);
+                    if (Math.abs(dy) > 3.0) {
+                        int s = Math.round(1.2f * Q * gross);
+                        int off = Math.round(4.0f * Q * gross);
+                        dreieck(context, ix + off, iy, s, dy > 0, mitAlpha(0xE6FFFFFF, ein));
+                    }
+                    if (playerWithHead) {
+                        drawPlayerInfo(context, client, (AbstractClientPlayer) e, ix, iy, dist, farbe, ein, scale);
+                    }
+                    m.popMatrix();
                 }
             }
             SEIT.keySet().retainAll(JETZT);
 
             // 7) Du in der Mitte: Pfeil mit dunklem Rand
-            int s = (int) Math.round(3.0 * Q * Math.max(1.0, scale));
-            pfeil(context, R, R, s + Q, 0xE0000000);
-            pfeil(context, R, R, s, 0xFFFFFFFF);
+            m.pushMatrix();
+            m.scale(1f / Q, 1f / Q);
+            int c = Math.round(R * Q);
+            int s = Math.round(3.0f * Q * gross);
+            pfeil(context, c, c, s + Q, 0xE0000000);
+            pfeil(context, c, c, s, 0xFFFFFFFF);
+            m.popMatrix();
         } finally {
             m.popMatrix();
         }
@@ -221,41 +230,22 @@ public final class RadarRenderer {
     // ------------------------------------------------------------------
     // Formen (alles aus waagerechten Streifen -- wenige, billige fills)
 
-    /** Gefuellter Kreis. */
-    private static void disc(GuiGraphicsExtractor c, int cx, int cy, int r, int farbe) {
-        if (r <= 0 || (farbe >>> 24) == 0) return;
-        for (int dy = -r; dy < r; dy++) {
-            double yy = dy + 0.5;
-            int w = (int) Math.round(Math.sqrt(r * (double) r - yy * yy));
-            if (w > 0) c.fill(cx - w, cy + dy, cx + w, cy + dy + 1, farbe);
-        }
-    }
-
-    /** Kreisring: aussen r, Dicke d. */
-    private static void ring(GuiGraphicsExtractor c, int cx, int cy, int r, int d, int farbe) {
+    /** Kreisring um den Mittelpunkt (c, c): aussen Radius r (GUI), Dicke in echten Pixeln. */
+    private static void ring(GuiGraphicsExtractor ctx, float c, float r, int dickePx, int farbe) {
         if (r <= 0) return;
-        int ri = Math.max(0, r - d);
-        for (int dy = -r; dy < r; dy++) {
-            double yy = dy + 0.5;
-            int wo = (int) Math.round(Math.sqrt(r * (double) r - yy * yy));
-            if (wo <= 0) continue;
-            if (Math.abs(yy) >= ri) {
-                c.fill(cx - wo, cy + dy, cx + wo, cy + dy + 1, farbe);
-            } else {
-                int wi = (int) Math.round(Math.sqrt(ri * (double) ri - yy * yy));
-                c.fill(cx - wo, cy + dy, cx - wi, cy + dy + 1, farbe);
-                c.fill(cx + wi, cy + dy, cx + wo, cy + dy + 1, farbe);
-            }
-        }
+        Glatt.rahmen(ctx, c - r, c - r, 2 * r, 2 * r, r, dickePx, farbe);
     }
 
-    /** Strahl vom Mittelpunkt (fuer den Sweep), Winkel 0 = oben, im Uhrzeigersinn. */
-    private static void strahl(GuiGraphicsExtractor c, int cx, int cy, int laenge, double winkel, int farbe) {
-        double sx = Math.sin(winkel), sy = -Math.cos(winkel);
-        for (int t = 3; t < laenge; t += 3) {
-            int x = (int) Math.round(cx + sx * t), y = (int) Math.round(cy + sy * t);
-            c.fill(x - 1, y - 1, x + 2, y + 2, farbe);
-        }
+    /** Strahl vom Mittelpunkt (fuer den Sweep), Winkel 0 = oben, im Uhrzeigersinn: ein gedrehter Balken. */
+    private static void strahl(GuiGraphicsExtractor ctx, float c, float laenge, float winkel, int px, int farbe) {
+        var m = ctx.pose();
+        m.pushMatrix();
+        m.translate(c, c);
+        m.rotate(winkel);
+        m.scale(1f / px, 1f / px);
+        int l = Math.round(laenge * px), b = Math.max(1, px / 2);
+        ctx.fill(-b, -l, b, -2 * px, farbe);
+        m.popMatrix();
     }
 
     /** Pfeil nach oben (Spitze oben, hinten eingekerbt). */
@@ -294,7 +284,7 @@ public final class RadarRenderer {
      */
     private static boolean drawMobEgg(GuiGraphicsExtractor context,
                                       net.minecraft.world.entity.LivingEntity living,
-                                      int dotX, int dotY, double scale) {
+                                      float dotX, float dotY, double scale) {
         try {
             var type = living.getType();
             //#if 26
@@ -308,9 +298,9 @@ public final class RadarRenderer {
             // Icon-Groesse klein halten (5px Basis), damit der Radar
             // uebersichtlich bleibt und sich die Icons nicht gegenseitig
             // (und den Mittel-Pfeil) verdecken.
-            int iconSize = Math.max(5 * Q, (int) Math.round(5 * Q * scale));
-            int ix = dotX - iconSize / 2;
-            int iy = dotY - iconSize / 2;
+            float iconSize = (float) Math.max(5.0, 5.0 * scale);
+            float ix = dotX - iconSize / 2f;
+            float iy = dotY - iconSize / 2f;
 
             // Item-Icons sind immer 16px; per Matrix auf iconSize skalieren.
             float factor = iconSize / 16.0f;
@@ -373,13 +363,6 @@ public final class RadarRenderer {
 
     private static boolean isAnimal(Entity e) {
         return e instanceof Animal || e instanceof AgeableMob;
-    }
-
-    private static com.vortex.client.module.Module module() {
-        for (var m : ModuleManager.INSTANCE.getModules()) {
-            if (m instanceof RadarModule) return m;
-        }
-        return null;
     }
 
     // --- Warnung bei neuen Spielern ---------------------------------------
