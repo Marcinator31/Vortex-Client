@@ -18,7 +18,7 @@ public final class Symbole {
     public enum Symbol {
         RASTER, HUD, REGLER, NADEL, BLITZ, LEUTE, HEMD, ROBOTER, TASTATUR, ZAHNRAD, GLOBUS,
         NEUSTART, PFEIL_RECHTS, KREUZ, KOLBEN, WELT, SERVER, WELLEN, BILD, PERSON, AUSGANG, PLUS,
-        SUCHE, STERN, HAKEN
+        SUCHE, STERN, HAKEN, NOTE, PLAY, PAUSE, VOR, ZURUECK, KOPFHOERER
     }
 
     /** Ein Strich-Bauteil: Linienzug (Abstandsfeld) oder Flaeche (Vieleck). */
@@ -186,6 +186,20 @@ public final class Symbole {
             case SUCHE -> { z.kreis(10.5f, 10.5f, 6.5f); z.zug(15.5f, 15.5f, 20.5f, 20.5f); }
             case STERN -> z.ring(12, 2.5f, 14.8f, 8.8f, 21.5f, 9.4f, 16.4f, 13.8f, 18, 20.6f, 12, 17, 6, 20.6f, 7.6f, 13.8f, 2.5f, 9.4f, 9.2f, 8.8f);
             case HAKEN -> z.zug(5, 12.5f, 10, 17.5f, 19.5f, 7);
+            case NOTE -> {
+                // Zwei Achtelnoten mit Balken
+                z.punkt(7, 18, 3); z.punkt(17, 16, 3);
+                z.zug(9.6f, 18, 9.6f, 5.5f, 19.6f, 3.5f, 19.6f, 16);
+                z.zug(9.6f, 9, 19.6f, 7);
+            }
+            case PLAY -> z.flaeche(7, 4.5f, 19.5f, 12, 7, 19.5f);
+            case PAUSE -> { z.rundVoll(6, 4.5f, 4.5f, 15, 1.2f); z.rundVoll(13.5f, 4.5f, 4.5f, 15, 1.2f); }
+            case VOR -> { z.flaeche(4.5f, 5, 15, 12, 4.5f, 19); z.rundVoll(16, 5, 3.2f, 14, 1); }
+            case ZURUECK -> { z.flaeche(19.5f, 5, 9, 12, 19.5f, 19); z.rundVoll(4.8f, 5, 3.2f, 14, 1); }
+            case KOPFHOERER -> {
+                z.bogen(12, 13, 8, 180, 360);
+                z.rundVoll(3, 13, 4.5f, 7.5f, 1.8f); z.rundVoll(16.5f, 13, 4.5f, 7.5f, 1.8f);
+            }
         }
         return z;
     }

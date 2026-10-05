@@ -133,7 +133,7 @@ public class HomeScreen extends Screen {
         int spalten = verfW >= 400 ? 4 : 2;
         float kachelH = kompakt ? 38 : 50;
         float w = Math.min(verfW, spalten == 4 ? 500 : 300);
-        float h = hoehe(spalten, kachelH, kompakt, mitBeta);
+        float h = hoehe(spalten, kachelH, kompakt, mitBeta, kachelAnzahl());
         float zoom = 1f;
         if (h > verfH) zoom = Math.max(0.55f, verfH / h);
         if (w < 260) zoom = Math.min(zoom, Math.max(0.55f, verfW / 260f));
@@ -141,8 +141,20 @@ public class HomeScreen extends Screen {
         return new Masse(w, h, spalten, kachelH, kompakt, mitBeta, zoom);
     }
 
-    private static float hoehe(int spalten, float kachelH, boolean kompakt, boolean mitBeta) {
-        int reihen = 8 / spalten;
+    /** Untertitel der Music-Kachel: laufender Song oder Spotify-Status. */
+    private static String musikKurz() {
+        var song = com.vortex.client.musik.MusikDienst.eigener();
+        if (song != null && song.spielt()) return "\u266b " + song.zeile();
+        return com.vortex.client.musik.Spotify.verbunden() ? "Spotify connected" : "Spotify";
+    }
+
+    /** Kacheln im Raster: 9 (mit Music), ohne Bots-Kachel bei Clean Modules 8. */
+    private static int kachelAnzahl() {
+        return com.vortex.client.core.CleanModules.aktiv() ? 8 : 9;
+    }
+
+    private static float hoehe(int spalten, float kachelH, boolean kompakt, boolean mitBeta, int kacheln) {
+        int reihen = (kacheln + spalten - 1) / spalten;
         float h = 16;                         // Rand oben
         h += kompakt ? 26 : 32;               // Kopf
         h += kompakt ? 10 : 14;
@@ -251,6 +263,7 @@ public class HomeScreen extends Screen {
             {"wardrobe", "Wardrobe", "Skins, capes", Symbol.HEMD, (Runnable) () -> mc.gui.setScreen(new SkinScreen(this))},
             {"bots", "Bots", bots > 0 ? bots + " bots" : "Plus Addon", Symbol.ROBOTER, (Runnable) () -> mc.gui.setScreen(new BotScreen(this))},
             {"keys", "Keybinds", "All keys", Symbol.TASTATUR, (Runnable) () -> mc.gui.setScreen(new KeyListScreen(this))},
+            {"music", "Music", musikKurz(), Symbol.NOTE, (Runnable) () -> mc.gui.setScreen(new com.vortex.client.musik.MusikScreen(this))},
         };
         // Clean Modules: keine Bots-Kachel. Die letzte Reihe wird dann
         // breiter verteilt, damit keine Luecke auffaellt.
@@ -279,7 +292,7 @@ public class HomeScreen extends Screen {
             }
             hits.add(new Hit(kx, ky, kw, kh, (Runnable) k[4]));
         }
-        int reihen = 8 / sp;
+        int reihen = (kacheln.length + sp - 1) / sp;
         cy += reihen * kh + (reihen - 1) * gap;
 
         // --- Beta-Test (nur wenn der Launcher eine Checkliste mitgibt) ---------------

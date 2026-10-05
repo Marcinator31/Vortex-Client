@@ -30,6 +30,8 @@ public abstract class Module {
      */
     public enum Category {
         HUD, PVP, CHEATS, PERFORMANCE, MISC,
+        /** Spotify: Song ueber dem Kopf, Mithoeren, Now-Playing-HUD (eigene Kachel "Music"). */
+        MUSIC,
         /** Automatisierte Ablaeufe. Leer, solange kein Addon Module anmeldet. */
         BOTS
     }

@@ -79,6 +79,8 @@ public final class ModuleManager {
         register(new PotionEffectsModule());
         register(new TotemCountModule());
         register(new RadarModule());
+        register(new com.vortex.client.module.modules.SpotifyModule());
+        register(new com.vortex.client.module.modules.NowPlayingModule());
         register(new GlobalHudColorModule());
         register(new SaturationModule());
         register(new ToggleSprintModule());
