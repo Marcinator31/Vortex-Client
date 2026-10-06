@@ -197,7 +197,7 @@ public final class Panoramen {
                 int[] zeile = new int[w];
                 for (int y = 0; y < w; y++) {
                     b.getRGB(0, y, w, 1, zeile, 0, w);
-                    for (int x = 0; x < w; x++) ziel.setPixel(x, i * w + y, zeile[x] | 0xFF000000);
+                    for (int x = 0; x < w; x++) ziel.setPixel(x, i * w + (w - 1 - y), zeile[x] | 0xFF000000); // wie Vanilla: jede Seite gespiegelt (flipY)
                 }
             }
             LOG.info("[Vortex] Menu panorama {} read ({} px faces)", id, w);
