@@ -64,6 +64,8 @@ public final class Modules {
         m.register(new ItemPhysics());
         m.register(new ExplosionTimer());
         m.register(new GlintColor());
+        m.register(new NoParticles());
+        m.register(new HandItemSize());
         m.register(new Nametags());
         m.register(new HealthIndicator());
         m.register(new ProjectilePath());
