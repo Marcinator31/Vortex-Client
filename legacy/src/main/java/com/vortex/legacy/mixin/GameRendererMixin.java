@@ -70,7 +70,7 @@ public abstract class GameRendererMixin {
     }
 
     /** Freelook: Mausbewegung dreht die Kamera, nicht den Spieler */
-    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet.minecraft.entity.player.ClientPlayerEntity;increaseTransforms(FF)V"))
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/ClientPlayerEntity;increaseTransforms(FF)V"))
     private void vortex$drehen(ClientPlayerEntity p, float dx, float dy) {
         Freelook f = ModuleManager.INSTANCE.get(Freelook.class);
         if (f != null && f.isEnabled() && f.active) f.turn(dx, dy);

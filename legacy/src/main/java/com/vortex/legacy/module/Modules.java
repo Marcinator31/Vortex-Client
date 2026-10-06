@@ -4,6 +4,7 @@ import com.vortex.legacy.core.ModuleManager;
 import com.vortex.legacy.module.hud.*;
 import com.vortex.legacy.module.pvp.*;
 import com.vortex.legacy.module.visual.*;
+import com.vortex.legacy.module.misc.*;
 
 /** Alle Module des 1.8.9-Clients. */
 public final class Modules {
@@ -52,5 +53,11 @@ public final class Modules {
         m.register(new SimpleToggles.NoPumpkinBlur());
         m.register(new SimpleToggles.NoHurtCam());
         m.register(new SimpleToggles.NoBob());
+        m.register(new BlockOutline());
+        m.register(new ChunkBorders());
+        // Misc
+        m.register(new Chat());
+        m.register(new AutoGG());
+        m.register(new AutoReconnect());
     }
 }

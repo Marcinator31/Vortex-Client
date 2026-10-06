@@ -5,6 +5,9 @@
   "compatibilityLevel": "JAVA_8",
   "client": [
     "AttackMixin",
+    "BlockOutlineMixin",
+    "ChatMixin",
+    "DisconnectMixin",
     "GameRendererMixin",
     "HeldItemRendererMixin",
     "HitColorMixin",
@@ -13,7 +16,8 @@
     "KeyPressMixin",
     "MinecraftClientMixin",
     "NetworkMixin",
-    "TitlePanoramaMixin"
+    "TitlePanoramaMixin",
+    "WorldRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1
