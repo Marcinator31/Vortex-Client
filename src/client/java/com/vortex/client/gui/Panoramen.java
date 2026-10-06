@@ -162,7 +162,11 @@ public final class Panoramen {
             if (t instanceof ReloadableTexture r) {
                 try (TextureContents c = r.loadContents(mc.getResourceManager())) {
                     r.apply(c);
+                    LOG.info("[Vortex] Menu panorama {} applied to {} ({}x{})", id, t.getClass().getSimpleName(),
+                            c.image().getWidth(), c.image().getHeight());
                 }
+            } else {
+                LOG.info("[Vortex] Menu panorama {}: texture is {}", id, t == null ? "null" : t.getClass().getName());
             }
         } catch (Throwable e) {
             // Kaputt? Dann lieber Vanilla.
@@ -193,6 +197,7 @@ public final class Panoramen {
                     for (int x = 0; x < w; x++) ziel.setPixel(x, i * w + y, zeile[x] | 0xFF000000);
                 }
             }
+            LOG.info("[Vortex] Menu panorama {} read ({} px faces)", id, w);
             return new TextureContents(ziel, null);
         } catch (Throwable e) {
             if (ziel != null) ziel.close();
