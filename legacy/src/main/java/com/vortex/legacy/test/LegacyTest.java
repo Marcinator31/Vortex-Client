@@ -195,6 +195,10 @@ public final class LegacyTest {
         step(2, "client settings shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "09-menu-client-settings"); }});
         step(10, "hud editor", new Step() { public void run(MinecraftClient mc) { mc.setScreen(new HudEditorScreen(null)); }});
         step(2, "hud editor shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "10-hud-editor"); }});
+        step(10, "pause menu", new Step() { public void run(MinecraftClient mc) { mc.setScreen(new net.minecraft.client.gui.screen.GameMenuScreen()); }});
+        step(2, "pause shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "10b-pause-menu"); }});
+        step(10, "options", new Step() { public void run(MinecraftClient mc) { mc.setScreen(new net.minecraft.client.gui.screen.SettingsScreen(null, mc.options)); }});
+        step(2, "options shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "10c-options"); }});
         step(10, "close", new Step() { public void run(MinecraftClient mc) { mc.setScreen(null); }});
         step(10, "freelook view", new Step() { public void run(MinecraftClient mc) {
             mc.options.perspective = 1;

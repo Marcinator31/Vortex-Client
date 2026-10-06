@@ -16,10 +16,12 @@
     "ItemPhysicsMixin",
     "KeyBindingMixin",
     "KeyPressMixin",
+    "MenuStilMixin",
     "MinecraftClientMixin",
     "NametagMixin",
     "NetworkMixin",
     "OldAnimationsMixin",
+    "TitelMixin",
     "TitlePanoramaMixin",
     "WorldRenderMixin"
   ],
