@@ -8,6 +8,7 @@
     "BlockOutlineMixin",
     "ChatMixin",
     "DisconnectMixin",
+    "GameRendererAccessor",
     "GameRendererMixin",
     "HeldItemRendererMixin",
     "HitColorMixin",
@@ -15,6 +16,7 @@
     "KeyBindingMixin",
     "KeyPressMixin",
     "MinecraftClientMixin",
+    "NametagMixin",
     "NetworkMixin",
     "TitlePanoramaMixin",
     "WorldRenderMixin"

@@ -55,6 +55,11 @@ public final class Modules {
         m.register(new SimpleToggles.NoBob());
         m.register(new BlockOutline());
         m.register(new ChunkBorders());
+        m.register(new MotionBlur());
+        m.register(new Nametags());
+        m.register(new HealthIndicator());
+        m.register(new ProjectilePath());
+        m.register(new PotatoMode());
         // Misc
         m.register(new Chat());
         m.register(new AutoGG());

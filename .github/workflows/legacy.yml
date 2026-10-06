@@ -73,7 +73,7 @@ jobs:
         if: ${{ github.event.inputs.mode == 'test' }}
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q xvfb mesa-utils libgl1-mesa-dri libegl1 libxrandr2 libxxf86vm1 libopenal1
+          sudo apt-get install -y -q xvfb mesa-utils libgl1-mesa-dri libegl1 libxrandr2 libxxf86vm1 libopenal1 x11-xserver-utils
       - name: Im Spiel testen
         if: ${{ github.event.inputs.mode == 'test' }}
         timeout-minutes: 40
@@ -81,7 +81,7 @@ jobs:
           ONLY: ${{ github.event.inputs.only }}
         run: |
           set -o pipefail
-          xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient -PvortexTest ${ONLY:+-PvortexTestOnly=$ONLY} --no-daemon --stacktrace 2>&1 | tee test.log
+          xvfb-run -a -s "-screen 0 1280x720x24 +extension RANDR" ./gradlew runClient -PvortexTest ${ONLY:+-PvortexTestOnly=$ONLY} --no-daemon --stacktrace 2>&1 | tee test.log
       - name: Ergebnis einsammeln
         if: ${{ always() && github.event.inputs.mode == 'test' }}
         env:
