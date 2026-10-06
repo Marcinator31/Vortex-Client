@@ -146,7 +146,18 @@ public class MusikScreen extends Screen {
         String meld = MusikDienst.meldung();
         if (meld == null && Spotify.status() == Spotify.Status.FEHLER) meld = Spotify.fehler();
         if (meld == null && Spotify.verbunden()) meld = MusikDienst.apiFehler();
-        if (meld != null) Glatt.textMitte(g, k(meld, fw - 40, Schrift.NORMAL), fx + fw / 2f, fy + fh - 17, Glatt.alpha(0xFFFFB86B, a), Schrift.NORMAL);
+        if (meld != null) {
+            int farbe = Glatt.alpha(0xFFFFB86B, a);
+            if (Glatt.breite(meld, Schrift.NORMAL) <= fw - 40) {
+                Glatt.textMitte(g, meld, fx + fw / 2f, fy + fh - 17, farbe, Schrift.NORMAL);
+            } else {
+                // Lange Meldungen (z. B. von Spotify) auf zwei Zeilen
+                int teil = meld.lastIndexOf(' ', meld.length() / 2 + 8);
+                if (teil < 0) teil = meld.length() / 2;
+                Glatt.textMitte(g, k(meld.substring(0, teil).trim(), fw - 40, Schrift.NORMAL), fx + fw / 2f, fy + fh - 22, farbe, Schrift.NORMAL);
+                Glatt.textMitte(g, k(meld.substring(teil).trim(), fw - 40, Schrift.NORMAL), fx + fw / 2f, fy + fh - 12, farbe, Schrift.NORMAL);
+            }
+        }
     }
 
     /** Linke Karte: Cover, Titel, Fortschritt, Steuerung -- oder "Connect". */

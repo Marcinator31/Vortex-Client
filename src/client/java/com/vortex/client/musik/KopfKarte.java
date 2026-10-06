@@ -43,7 +43,7 @@ public final class KopfKarte {
         m.scale(0.025f, -0.025f, 0.025f);
         final float tx = x0 + rand + c + 5;
         q.submitCustomGeometry(m, RenderTypes.textBackground(), (pose, vc) -> {
-            rechteck(pose, vc, x0, y0, x0 + w, y0 + h, 0xA00B0814);
+            rechteck(pose, vc, x0, y0, x0 + w, y0 + h, 0xC80B0814);
             rechteck(pose, vc, x0, y0, x0 + 1.2f, y0 + h, GRUEN);               // gruene Kante links
             if (anteil >= 0) {
                 rechteck(pose, vc, tx, y0 + h - 4.5f, x0 + w - 6, y0 + h - 3.5f, 0x40FFFFFF);

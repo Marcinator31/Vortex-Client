@@ -208,7 +208,9 @@ public final class Spotify {
                         if (ok) {
                             POOL.execute(() -> codeEinloesen(cid, q.get("code"), verifier));
                         } else if (state.equals(q.get("state"))) {
-                            fehler = "Spotify: " + q.getOrDefault("error", "sign-in cancelled");
+                            fehler = "access_denied".equals(q.get("error"))
+                                    ? "Spotify refused the sign-in. Only accounts on the app's user list can connect (Spotify Developer Dashboard > User Management, max. 5) -- or use your own Client ID."
+                                    : "Spotify: " + q.getOrDefault("error", "sign-in cancelled");
                             status = Status.FEHLER;
                         } else {
                             continue;    // fremde Anfrage (z. B. Favicon): weiter warten
