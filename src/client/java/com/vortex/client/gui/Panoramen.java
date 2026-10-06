@@ -68,6 +68,7 @@ public final class Panoramen {
             "https://raw.githubusercontent.com/Marcinator31/Vortex-Launcher/main/wallpapers/panorama/");
     public static final Identifier TEXTUR = Identifier.withDefaultNamespace("textures/gui/title/background/panorama");
     private static final int MAX_SEITE = 4096;
+    private static final int[] REIHENFOLGE = {1, 3, 5, 4, 0, 2};
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger("vortexclient");
 
     /** Fuer "Vortex Mix": einmal je Spielstart gewuerfelt. */
@@ -188,7 +189,8 @@ public final class Panoramen {
             int w = -1;
             for (int i = 0; i < 6; i++) {
                 BufferedImage b;
-                try (InputStream in = Files.newInputStream(seite(id, i))) { b = ImageIO.read(in); }
+                // Reihenfolge wie CubeMapTexture.SUFFIXES: _1, _3, _5, _4, _0, _2
+                try (InputStream in = Files.newInputStream(seite(id, REIHENFOLGE[i]))) { b = ImageIO.read(in); }
                 if (b == null) throw new IOException("unreadable face " + i);
                 if (w < 0) { w = b.getWidth(); ziel = new NativeImage(w, w * 6, false); }
                 if (b.getWidth() != w || b.getHeight() != w) throw new IOException("face " + i + " has a different size");
