@@ -55,6 +55,15 @@ jobs:
           done
           [ -n "$ok" ]
           ls -la build/libs
+      - name: Jar fuer Tests ablegen (Release legacy-dev)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JAR=$(ls build/libs/*.jar | grep -v -- '-sources' | head -n 1)
+          cp "$JAR" "$RUNNER_TEMP/vortexclient-legacy-dev.jar"
+          gh release view legacy-dev >/dev/null 2>&1 || gh release create legacy-dev --prerelease --title "Legacy 1.8.9 Devkit (intern)" --notes "Nur fuer die Entwicklung."
+          gh release upload legacy-dev "$RUNNER_TEMP/vortexclient-legacy-dev.jar" --clobber
       - name: Devkit (Minecraft 1.8.9 mit Namen + Quelltext)
         if: ${{ github.event.inputs.mode == 'devkit' }}
         env:
