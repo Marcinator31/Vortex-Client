@@ -99,6 +99,12 @@ public final class LegacyTest {
         step(40, "title screen", new Step() { public void run(MinecraftClient mc) {
             mc.options.pauseOnLostFocus = false; // Xvfb hat keinen Fokus -- sonst pausiert das Spiel
             ok(mc.currentScreen instanceof TitleScreen, "title screen is open (" + (mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName()) + ")");
+            boolean logo;
+            try { mc.getResourceManager().getResource(new net.minecraft.util.Identifier("vortexclient", "textures/gui/logo_v.png")); logo = true; } catch (Exception e) { logo = false; }
+            ok(logo, "Vortex files load as a resource pack (logo found)");
+            boolean shader;
+            try { mc.getResourceManager().getResource(new net.minecraft.util.Identifier("minecraft", "shaders/post/vortex_motionblur_5.json")); shader = true; } catch (Exception e) { shader = false; }
+            ok(shader, "Motion blur shader file found");
             ok(ModuleManager.INSTANCE.all().size() >= 30, ModuleManager.INSTANCE.all().size() + " modules registered");
         }});
         step(5, "title shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "01-title"); }});

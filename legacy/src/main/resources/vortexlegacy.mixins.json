@@ -23,6 +23,7 @@
     "NetworkMixin",
     "OldAnimationsMixin",
     "PlayerListMixin",
+    "ResourcePackMixin",
     "ScoreboardMixin",
     "StreamerMixin",
     "TitelMixin",
