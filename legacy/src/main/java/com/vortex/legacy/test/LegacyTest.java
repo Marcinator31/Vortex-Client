@@ -242,6 +242,13 @@ public final class LegacyTest {
             mc.player.pitch = 60;
         }});
         step(3, "world shot 2b", new Step() { public void run(MinecraftClient mc) { shot(mc, "13-outline-items"); }});
+        step(5, "panorama", new Step() { public void run(MinecraftClient mc) { mc.setScreen(new TitleScreen()); }});
+        step(300, "panorama wait", new Step() { public void run(MinecraftClient mc) { }});
+        step(2, "panorama shot", new Step() { public void run(MinecraftClient mc) {
+            ok(com.vortex.legacy.gui.Panoramen.seite(0) != null, "Vortex menu panorama loaded");
+            shot(mc, "14-title-panorama");
+            mc.setScreen(null);
+        }});
         step(5, "blur off", new Step() { public void run(MinecraftClient mc) {
             mod(com.vortex.legacy.module.visual.MotionBlur.class).setEnabled(false);
             ok(mc.gameRenderer.getShader() == null, "Motion Blur off removes the shader");
