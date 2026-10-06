@@ -198,6 +198,7 @@ public class VortexClientMod implements ClientModInitializer {
             GLFW.GLFW_KEY_O, CATEGORY));
         com.vortex.client.social.Social.register();
         com.vortex.client.musik.MusikDienst.register();
+        com.vortex.client.gui.Panoramen.register();
 
         // Keybind: B oeffnet das Emote-Rad (Cosmetics).
         emoteKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(

@@ -132,6 +132,33 @@ jobs:
           done
           exit 1
 
+      # ---------------------------------------------------------------
+      # 1.8.9 (Legacy Fabric, Ordner legacy/): eigener Quelltext (Java 8),
+      # gleiche Versionsnummer wie der Client. Landet im selben Release.
+      # ---------------------------------------------------------------
+      - name: Build 1.8.9
+        id: legacy
+        continue-on-error: true
+        run: |
+          set -e
+          VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          VERSION="${VERSION%%+*}"   # "4.25.0+26.2" -> "4.25.0"
+          cd legacy
+          chmod +x gradlew
+          for attempt in 1 2 3; do
+            echo "=== 1.8.9 build attempt $attempt of 3 ==="
+            if ./gradlew build -Pmod_version="$VERSION" --no-daemon --stacktrace 2>&1 | tee build.log; test ${PIPESTATUS[0]} -eq 0; then
+              mkdir -p ../build-port/1.8.9/build/libs
+              cp $(ls build/libs/*.jar | grep -v -- '-sources') ../build-port/1.8.9/build/libs/
+              echo "1.8.9 build succeeded."
+              exit 0
+            fi
+            grep -A3 -E '^/.*\.java:[0-9]+: error: ' build.log | head -60 | sed 's/^/::error::[1.8.9] /' || true
+            grep -A6 'What went wrong' build.log | head -14 | sed 's/^/::error::[1.8.9] /' || true
+            [ "$attempt" -lt 3 ] && sleep 20
+          done
+          exit 1
+
       # Die fertige Jar als Release veroeffentlichen.
       #
       # WARUM NICHT (NUR) ALS ARTIFACT: Artifacts zaehlen gegen ein

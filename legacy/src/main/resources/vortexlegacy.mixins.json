@@ -1,0 +1,38 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.vortex.legacy.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "AttackMixin",
+    "BlockOutlineMixin",
+    "ChatMixin",
+    "DisconnectMixin",
+    "GameRendererAccessor",
+    "GameRendererMixin",
+    "GlintMixin",
+    "HandItemMixin",
+    "HeldItemRendererMixin",
+    "HitColorMixin",
+    "InGameHudMixin",
+    "ItemPhysicsMixin",
+    "KeyBindingMixin",
+    "KeyPressMixin",
+    "MenuStilMixin",
+    "MinecraftClientMixin",
+    "NametagMixin",
+    "NetworkMixin",
+    "OldAnimationsMixin",
+    "ParticleMixin",
+    "PlayerListMixin",
+    "ResourcePackMixin",
+    "ScoreboardMixin",
+    "StreamerMixin",
+    "TitelMixin",
+    "TitlePanoramaMixin",
+    "WorldRenderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
