@@ -204,5 +204,44 @@ public final class LegacyTest {
             mc.options.perspective = 1;
         }});
         step(3, "third person shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "11-third-person"); mc.options.perspective = 0; }});
+
+        // --- Welt-Module ---
+        step(20, "world modules", new Step() { public void run(MinecraftClient mc) {
+            for (Module m : ModuleManager.INSTANCE.all()) if (m instanceof HudModule) m.setEnabled(false);
+            for (Class<? extends Module> c : java.util.Arrays.<Class<? extends Module>>asList(
+                    com.vortex.legacy.module.visual.BlockOutline.class, com.vortex.legacy.module.visual.ChunkBorders.class,
+                    com.vortex.legacy.module.visual.ItemPhysics.class, com.vortex.legacy.module.visual.ExplosionTimer.class,
+                    com.vortex.legacy.module.pvp.DamageNumbers.class, com.vortex.legacy.module.cheats.RadarModule.class,
+                    com.vortex.legacy.module.visual.MotionBlur.class, com.vortex.legacy.module.pvp.HealthIndicator.class))
+                mod(c).setEnabled(true);
+            mc.player.pitch = 30;
+            mc.player.sendChatMessage("/summon PrimedTnt ~3 ~ ~2 {Fuse:200}");
+            mc.player.sendChatMessage("/summon Item ~1 ~1 ~2 {Item:{id:minecraft:diamond_sword,Count:1}}");
+            mc.player.sendChatMessage("/summon Item ~-1 ~1 ~2 {Item:{id:minecraft:golden_apple,Count:5}}");
+            mc.player.sendChatMessage("/summon Zombie ~0 ~ ~3 {NoAI:1}");
+            mc.player.sendChatMessage("/summon Zombie ~-3 ~ ~8 {NoAI:1,CustomName:\"Steve\",CustomNameVisible:1}");
+        }});
+        step(10, "hit zombie", new Step() { public void run(MinecraftClient mc) {
+            LivingEntity z = null; double best = 1e9;
+            for (Entity e : mc.world.loadedEntities)
+                if (e instanceof net.minecraft.entity.mob.ZombieEntity && mc.player.distanceTo(e) < best) { z = (LivingEntity) e; best = mc.player.distanceTo(e); }
+            ok(z != null, "zombie spawned");
+            if (z != null) {
+                mc.player.yaw = (float) (Math.toDegrees(Math.atan2(z.z - mc.player.z, z.x - mc.player.x)) - 90);
+                mc.interactionManager.attackEntity(mc.player, z);
+            }
+        }});
+        step(4, "world shot", new Step() { public void run(MinecraftClient mc) {
+            ok(mc.gameRenderer.getShader() != null, "Motion Blur shader loaded");
+            shot(mc, "12-world-modules");
+        }});
+        step(5, "world shot 2", new Step() { public void run(MinecraftClient mc) {
+            mc.player.pitch = 60;
+        }});
+        step(3, "world shot 2b", new Step() { public void run(MinecraftClient mc) { shot(mc, "13-outline-items"); }});
+        step(5, "blur off", new Step() { public void run(MinecraftClient mc) {
+            mod(com.vortex.legacy.module.visual.MotionBlur.class).setEnabled(false);
+            ok(mc.gameRenderer.getShader() == null, "Motion Blur off removes the shader");
+        }});
     }
 }
