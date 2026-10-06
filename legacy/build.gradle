@@ -1,0 +1,51 @@
+// Vortex Client fuer Minecraft 1.8.9 (Legacy Fabric).
+//
+// Eigenes Projekt neben dem grossen Client: 1.8.9 laeuft auf Java 8 und hat
+// ganz andere Minecraft-Interna (Yarn-Namen von Legacy Fabric). Der Quelltext
+// liegt in legacy/src und ist bewusst Java 8 (keine records, kein var).
+plugins {
+	id "net.fabricmc.fabric-loom-remap" version "${loom_version}"
+	id "legacy-looming" version "${loom_version}"
+}
+
+version = "${project.mod_version}+1.8.9"
+group = project.maven_group
+base { archivesName = project.archives_base_name }
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings(legacy.yarn(project.minecraft_version, project.yarn_build))
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.legacyfabric.legacy-fabric-api:legacy-fabric-api:${project.fabric_version}"
+	include "net.legacyfabric.legacy-fabric-api:legacy-fabric-api:${project.fabric_version}"
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") { expand "version": inputs.properties.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+	if (JavaVersion.current().isJava9Compatible()) it.options.release = 8
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+// Im Spiel testen (CI): -PvortexTest  -> der Client spielt ein Testskript ab und beendet sich
+if (project.hasProperty('vortexTest')) {
+	loom.runs.configureEach {
+		vmArg("-Dvortex.legacy.test=true")
+		if (project.hasProperty('vortexTestOnly')) vmArg("-Dvortex.legacy.test.only=${project.property('vortexTestOnly')}")
+	}
+}
+
+// Fuer die Entwicklung: Klassenpfad (inkl. Minecraft mit Yarn-Namen) auflisten
+tasks.register('dumpClasspath') {
+	doLast {
+		file("build/classpath.txt").text = sourceSets.main.compileClasspath.files.collect { it.absolutePath }.join('\n')
+	}
+}

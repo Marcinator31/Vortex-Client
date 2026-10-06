@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "vortexclient",
+  "version": "${version}",
+  "name": "Vortex Client",
+  "description": "Vortex Client for Minecraft 1.8.9 -- HUD modules, PvP tools and the Vortex look.",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/vortexclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [ "com.vortex.legacy.VortexLegacy" ]
+  },
+  "mixins": [ { "config": "vortexlegacy.mixins.json", "environment": "client" } ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.8.9"
+  }
+}
