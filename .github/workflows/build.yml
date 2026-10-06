@@ -142,6 +142,7 @@ jobs:
         run: |
           set -e
           VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          VERSION="${VERSION%%+*}"   # "4.25.0+26.2" -> "4.25.0"
           cd legacy
           chmod +x gradlew
           for attempt in 1 2 3; do
