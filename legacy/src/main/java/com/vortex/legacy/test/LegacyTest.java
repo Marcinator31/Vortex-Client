@@ -253,5 +253,18 @@ public final class LegacyTest {
             mod(com.vortex.legacy.module.visual.MotionBlur.class).setEnabled(false);
             ok(mc.gameRenderer.getShader() == null, "Motion Blur off removes the shader");
         }});
+        // Optionen > "Broadcast Settings" (Twitch) stuerzte ab
+        step(5, "broadcast settings", new Step() { public void run(MinecraftClient mc) {
+            net.minecraft.client.util.TwitchStreamProvider p = mc.getTwitchStreamProvider();
+            if (p instanceof net.minecraft.client.util.NullTwitchStream) {
+                Throwable t = ((net.minecraft.client.util.NullTwitchStream) p).getThrowable();
+                note("Twitch: " + (t == null ? "no error" : t.getClass().getSimpleName() + " message=" + t.getMessage()));
+            }
+            net.minecraft.client.gui.screen.Screen opt = new net.minecraft.client.gui.screen.SettingsScreen(null, mc.options);
+            mc.setScreen(opt);
+            net.minecraft.client.gui.screen.TwitchErrorScreen.openNew(opt);
+            ok(mc.currentScreen != opt, "Broadcast Settings opens a screen without crashing (" + (mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName()) + ")");
+        }});
+        step(3, "broadcast shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "15-broadcast"); mc.setScreen(null); }});
     }
 }

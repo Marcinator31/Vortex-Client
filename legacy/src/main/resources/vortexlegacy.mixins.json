@@ -28,6 +28,7 @@
     "ResourcePackMixin",
     "ScoreboardMixin",
     "StreamerMixin",
+    "TwitchMixin",
     "TitelMixin",
     "TitlePanoramaMixin",
     "WorldRenderMixin"
