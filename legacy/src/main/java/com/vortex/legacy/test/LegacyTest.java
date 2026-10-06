@@ -266,5 +266,20 @@ public final class LegacyTest {
             ok(mc.currentScreen != opt, "Broadcast Settings opens a screen without crashing (" + (mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName()) + ")");
         }});
         step(3, "broadcast shot", new Step() { public void run(MinecraftClient mc) { shot(mc, "15-broadcast"); mc.setScreen(null); }});
+        // Wie auf Windows: Twitch-Fehler OHNE Meldung (dort kam die NullPointerException her)
+        step(3, "broadcast settings, error without message", new Step() { public void run(MinecraftClient mc) {
+            net.minecraft.client.util.TwitchStreamProvider p = mc.getTwitchStreamProvider();
+            if (!(p instanceof net.minecraft.client.util.NullTwitchStream)) { note("no NullTwitchStream -- skipped"); return; }
+            try {
+                for (java.lang.reflect.Field f : p.getClass().getDeclaredFields()) {
+                    if (Throwable.class.isAssignableFrom(f.getType())) { f.setAccessible(true); f.set(p, new RuntimeException((String) null)); }
+                }
+            } catch (Throwable t) { note("could not set the error: " + t); return; }
+            net.minecraft.client.gui.screen.Screen opt = new net.minecraft.client.gui.screen.SettingsScreen(null, mc.options);
+            mc.setScreen(opt);
+            net.minecraft.client.gui.screen.TwitchErrorScreen.openNew(opt);
+            ok(mc.currentScreen instanceof net.minecraft.client.gui.screen.TwitchErrorScreen, "Broadcast Settings without error message: no crash (" + (mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName()) + ")");
+            mc.setScreen(null);
+        }});
     }
 }
