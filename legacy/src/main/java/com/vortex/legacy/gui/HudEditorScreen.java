@@ -28,7 +28,8 @@ public class HudEditorScreen extends Screen {
 
     private static boolean inside(HudModule h, int mx, int my) {
         float s = h.scale.getFloat();
-        return mx >= h.x.get() && my >= h.y.get() && mx <= h.x.get() + h.width() * s && my <= h.y.get() + h.height() * s;
+        float[] p = HudRenderer.position(h);
+        return mx >= p[0] && my >= p[1] && mx <= p[0] + h.width() * s && my <= p[1] + h.height() * s;
     }
 
     @Override
@@ -43,7 +44,8 @@ public class HudEditorScreen extends Screen {
             float s = h.scale.getFloat();
             boolean over = drag == h || (drag == null && inside(h, mx, my));
             if (over) hover = h;
-            Render2D.roundOutline(h.x.getFloat() - 2, h.y.getFloat() - 2, h.width() * s + 4, h.height() * s + 4, 3, 1,
+            float[] p = HudRenderer.position(h);
+            Render2D.roundOutline(p[0] - 2, p[1] - 2, h.width() * s + 4, h.height() * s + 4, 3, 1,
                     over ? Theme.accent() : 0x55FFFFFF);
         }
         String hint = "Drag to move  •  Scroll to resize  •  Right click to hide  •  Esc to close";
@@ -64,7 +66,7 @@ public class HudEditorScreen extends Screen {
         for (int i = l.size() - 1; i >= 0; i--) {
             HudModule h = l.get(i);
             if (!inside(h, mx, my)) continue;
-            if (button == 0) { drag = h; offX = mx - h.x.getFloat(); offY = my - h.y.getFloat(); }
+            if (button == 0) { float[] p = HudRenderer.position(h); drag = h; offX = mx - p[0]; offY = my - p[1]; }
             else if (button == 1) { h.setEnabled(false); Config.markDirty(); }
             return;
         }

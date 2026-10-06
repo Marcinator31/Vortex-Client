@@ -39,6 +39,7 @@ java {
 if (project.hasProperty('vortexTest')) {
 	loom.runs.configureEach {
 		vmArg("-Dvortex.legacy.test=true")
+		programArgs("--width", "1280", "--height", "720")
 		if (project.hasProperty('vortexTestOnly')) vmArg("-Dvortex.legacy.test.only=${project.property('vortexTestOnly')}")
 	}
 }

@@ -8,7 +8,7 @@ public class SessionStatsModule extends HudModule {
     public static int kills, deaths;
     private static long start = System.currentTimeMillis();
     private float w = 90, h = 40;
-    public SessionStatsModule() { super("Session Stats", "Play time, kills and deaths this session.", 4, 400); }
+    public SessionStatsModule() { super("Session Stats", "Play time, kills and deaths this session.", 10000, 330); }
     @Override public float width() { return w; }
     @Override public float height() { return h; }
 

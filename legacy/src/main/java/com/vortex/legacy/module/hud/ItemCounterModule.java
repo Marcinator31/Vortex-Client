@@ -21,7 +21,7 @@ public class ItemCounterModule extends HudModule {
     private final BoolSetting hideZero = add(new BoolSetting("Hide Empty", true));
     private float w = 40, h = 20;
 
-    public ItemCounterModule() { super("Item Counter", "Counts arrows, golden apples, pearls and potions.", 300, 330); }
+    public ItemCounterModule() { super("Item Counter", "Counts arrows, golden apples, pearls and potions.", 10000, 260); }
     @Override public float width() { return w; }
     @Override public float height() { return h; }
 

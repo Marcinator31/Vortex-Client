@@ -11,7 +11,7 @@ public class TargetInfoModule extends HudModule {
     private float shown;
     private float hpAnim = -1;
     private long last;
-    public TargetInfoModule() { super("Target Info", "Health of the player you are fighting.", 300, 200); }
+    public TargetInfoModule() { super("Target Info", "Health of the player you are fighting.", 300, 300); }
     private static final float W = 130, H = 38;
     @Override public float width() { return W; }
     @Override public float height() { return H; }

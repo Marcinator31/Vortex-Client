@@ -100,6 +100,7 @@ public final class LegacyTest {
 
     private static void build() {
         step(40, "title screen", new Step() { public void run(MinecraftClient mc) {
+            mc.options.pauseOnLostFocus = false; // Xvfb hat keinen Fokus -- sonst pausiert das Spiel
             ok(mc.currentScreen instanceof TitleScreen, "title screen is open (" + (mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName()) + ")");
             ok(ModuleManager.INSTANCE.all().size() >= 30, ModuleManager.INSTANCE.all().size() + " modules registered");
         }});
@@ -151,7 +152,9 @@ public final class LegacyTest {
         }});
         step(10, "attack", new Step() { public void run(MinecraftClient mc) {
             LivingEntity v = null;
-            for (Entity e : mc.world.loadedEntities) if (e instanceof LivingEntity && e != mc.player) { v = (LivingEntity) e; break; }
+            double best = 1e9;
+            for (Entity e : mc.world.loadedEntities)
+                if (e instanceof net.minecraft.entity.passive.VillagerEntity && mc.player.distanceTo(e) < best) { v = (LivingEntity) e; best = mc.player.distanceTo(e); }
             ok(v != null, "villager spawned");
             if (v == null) return;
             mod(HitColor.class).setEnabled(true);

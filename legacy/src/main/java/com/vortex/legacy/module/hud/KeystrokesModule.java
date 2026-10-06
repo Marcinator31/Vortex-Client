@@ -16,7 +16,7 @@ public class KeystrokesModule extends HudModule {
     private final float[] glow = new float[7];
     private long last;
 
-    public KeystrokesModule() { super("Keystrokes", "Shows WASD, mouse buttons and space.", 4, 200); }
+    public KeystrokesModule() { super("Keystrokes", "Shows WASD, mouse buttons and space.", 4, 38); }
     @Override public boolean defaultEnabled() { return true; }
 
     private static final float K = 22, G = 2;

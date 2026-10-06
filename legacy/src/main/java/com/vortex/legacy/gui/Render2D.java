@@ -35,9 +35,11 @@ public final class Render2D {
         GlStateManager.disableAlphaTest();
         GlStateManager.blendFuncSeparate(770, 771, 1, 0);
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
+        GlStateManager.disableCull(); // Faecher/Streifen haben gemischte Wicklung
     }
     private static void end() {
         GlStateManager.shadeModel(GL11.GL_FLAT);
+        GlStateManager.enableCull();
         GlStateManager.enableAlphaTest();
         GlStateManager.enableTexture();
         GlStateManager.disableBlend();

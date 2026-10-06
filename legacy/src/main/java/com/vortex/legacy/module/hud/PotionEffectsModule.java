@@ -20,7 +20,7 @@ public class PotionEffectsModule extends HudModule {
     private final BoolSetting blink = add(new BoolSetting("Blink When Ending", true));
     private float w = 90, h = 40;
 
-    public PotionEffectsModule() { super("Potion Effects", "Active potion effects and how long they last.", 4, 340); }
+    public PotionEffectsModule() { super("Potion Effects", "Active potion effects and how long they last.", 10000, 70); }
     @Override public boolean defaultEnabled() { return true; }
     @Override public float width() { return w; }
     @Override public float height() { return h; }

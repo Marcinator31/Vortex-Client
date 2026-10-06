@@ -8,7 +8,7 @@ public class CoordinatesModule extends HudModule {
     private final BoolSetting direction = add(new BoolSetting("Direction", true));
     private final BoolSetting biome = add(new BoolSetting("Biome", false));
     private float w = 80, h = 30;
-    public CoordinatesModule() { super("Coordinates", "Your position, facing and biome.", 4, 40); }
+    public CoordinatesModule() { super("Coordinates", "Your position, facing and biome.", 10000, 4); }
 
     @Override public float width() { return w; }
     @Override public float height() { return h; }

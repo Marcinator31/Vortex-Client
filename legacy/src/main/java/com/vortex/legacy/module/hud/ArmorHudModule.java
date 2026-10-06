@@ -15,7 +15,7 @@ public class ArmorHudModule extends HudModule {
     private final BoolSetting hand = add(new BoolSetting("Held Item", true));
     private float w = 60, h = 70;
 
-    public ArmorHudModule() { super("ArmorHUD", "Your armor and its durability.", 4, 260); }
+    public ArmorHudModule() { super("ArmorHUD", "Your armor and its durability.", 10000, 170); }
     @Override public boolean defaultEnabled() { return true; }
     @Override public float width() { return w; }
     @Override public float height() { return h; }

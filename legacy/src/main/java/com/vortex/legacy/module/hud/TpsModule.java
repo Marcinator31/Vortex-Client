@@ -4,7 +4,7 @@ package com.vortex.legacy.module.hud;
 public class TpsModule extends SimpleText {
     private static long lastWorldTime = -1, lastReal;
     private static double tps = 20;
-    public TpsModule() { super("TPS", "Estimated server ticks per second.", 4, 444); }
+    public TpsModule() { super("TPS", "Estimated server ticks per second.", 4, 228); }
 
     /** Aus dem Weltzeit-Paket (alle ~20 Ticks). */
     public static void onWorldTime(long worldTime) {

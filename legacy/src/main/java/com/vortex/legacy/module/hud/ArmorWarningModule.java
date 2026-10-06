@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 public class ArmorWarningModule extends HudModule {
     private final NumberSetting percent = add(new NumberSetting("Warn Below %", 15, 1, 50, 1));
     private float w = 120, h = 16;
-    public ArmorWarningModule() { super("Armor Warning", "Warns when a piece of armor is about to break.", 300, 120); }
+    public ArmorWarningModule() { super("Armor Warning", "Warns when a piece of armor is about to break.", 330, 30); }
     @Override public float width() { return w; }
     @Override public float height() { return h; }
 

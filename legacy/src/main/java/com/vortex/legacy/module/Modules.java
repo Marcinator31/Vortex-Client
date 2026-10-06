@@ -56,6 +56,8 @@ public final class Modules {
         m.register(new BlockOutline());
         m.register(new ChunkBorders());
         m.register(new MotionBlur());
+        m.register(new OldAnimations());
+        m.register(new ItemPhysics());
         m.register(new Nametags());
         m.register(new HealthIndicator());
         m.register(new ProjectilePath());

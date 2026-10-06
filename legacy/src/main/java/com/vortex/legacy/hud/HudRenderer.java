@@ -20,11 +20,21 @@ public final class HudRenderer {
         }
     }
 
+    /** Position auf dem Bildschirm -- immer ganz sichtbar (grosse Werte = rechter/unterer Rand). */
+    public static float[] position(HudModule h) {
+        net.minecraft.client.util.Window w = new net.minecraft.client.util.Window(MinecraftClient.getInstance());
+        float s = h.scale.getFloat();
+        float x = Math.max(0, Math.min(w.getWidth() - h.width() * s, h.x.getFloat()));
+        float y = Math.max(0, Math.min(w.getHeight() - h.height() * s, h.y.getFloat()));
+        return new float[]{ x, y };
+    }
+
     public static void draw(HudModule h, boolean editor) {
         GlStateManager.pushMatrix();
         try {
-            GlStateManager.translate(h.x.getFloat(), h.y.getFloat(), 0);
             float s = h.scale.getFloat();
+            float[] pos = position(h);
+            GlStateManager.translate(pos[0], pos[1], 0);
             GlStateManager.scale(s, s, 1);
             h.render(editor);
         } catch (Throwable t) {

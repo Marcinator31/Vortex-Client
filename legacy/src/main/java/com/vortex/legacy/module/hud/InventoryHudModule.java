@@ -8,7 +8,7 @@ import net.minecraft.item.ItemStack;
 
 /** Dein Inventar (ohne Hotbar) als kleines Raster. */
 public class InventoryHudModule extends HudModule {
-    public InventoryHudModule() { super("Inventory HUD", "Shows your inventory on screen.", 300, 260); }
+    public InventoryHudModule() { super("Inventory HUD", "Shows your inventory on screen.", 10000, 10000); }
     private static final float W = 9 * 18 + 4, H = 3 * 18 + 4;
     @Override public float width() { return W; }
     @Override public float height() { return H; }

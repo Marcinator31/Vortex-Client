@@ -5,7 +5,7 @@ import com.vortex.legacy.hud.HudModule;
 
 /** Kompassband wie in Shootern: Himmelsrichtungen ziehen mit der Blickrichtung mit. */
 public class CompassBarModule extends HudModule {
-    public CompassBarModule() { super("Compass Bar", "A compass strip at the top of the screen.", 200, 4); }
+    public CompassBarModule() { super("Compass Bar", "A compass strip at the top of the screen.", 330, 4); }
     private static final float W = 180, H = 16;
     @Override public float width() { return W; }
     @Override public float height() { return H; }

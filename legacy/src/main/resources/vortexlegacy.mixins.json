@@ -13,11 +13,13 @@
     "HeldItemRendererMixin",
     "HitColorMixin",
     "InGameHudMixin",
+    "ItemPhysicsMixin",
     "KeyBindingMixin",
     "KeyPressMixin",
     "MinecraftClientMixin",
     "NametagMixin",
     "NetworkMixin",
+    "OldAnimationsMixin",
     "TitlePanoramaMixin",
     "WorldRenderMixin"
   ],
