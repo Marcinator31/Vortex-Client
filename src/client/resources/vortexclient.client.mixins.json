@@ -73,7 +73,8 @@
     "StreamerTextMixin",
     "ZoomFovMixin",
     "ZoomScrollMixin",
-    "WeichScrollenMixin"
+    "WeichScrollenMixin",
+    "BildschirmZeitMixin"
   ],
   "injectors": {
     "defaultRequire": 1
