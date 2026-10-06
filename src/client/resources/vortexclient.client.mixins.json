@@ -13,6 +13,7 @@
     "MenuSymbolKnopfMixin",
     "MenuTextKnopfStilMixin",
     "TitelGrundMixin",
+    "PanoramaTexturMixin",
     "TitelLogoMixin",
     "TitelSplashMixin",
     "AutoReconnectMixin",
