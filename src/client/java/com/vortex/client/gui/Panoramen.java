@@ -47,13 +47,13 @@ public final class Panoramen {
     /** Reihenfolge = Reihenfolge in der Einstellung. */
     public static final List<Ort> ORTE = List.of(
             new Ort("cherry", "Cherry Grove"),
-            new Ort("peaks", "Mountain Peaks"),
-            new Ort("meadow", "Meadow"),
             new Ort("village", "Village"),
+            new Ort("flowers", "Flower River"),
+            new Ort("jungle", "Bamboo Coast"),
             new Ort("badlands", "Badlands"),
-            new Ort("mangrove", "Mangrove Swamp"),
             new Ort("ocean", "Warm Ocean"),
-            new Ort("taiga", "Snowy Taiga")
+            new Ort("taiga", "Snowy Taiga"),
+            new Ort("peaks", "Frozen Peaks")
     );
 
     /** Einstellungs-Optionen: Mix, die Orte, Minecraft (Vanilla). */
