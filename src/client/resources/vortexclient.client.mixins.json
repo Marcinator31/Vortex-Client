@@ -72,7 +72,9 @@
     "SlotLockDropMixin",
     "StreamerTextMixin",
     "ZoomFovMixin",
-    "ZoomScrollMixin"
+    "ZoomScrollMixin",
+    "WeichScrollenMixin",
+    "BildschirmZeitMixin"
   ],
   "injectors": {
     "defaultRequire": 1

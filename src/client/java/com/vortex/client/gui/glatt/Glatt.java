@@ -247,8 +247,27 @@ public final class Glatt {
         return Component.literal(text).withStyle(st -> st.withFont(f));
     }
 
+    /**
+     * Gemerkte Breiten und Kuerzungen: Menues zeichnen jedes Bild dieselben
+     * Texte -- Vermessen (und erst recht Kuerzen, Zeichen fuer Zeichen) nur
+     * beim ersten Mal. Schluessel enthaelt die GUI-Groesse (andere Schrift).
+     */
+    private static final java.util.Map<String, Integer> BREITEN = new java.util.LinkedHashMap<>(256, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, Integer> e) { return size() > 2048; }
+    };
+    private static final java.util.Map<String, String> KURZ = new java.util.LinkedHashMap<>(256, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, String> e) { return size() > 1024; }
+    };
+
     public static int breite(String text, Schrift schrift) {
-        return Minecraft.getInstance().font.width(komp(text, schrift));
+        if (text == null) return 0;
+        String k = schrift.ordinal() + "\u0000" + skala() + "\u0000" + text;
+        Integer w = BREITEN.get(k);
+        if (w == null) {
+            w = Minecraft.getInstance().font.width(komp(text, schrift));
+            BREITEN.put(k, w);
+        }
+        return w;
     }
 
     /** Text an (x, y); y ist die Oberkante wie bei Minecraft. */
@@ -280,8 +299,19 @@ public final class Glatt {
         if (s == null) return "";
         if (max <= 8) return "";
         if (breite(s, schrift) <= max) return s;
+        String k = schrift.ordinal() + "\u0000" + skala() + "\u0000" + max + "\u0000" + s;
+        String fertig = KURZ.get(k);
+        if (fertig == null) {
+            fertig = kuerzenNeu(s, max, schrift);
+            KURZ.put(k, fertig);
+        }
+        return fertig;
+    }
+
+    private static String kuerzenNeu(String s, int max, Schrift schrift) {
         String c = s;
-        while (c.length() > 1 && breite(c + "…", schrift) > max) c = c.substring(0, c.length() - 1);
+        var font = Minecraft.getInstance().font;
+        while (c.length() > 1 && font.width(komp(c + "…", schrift)) > max) c = c.substring(0, c.length() - 1);
         return c.stripTrailing() + "…";
     }
 

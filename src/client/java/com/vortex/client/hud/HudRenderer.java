@@ -226,6 +226,10 @@ public final class HudRenderer {
         // --- Radar (zeichnet sich selbst, prueft intern auf aktiv/Spieler) ---
         RadarRenderer.render(context, client);
 
+        // --- Now Playing (Spotify) ---
+        try { com.vortex.client.musik.MusikHud.render(context, client); }
+        catch (Throwable musikErr) { com.vortex.client.core.Errors.report("NowPlaying", musikErr); }
+
         // --- Player List ESP (Spieler in Reichweite mit Distanz) ---
         com.vortex.client.module.modules.PlayerListEspModule plist =
                 (com.vortex.client.module.modules.PlayerListEspModule)

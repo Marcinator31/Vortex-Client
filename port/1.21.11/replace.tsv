@@ -67,3 +67,5 @@ net([./])minecraft\1client\1renderer\1state\1gui\1GuiTextRenderState\b	net\1mine
 \bextractSelection\b	renderSelection
 \bextractSprite\b	renderSprite
 \bextractListItems\b	renderListItems
+"extractScrollbar"	"renderScrollbar"	WeichScrollenMixin.java
+"extractRenderStateWithTooltipAndSubtitles"	"renderWithTooltipAndSubtitles"	BildschirmZeitMixin.java

@@ -79,6 +79,8 @@ public final class ModuleManager {
         register(new PotionEffectsModule());
         register(new TotemCountModule());
         register(new RadarModule());
+        register(new com.vortex.client.module.modules.SpotifyModule());
+        register(new com.vortex.client.module.modules.NowPlayingModule());
         register(new GlobalHudColorModule());
         register(new SaturationModule());
         register(new ToggleSprintModule());
@@ -162,6 +164,7 @@ public final class ModuleManager {
      * module that cannot be found.
      */
     public void register(Module module) {
+        nachKategorie.clear();
         modules.add(module);
         byType.put(module.getClass(), module);
     }
@@ -179,16 +182,23 @@ public final class ModuleManager {
         return modules;
     }
 
-    /** Alle Module einer Kategorie -- praktisch fuers GUI. */
+    /** Sortierte Listen je Kategorie (Menues fragen jedes Bild). */
+    private final java.util.Map<Module.Category, List<Module>> nachKategorie = new java.util.EnumMap<>(Module.Category.class);
+
+    /** Alle Module einer Kategorie -- praktisch fuers GUI. Neue Liste (darf veraendert werden). */
     public List<Module> getByCategory(Module.Category category) {
-        List<Module> result = new ArrayList<>();
-        for (Module m : modules) {
-            if (m.getCategory() == category) result.add(m);
+        List<Module> fertig = nachKategorie.get(category);
+        if (fertig == null) {
+            fertig = new ArrayList<>();
+            for (Module m : modules) {
+                if (m.getCategory() == category) fertig.add(m);
+            }
+            // Alphabetisch (Gross/klein egal) -- sonst stehen sie in der
+            // Reihenfolge der Anmeldung, und Addon-Module haengen hinten dran.
+            fertig.sort(java.util.Comparator.comparing(
+                    (Module m) -> m.getName().toLowerCase(java.util.Locale.ROOT)));
+            nachKategorie.put(category, fertig);
         }
-        // Alphabetisch (Gross/klein egal) -- sonst stehen sie in der
-        // Reihenfolge der Anmeldung, und Addon-Module haengen hinten dran.
-        result.sort(java.util.Comparator.comparing(
-                (Module m) -> m.getName().toLowerCase(java.util.Locale.ROOT)));
-        return result;
+        return new ArrayList<>(fertig);
     }
 }

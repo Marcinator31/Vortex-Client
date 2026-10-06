@@ -1308,15 +1308,22 @@ public class PanelGui extends Screen {
         }
     }
 
-    /** Waagerechter Verlauf in Baendern von 6 Pixeln -- guenstig und weich. */
+    /**
+     * Waagerechter Verlauf als EIN Zeichenbefehl: der senkrechte Verlauf von
+     * Minecraft, um 90 Grad gedreht. Vorher waren es Baender von 6 Pixeln --
+     * bei jeder aktiven Zeile Dutzende Rechtecke pro Bild.
+     */
     private static void verlaufBand(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
                                     int von, int bis) {
         if (w <= 0 || h <= 0) return;
-        int baender = Math.max(1, (w + 5) / 6);
-        for (int b = 0; b < baender; b++) {
-            int ax = x + w * b / baender, bx = x + w * (b + 1) / baender;
-            if (bx <= ax) continue;
-            ctx.fill(ax, y, bx, y + h, VortexStyle.mix(von, bis, (b + 0.5f) / baender));
+        var p = ctx.pose();
+        p.pushMatrix();
+        try {
+            p.translate(x, y + h);
+            p.rotate((float) (-Math.PI / 2));
+            ctx.fillGradient(0, 0, h, w, von, bis);
+        } finally {
+            p.popMatrix();
         }
     }
 

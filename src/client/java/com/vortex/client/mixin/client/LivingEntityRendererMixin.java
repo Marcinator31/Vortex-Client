@@ -112,6 +112,32 @@ public class LivingEntityRendererMixin {
     }
 
     /**
+     * Musik: der Spotify-Song eines Vortex-Spielers ueber seinem Kopf
+     * (ueber dem Namen; siehe MusikDienst.kopfText).
+     */
+    @Inject(method = "submit", at = @At("TAIL"))
+    private void vortex$renderSong(LivingEntityRenderState state, PoseStack matrices,
+                                   SubmitNodeCollector queue, CameraRenderState camState,
+                                   CallbackInfo ci) {
+        try {
+            LivingEntity entity = pvpclient$entityMap.get(state);
+            if (!(entity instanceof Player p) || !entity.isAlive()) return;
+            Component label = com.vortex.client.musik.MusikDienst.kopfText(p);
+            if (label == null) return;
+            // Ueber dem Namen; mit Ziel-Info noch eine Zeile hoeher
+            boolean zielInfo = pvpclient$find(com.vortex.client.module.modules.TargetInfoModule.class) instanceof Module ti && ti.isEnabled();
+            Vec3 labelPos = new Vec3(0.0, entity.getBbHeight() + (zielInfo ? 1.2 : 0.78), 0.0);
+            int light = 0xF000F0;
+            matrices.pushPose();
+            OrderedSubmitNodeCollector rcq = queue.order(light);
+            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
+            matrices.popPose();
+        } catch (Throwable vortexErr) {
+            com.vortex.client.core.Errors.report("SongAboveHead", vortexErr);
+        }
+    }
+
+    /**
      * Ziel-Info: Ausruestung und Reichweite ueber dem Kopf anderer Spieler.
      *
      * Bewusst ein eigener Einstiegspunkt und nicht im Health-Block: beide Module

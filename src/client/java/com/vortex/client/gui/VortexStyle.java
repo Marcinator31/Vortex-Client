@@ -71,13 +71,15 @@ public final class VortexStyle {
      */
     public static void akzentLinie(GuiGraphicsExtractor ctx, int x, int y, int w, float alpha) {
         if (w <= 0) return;
-        int baender = Math.max(1, (w + 7) / 8);
-        for (int b = 0; b < baender; b++) {
-            int ax = x + (int) ((long) w * b / baender);
-            int bx = x + (int) ((long) w * (b + 1) / baender);
-            if (bx <= ax) continue;
-            float t = (b + 0.5f) / baender;
-            ctx.fill(ax, y, bx, y + 2, fade(akzent(t), alpha));
+        // Ein gedrehter Verlauf (Violett -> Blau) statt vieler 8-Pixel-Baender
+        var p = ctx.pose();
+        p.pushMatrix();
+        try {
+            p.translate(x, y + 2);
+            p.rotate((float) (-Math.PI / 2));
+            ctx.fillGradient(0, 0, 2, w, fade(akzent(0f), alpha), fade(akzent(1f), alpha));
+        } finally {
+            p.popMatrix();
         }
     }
 
