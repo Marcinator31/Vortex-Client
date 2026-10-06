@@ -206,7 +206,14 @@ public final class Symbole {
 
     /** Symbol in n x n Pixeln (weisse Maske). */
     public static Masken.Maske maske(Symbol s, int n) {
-        return Masken.hole("sym_" + s.name() + "_" + n, n, n, false, rasterer(zeichnung(s), n));
+        // Erst rastern, wenn die Maske wirklich fehlt: frueher stand rasterer(...)
+        // direkt als Argument da und lief damit JEDES Bild fuer JEDES Symbol --
+        // im Startmenue ueber 10 ms pro Bild, obwohl alles im Cache lag.
+        Masken.Deckung[] fertig = {null};
+        return Masken.hole("sym_" + s.name() + "_" + n, n, n, false, (x, y) -> {
+            if (fertig[0] == null) fertig[0] = rasterer(zeichnung(s), n);
+            return fertig[0].bei(x, y);
+        });
     }
 
     private static Masken.Deckung rasterer(Zeichnung z, int n) {
