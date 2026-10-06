@@ -28,8 +28,8 @@ public final class Panoramen {
     private Panoramen() {}
 
     static final String[][] ORTE = {
-            { "cherry", "Cherry Grove" }, { "peaks", "Mountain Peaks" }, { "meadow", "Meadow" }, { "village", "Village" },
-            { "badlands", "Badlands" }, { "mangrove", "Mangrove Swamp" }, { "ocean", "Warm Ocean" }, { "taiga", "Snowy Taiga" }
+            { "cherry", "Cherry Grove" }, { "village", "Village" }, { "flowers", "Flower River" }, { "jungle", "Bamboo Coast" },
+            { "badlands", "Badlands" }, { "ocean", "Warm Ocean" }, { "taiga", "Snowy Taiga" }, { "peaks", "Frozen Peaks" }
     };
     private static final String BASIS = System.getProperty("vortex.panorama.url",
             "https://raw.githubusercontent.com/Marcinator31/Vortex-Launcher/main/wallpapers/panorama/");
