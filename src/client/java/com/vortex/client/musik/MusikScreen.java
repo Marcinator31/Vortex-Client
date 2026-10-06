@@ -206,7 +206,10 @@ public class MusikScreen extends Screen {
                 Glatt.textRechts(g, vol + "%", x + w - 8, vy - 3, Glatt.alpha(DIM, a), Schrift.NORMAL);
                 flaechen.add(new Flaeche(vx, vy - 5, vw, 13, () -> MusikDienst.lautstaerkeSetzen(Math.round(100 * Math.max(0, Math.min(1, (mausX - vx) / vw))))));
             }
-            knopf(g, x + w / 2f - 40, y + h - 22, 80, 16, "Disconnect", mx, my, () -> { MusikDienst.stoppeMithoeren(null); Spotify.abmelden(); }, false, a);
+            // Nur wenn Platz ist (sonst steht "Disconnect" in den Einstellungen)
+            if (sy + 28 + 6 <= y + h - 22) {
+                knopf(g, x + w / 2f - 40, y + h - 22, 80, 16, "Disconnect", mx, my, () -> { MusikDienst.stoppeMithoeren(null); Spotify.abmelden(); }, false, a);
+            }
             clientId.visible = false;
         } else {
             boolean warte = Spotify.status() == Spotify.Status.ANMELDEN;
@@ -300,6 +303,8 @@ public class MusikScreen extends Screen {
                 () -> { double v = m.listenRange.get() + 4; m.listenRange.set(v > 48 ? 4 : v); ConfigManager.save(); }));
         z.add(schalter(m.resumeMine, "Resume my music", "After listening along, your own music continues."));
         z.add(schalter(m.desktopApp, "Read the Spotify app", "Without sign-in (Windows): title and artist from the app."));
+        if (Spotify.verbunden()) z.add(new Zeile("Spotify account", Spotify.name().isEmpty() ? "Connected." : "Connected as " + Spotify.name() + ".",
+                "Disconnect", false, () -> { MusikDienst.stoppeMithoeren(null); Spotify.abmelden(); }));
         if (hud != null) z.add(schalter("Now Playing HUD", "Song card on screen (move it in the HUD editor).", hud.isEnabled(), hud::toggle));
 
         int zh = 30;
