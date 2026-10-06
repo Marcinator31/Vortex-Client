@@ -37,6 +37,7 @@ public final class FremdeCapes {
     public static Identifier textur(UUID spieler) {
         Cosmetics.Auswahl a = Cosmetics.fuer(spieler);
         if (a.cape().isEmpty()) return null;
+        if (AnimCapes.ist(a.cape())) return AnimCapes.basis(a.cape());
         String schluessel = EigenesCape.ID.equals(a.cape()) ? "bild:" + CosmeticsSync.bildVon(spieler) : "id:" + a.cape();
         if (schluessel.endsWith(":null")) return null;
         Identifier fertig = FERTIG.get(schluessel);

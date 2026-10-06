@@ -49,8 +49,8 @@ public class CosmeticsScreen extends Screen {
 
     @Override
     protected void init() {
-        fw = Math.min(this.width - 24, 560);
-        fh = Math.min(this.height - 24, 320);
+        fw = Math.min(this.width - 24, 640);
+        fh = Math.min(this.height - 24, 360);
         fx = (this.width - fw) / 2;
         fy = (this.height - fh) / 2;
     }
@@ -64,6 +64,7 @@ public class CosmeticsScreen extends Screen {
         switch (reiter) {
             case CAPES -> {
                 k.add(new Kachel("", "None", "No Vortex cape"));
+                for (CapeKunst.Design d : CapeKunst.alle().values()) k.add(new Kachel(d.id(), d.name(), d.text()));
                 if (katalog == null) k.add(new Kachel("#laedt", "Loading...", "Vortex capes"));
                 else for (String[] c : katalog) k.add(new Kachel(c[0], c[1], "Vortex cape"));
                 if (EigenesCape.vorhanden()) k.add(new Kachel(EigenesCape.ID, "Your picture", "Custom cape"));
@@ -177,6 +178,9 @@ public class CosmeticsScreen extends Screen {
                     () -> Cosmetics.setzeCapePhysik(!Cosmetics.capePhysik()), an);
             ly += 26; lh -= 26;
         }
+        if (reiter == Reiter.CAPES) {
+            capeKacheln(g, lx, ly, lw, lh, mouseX, mouseY);
+        } else {
         int spalten = lw >= 260 ? 2 : 1, kw = (lw - (spalten - 1) * 6) / spalten, kh = 34;
         List<Kachel> liste = kacheln();
         int zeilen = (liste.size() + spalten - 1) / spalten;
@@ -199,9 +203,59 @@ public class CosmeticsScreen extends Screen {
             if (ky >= ly && ky + kh <= ly + lh) flaechen.add(new Flaeche(kx, ky, kw, kh, () -> waehle(k.id())));
         }
         g.disableScissor();
+        }
 
         if (meldung != null) Glatt.textMitte(g, meldung, lx + lw / 2f, fy + fh - 11, DIM, Glatt.Schrift.NORMAL);
         super.extractRenderState(g, mouseX, mouseY, delta);
+    }
+
+    /**
+     * Capes als Galerie: jede Karte zeigt das Cape selbst -- animierte Capes
+     * laufen live (gleiche Texturen wie am Spieler, inklusive Leuchten).
+     */
+    private void capeKacheln(GuiGraphicsExtractor g, int lx, int ly, int lw, int lh, int mouseX, int mouseY) {
+        List<Kachel> liste = kacheln();
+        int spalten = Math.max(2, Math.min(5, lw / 74));
+        int kw = (lw - (spalten - 1) * 6) / spalten;
+        int tw = Math.min(44, kw - 20), th = Math.round(tw * 1.6f), kh = th + 34;
+        int zeilen = (liste.size() + spalten - 1) / spalten;
+        float max = Math.max(0, zeilen * (kh + 6) - 6 - lh);
+        scroll = Math.max(0, Math.min(scroll, max));
+        String sel = gewaehlt();
+        g.enableScissor(lx, ly, lx + lw, ly + lh);
+        for (int i = 0; i < liste.size(); i++) {
+            Kachel k = liste.get(i);
+            int kx = lx + (i % spalten) * (kw + 6), ky = ly + (i / spalten) * (kh + 6) - Math.round(scroll);
+            if (ky + kh < ly || ky > ly + lh) continue;
+            boolean an = k.id().equals(sel) && !k.id().startsWith("#");
+            boolean hov = mouseX >= kx && mouseX < kx + kw && mouseY >= ky && mouseY < ky + kh && mouseY >= ly && mouseY < ly + lh;
+            Glatt.rund(g, kx, ky, kw, kh, 8, hov ? KARTE_HOV : KARTE);
+            int bx = kx + (kw - tw) / 2, by = ky + 7;
+            CapeKunst.Design d = CapeKunst.design(k.id());
+            if (d != null) {
+                Glatt.schatten(g, bx, by, tw, th, 4, 6, 0x70000000);
+                Glatt.schatten(g, bx, by, tw, th, 4, 10, 0x38000000 | (d.akzent() & 0xFFFFFF));
+                var basis = AnimCapes.basis(d.id());
+                var glow = AnimCapes.glow(d.id());
+                if (basis != null) {
+                    g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, basis, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                    if (glow != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, glow, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                }
+            } else {
+                Glatt.rund(g, bx, by, tw, th, 4, 0xFF1B1726);
+                Symbole.Symbol sym = k.id().equals("#upload") ? Symbole.Symbol.PLUS : k.id().isEmpty() ? Symbole.Symbol.KREUZ : Symbole.Symbol.HEMD;
+                Glatt.symbol(g, sym, bx + tw / 2f - 8, by + th / 2f - 8, 16, k.id().isEmpty() ? DIM : AKZENT);
+            }
+            Glatt.textMitte(g, Glatt.kuerzen(k.name(), kw - 8, Glatt.Schrift.FETT), kx + kw / 2f, by + th + 7, an ? TEXT : 0xFFD9D4E8, Glatt.Schrift.FETT);
+            Glatt.textMitte(g, Glatt.kuerzen(d != null ? "Animated" : k.unter(), kw - 8, Glatt.Schrift.NORMAL), kx + kw / 2f, by + th + 17, d != null ? 0xFFB79CFF : DIM, Glatt.Schrift.NORMAL);
+            if (an) {
+                Glatt.rahmen(g, kx, ky, kw, kh, 8, 1, AKZENT);
+                Glatt.kreis(g, kx + kw - 9, ky + 9, 12, AKZENT);
+                Glatt.symbol(g, Symbole.Symbol.HAKEN, kx + kw - 14, ky + 4, 10, 0xFFFFFFFF);
+            }
+            if (ky >= ly && ky + kh <= ly + lh) flaechen.add(new Flaeche(kx, ky, kw, kh, () -> waehle(k.id())));
+        }
+        g.disableScissor();
     }
 
     private void partikelOptionen(GuiGraphicsExtractor g, int x, int y, int w, int mouseX, int mouseY) {
@@ -227,6 +281,21 @@ public class CosmeticsScreen extends Screen {
     /** Eigener Spieler, frei drehbar. Ohne Welt (Hauptmenue) gibt es nichts zu zeigen. */
     private void vorschau(GuiGraphicsExtractor g, int x, int y, int w, int h) {
         Player p = this.minecraft.player;
+        CapeKunst.Design gross = CapeKunst.design(Cosmetics.eigene().cape());
+        if (p == null && gross != null) {
+            // Ohne Welt: das gewaehlte animierte Cape gross
+            int th = Math.min(h - 40, Math.round((w - 40) * 1.6f)), tw = Math.round(th / 1.6f);
+            int bx = x + (w - tw) / 2, by = y + 12;
+            Glatt.schatten(g, bx, by, tw, th, 6, 14, 0x50000000 | (gross.akzent() & 0xFFFFFF));
+            var basis = AnimCapes.basis(gross.id());
+            var glow = AnimCapes.glow(gross.id());
+            if (basis != null) {
+                g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, basis, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                if (glow != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, glow, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+            }
+            Glatt.textMitte(g, gross.name(), x + w / 2f, by + th + 8, TEXT, Glatt.Schrift.FETT);
+            return;
+        }
         if (p == null) {
             Glatt.textMitte(g, "Join a world", x + w / 2f, y + h / 2f - 10, DIM, Glatt.Schrift.NORMAL);
             Glatt.textMitte(g, "to see the preview", x + w / 2f, y + h / 2f + 2, DIM, Glatt.Schrift.NORMAL);

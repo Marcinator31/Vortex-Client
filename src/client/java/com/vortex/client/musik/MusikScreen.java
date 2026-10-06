@@ -159,8 +159,19 @@ public class MusikScreen extends Screen {
         float cx = x + (w - c) / 2f, cy = y + 12;
         Identifier id = s == null ? null : Cover.von(s.cover());
         if (id != null) {
+            int fc = Cover.farbe(s.cover());
+            if (fc >= 0) {
+                // Leuchten in der Farbe des Covers -- die Karte faerbt sich passend zum Song
+                Glatt.schatten(g, x, y, w, h * 0.7f, 8, 30, Glatt.alpha(0x22000000 | fc, a));
+                Glatt.schatten(g, cx, cy, c, c, 6, 16, Glatt.alpha(0x88000000 | fc, a));
+            }
             Glatt.schatten(g, cx, cy + 2, c, c, 6, 8, Glatt.alpha(0xA0000000, a));
             g.blit(RenderPipelines.GUI_TEXTURED, id, Math.round(cx), Math.round(cy), 0f, 0f, Math.round(c), Math.round(c), 128, 128, 128, 128, Glatt.alpha(0xFFFFFFFF, a));
+            // kleines Spotify-Abzeichen unten links am Cover
+            float bw = Glatt.breite("Spotify", Schrift.FETT) + 20;
+            Glatt.rund(g, cx + 4, cy + c - 16, bw, 12, 6, Glatt.alpha(0xE0101010, a));
+            Glatt.symbol(g, Symbol.NOTE, cx + 7, cy + c - 14.5f, 9, Glatt.alpha(GRUEN, a));
+            Glatt.text(g, "Spotify", cx + 18, cy + c - 13.5f, Glatt.alpha(TEXT, a), Schrift.FETT);
         } else {
             Glatt.rund(g, cx, cy, c, c, 8, Glatt.alpha(0xFF1B1726, a));
             Glatt.symbol(g, Symbol.NOTE, cx + c / 2 - 16, cy + c / 2 - 16, 32, Glatt.alpha(s != null ? GRUEN : 0xFF3A3450, a));
@@ -212,6 +223,14 @@ public class MusikScreen extends Screen {
             }
             clientId.visible = false;
         } else {
+            if (MusikDienst.kannSteuern()) {
+                // Spotify-App auf diesem PC: Steuern geht direkt (auch mit Spotify Free)
+                float sy = by - 6, mitte = x + w / 2f;
+                rundKnopf(g, mitte - 46, sy, 24, Symbol.ZURUECK, mx, my, MusikDienst::vorheriger, false, a);
+                rundKnopf(g, mitte - 16, sy - 4, 32, s != null && s.spielt() ? Symbol.PAUSE : Symbol.PLAY, mx, my, MusikDienst::spielenPause, true, a);
+                rundKnopf(g, mitte + 22, sy, 24, Symbol.VOR, mx, my, MusikDienst::naechster, false, a);
+                by += 34;
+            }
             boolean warte = Spotify.status() == Spotify.Status.ANMELDEN;
             float bw = Math.min(w - 40, 150);
             knopfGruen(g, x + (w - bw) / 2f, by - 4, bw, 20, warte ? "Waiting for browser..." : "Connect Spotify", mx, my, () -> {

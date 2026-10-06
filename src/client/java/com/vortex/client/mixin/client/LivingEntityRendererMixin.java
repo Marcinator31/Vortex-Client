@@ -122,16 +122,9 @@ public class LivingEntityRendererMixin {
         try {
             LivingEntity entity = pvpclient$entityMap.get(state);
             if (!(entity instanceof Player p) || !entity.isAlive()) return;
-            Component label = com.vortex.client.musik.MusikDienst.kopfText(p);
-            if (label == null) return;
-            // Ueber dem Namen; mit Ziel-Info noch eine Zeile hoeher
+            // Karte mit Cover ueber dem Namen; mit Ziel-Info noch eine Zeile hoeher
             boolean zielInfo = pvpclient$find(com.vortex.client.module.modules.TargetInfoModule.class) instanceof Module ti && ti.isEnabled();
-            Vec3 labelPos = new Vec3(0.0, entity.getBbHeight() + (zielInfo ? 1.2 : 0.78), 0.0);
-            int light = 0xF000F0;
-            matrices.pushPose();
-            OrderedSubmitNodeCollector rcq = queue.order(light);
-            rcq.submitNameTag(matrices, labelPos, 0, label, true, light, camState);
-            matrices.popPose();
+            com.vortex.client.musik.KopfKarte.zeichne(p, matrices, queue, camState, entity.getBbHeight() + (zielInfo ? 1.32 : 0.9));
         } catch (Throwable vortexErr) {
             com.vortex.client.core.Errors.report("SongAboveHead", vortexErr);
         }

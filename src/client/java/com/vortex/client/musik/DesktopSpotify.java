@@ -27,9 +27,37 @@ final class DesktopSpotify {
 
     /** Fenstertitel der Spotify-App (oder null, wenn nicht offen). Blockiert kurz -- nicht im Render-Thread. */
     static String fensterTitel() {
+        Object[] f = fenster();
+        return f == null ? null : (String) f[0];
+    }
+
+    // WM_APPCOMMAND: dieselben Befehle wie die Medientasten der Tastatur -- aber
+    // nur an die Spotify-App geschickt (andere Player bleiben unberuehrt).
+    static final int PLAY_PAUSE = 14, NAECHSTER = 11, VORHERIGER = 12;
+
+    /**
+     * Steuert die Spotify-App direkt (Windows). Geht auch mit Spotify Free und
+     * ohne Anmeldung -- die Web-API erlaubt Steuern nur mit Premium.
+     * Blockiert kurz; nicht im Render-Thread. true = die App war da.
+     */
+    static boolean befehl(int appCommand) {
+        Object[] f = fenster();
+        if (f == null) return false;
+        try {
+            WinDef.HWND h = (WinDef.HWND) f[1];
+            User32.INSTANCE.SendMessage(h, 0x0319, new WinDef.WPARAM(Pointer.nativeValue(h.getPointer())),
+                    new WinDef.LPARAM((long) appCommand << 16));
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** {Titel, HWND} des Spotify-Hauptfensters, oder null. */
+    private static Object[] fenster() {
         if (!moeglich()) return null;
         try {
-            String[] treffer = { null };
+            Object[] treffer = { null, null };
             User32.INSTANCE.EnumWindows((WinDef.HWND h, Pointer p) -> {
                 if (!User32.INSTANCE.IsWindowVisible(h)) return true;
                 char[] buf = new char[512];
@@ -41,10 +69,10 @@ final class DesktopSpotify {
                 if (!exe.toLowerCase(java.util.Locale.ROOT).endsWith("spotify.exe")) return true;
                 String t = new String(buf, 0, n);
                 // Das Hauptfenster: entweder "Kuenstler - Titel" oder "Spotify..."
-                if (t.contains(" - ") || t.startsWith("Spotify")) { treffer[0] = t; return false; }
+                if (t.contains(" - ") || t.startsWith("Spotify")) { treffer[0] = t; treffer[1] = h; return false; }
                 return true;
             }, null);
-            return treffer[0];
+            return treffer[0] == null ? null : treffer;
         } catch (Throwable t) {
             kaputt = true;          // JNA fehlt o. ae.: nicht weiter versuchen
             return null;

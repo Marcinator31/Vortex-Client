@@ -47,6 +47,7 @@ public final class ActiveCape {
 
     public static synchronized Identifier textureId() {
         ensureLoaded();
+        if (capeId != null && AnimCapes.ist(capeId)) return AnimCapes.basis(capeId);
         return textureId;
     }
 
@@ -71,7 +72,7 @@ public final class ActiveCape {
         if (geladen) return;
         geladen = true;
         capeId = leseAuswahl();
-        if (capeId == null || capeId.isBlank()) return;
+        if (capeId == null || capeId.isBlank() || AnimCapes.ist(capeId)) return;
         Thread t = new Thread(ActiveCape::holeUndMelde, "vortex-cape");
         t.setDaemon(true);
         t.start();

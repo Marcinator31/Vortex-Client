@@ -84,6 +84,10 @@ public final class MusikDienst {
     }
 
     /** Nur fuer Tests: Song eines Spielers setzen (sonst kommt er vom Freunde-Server). */
+    private static volatile Song testEigener;
+    /** Nur fuer den Test im Spiel: eigener Song ohne Spotify. */
+    public static void testEigener(Song s) { testEigener = s; }
+
     public static void testFremd(UUID u, String name, Song s) {
         FREMDE.put(u, new Fremd(u, name, s, System.currentTimeMillis()));
     }
@@ -136,23 +140,40 @@ public final class MusikDienst {
 
     public static String meldung() { return System.currentTimeMillis() < meldungBis ? meldung : null; }
 
-    /** Text ueber dem Kopf (oder null). */
-    public static Component kopfText(Player p) {
+    /** Song, der ueber dem Kopf dieses Spielers stehen soll (oder null). */
+    public static Song kopfSong(Player p) {
         SpotifyModule m = mod();
         if (m == null || !m.isEnabled() || !m.aboveHeads.get()) return null;
         Minecraft mc = Minecraft.getInstance();
         Song s;
         if (p == mc.player) {
             if (!m.ownAboveHead.get()) return null;
-            s = eigener;
+            s = testEigener != null ? testEigener : eigener;
         } else {
             if (mc.player == null || p.distanceTo(mc.player) > m.headDistance.get()) return null;
             s = songVon(p.getUUID());
         }
-        if (s == null || !s.spielt()) return null;
+        return s == null || !s.spielt() ? null : s;
+    }
+
+    /** Farbe der Schrift ueber dem Kopf (Einstellung). */
+    public static int kopfFarbe() {
+        SpotifyModule m = mod();
+        return m == null ? 0x1ED760 : m.headColor.get() & 0xFFFFFF;
+    }
+
+    /** Hoert der Spieler gerade mit diesem Spieler mit? */
+    public static boolean istZiel(Player p) {
+        return p.getUUID().equals(ziel);
+    }
+
+    /** Text ueber dem Kopf (oder null). */
+    public static Component kopfText(Player p) {
+        Song s = kopfSong(p);
+        if (s == null) return null;
         String z = s.zeile();
         if (z.length() > 42) z = z.substring(0, 41) + "…";
-        Component c = Component.literal("♫ " + z).withColor(m.headColor.get() & 0xFFFFFF);
+        Component c = Component.literal("♫ " + z).withColor(kopfFarbe());
         if (p.getUUID().equals(ziel)) c = c.copy().append(Component.literal("  ◀ you").withColor(0xFFFFFF));
         return c;
     }
@@ -471,17 +492,50 @@ public final class MusikDienst {
 
     public static void spielenPause() {
         Song s = eigener;
+        if (!Spotify.verbunden()) { appSteuern(DesktopSpotify.PLAY_PAUSE); return; }
         var f = s != null && s.spielt() ? Spotify.pause() : Spotify.weiter();
-        nachSteuerung(f);
+        nachSteuerung(f, DesktopSpotify.PLAY_PAUSE);
     }
-    public static void naechster() { nachSteuerung(Spotify.naechster()); }
-    public static void vorheriger() { nachSteuerung(Spotify.vorheriger()); }
+    public static void naechster() {
+        if (!Spotify.verbunden()) { appSteuern(DesktopSpotify.NAECHSTER); return; }
+        nachSteuerung(Spotify.naechster(), DesktopSpotify.NAECHSTER);
+    }
+    public static void vorheriger() {
+        if (!Spotify.verbunden()) { appSteuern(DesktopSpotify.VORHERIGER); return; }
+        nachSteuerung(Spotify.vorheriger(), DesktopSpotify.VORHERIGER);
+    }
+
+    /** Steuern geht immer, wenn die Spotify-App laeuft (Windows) -- auch ohne Premium/Anmeldung. */
+    public static boolean kannSteuern() {
+        SpotifyModule m = mod();
+        return Spotify.verbunden() || (DesktopSpotify.moeglich() && m != null && m.desktopApp.get());
+    }
+
+    /** Befehl direkt an die Spotify-App (Windows). */
+    private static void appSteuern(int befehl) {
+        Spotify.POOL.execute(() -> {
+            if (DesktopSpotify.befehl(befehl)) { naechsteApp = 0; naechsteAbfrage = System.currentTimeMillis() + 400; }
+            else melde("Open the Spotify app on this PC to control it.");
+        });
+    }
     public static void lautstaerkeSetzen(int p) { lautstaerke = p; nachSteuerung(Spotify.lautstaerke(p)); }
     public static void springen(long ms) { nachSteuerung(Spotify.springen(ms)); }
 
     private static void nachSteuerung(java.util.concurrent.CompletableFuture<Spotify.Antwort> f) {
+        nachSteuerung(f, -1);
+    }
+
+    /**
+     * Antwort der Web-API auswerten. Lehnt Spotify ab (z. B. ohne Premium) und
+     * laeuft die Spotify-App auf diesem PC, geht der Befehl stattdessen direkt
+     * an die App -- dann klappt Play/Pause/Vor/Zurueck auch mit Spotify Free.
+     */
+    private static void nachSteuerung(java.util.concurrent.CompletableFuture<Spotify.Antwort> f, int appBefehl) {
         f.thenAccept(a -> {
-            if (!a.ok()) melde(Spotify.grundText(a));
+            if (!a.ok()) {
+                boolean app = appBefehl >= 0 && a.code() != 429 && DesktopSpotify.befehl(appBefehl);
+                if (!app) melde(Spotify.grundText(a));
+            }
             naechsteAbfrage = 0;
         });
     }

@@ -54,6 +54,7 @@ public class CapeEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
         try {
             if (!Cosmetics.capePhysik() || !zeigt(s)) return;
             Identifier tex = s.skin.cape().texturePath();
+            Identifier glow = AnimCapes.glowZu(tex);
             float zeit = s.ageInTicks;
             float tempo = Math.min(1f, s.walkAnimationSpeed);
             // Vanilla-Winkel oben (Grad): Grundneigung + Lean/Flap aus der Bewegung
@@ -83,6 +84,8 @@ public class CapeEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
                 pose.pushPose();
                 pose.mulPose(new Quaternionf().rotationY(drehY));
                 collector.submitCustomGeometry(pose, RenderTypes.entitySolid(tex), (p, vc) -> streifen(p, vc, nr, h, licht));
+                // Animierte Capes: leuchtende Ebene darueber (Funken, Glanz, Sterne -- auch nachts hell)
+                if (glow != null) collector.submitCustomGeometry(pose, RenderTypes.eyes(glow), (p, vc) -> streifen(p, vc, nr, h, 0xF000F0));
                 pose.popPose();
                 pose.translate(0f, h / 16f, 0f);
             }

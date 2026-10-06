@@ -41,6 +41,9 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ctx.waitTicks(40);
             ctx.runOnClient(mc -> { if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle(); });
 
+            animiert(ctx, srv);
+            if ("anim".equals(System.getenv("VORTEX_COSMETICS_ONLY"))) return;
+
             // Huete
             for (Huete.Hut h : Huete.alle().values()) {
                 waehle(ctx, "", h.id(), "");
@@ -179,6 +182,84 @@ public class CosmeticGameTest implements FabricClientGameTest {
         ctx.takeScreenshot("title-screen");
         ctx.waitTicks(30);
         ctx.takeScreenshot("title-screen-later");
+    }
+
+    /** Animierte Capes (CapeKunst), Glanz auf Hueten, Song-Karte ueber dem Kopf, Cape-Galerie. */
+    private static void animiert(ClientGameTestContext ctx, TestServerContext srv) {
+        String[] capes = com.vortex.client.cosmetics.CapeKunst.alle().keySet().toArray(new String[0]);
+        for (String c : capes) {
+            waehle(ctx, c, "", "");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            ctx.waitTicks(12);
+            ctx.takeScreenshot("anim-" + c + "-a");
+            ctx.waitTicks(14);
+            ctx.takeScreenshot("anim-" + c + "-b");
+        }
+        // Nachts: das Leuchten muss trotzdem hell sein
+        srv.runCommand("time set midnight");
+        for (String c : new String[] { "anim_nether", "anim_end", "anim_neon" }) {
+            waehle(ctx, c, "crown", "");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            ctx.waitTicks(12);
+            ctx.takeScreenshot("anim-night-" + c);
+        }
+        srv.runCommand("time set noon");
+        // Laufen mit animiertem Cape (Physik + Animation)
+        waehle(ctx, "anim_vortex", "halo", "");
+        ctx.getInput().holdKey(o -> o.keyUp);
+        ctx.waitTicks(20);
+        ctx.takeScreenshot("anim-walking");
+        ctx.getInput().releaseKey(o -> o.keyUp);
+        srv.runCommand("tp @a 0.5 ~ 0.5 0 0");
+        ctx.waitTicks(10);
+        // Huete mit Glanz von vorne
+        for (String h : new String[] { "crown", "top_hat", "halo" }) {
+            waehle(ctx, "anim_royal", h, "");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("shine-" + h + "-1");
+            ctx.waitTicks(9);
+            ctx.takeScreenshot("shine-" + h + "-2");
+        }
+        // Song ueber dem Kopf: mit Cover und ohne
+        ctx.runOnClient(mc -> {
+            var m = com.vortex.client.module.ModuleManager.INSTANCE.get(com.vortex.client.module.modules.SpotifyModule.class);
+            if (m != null && !m.isEnabled()) m.toggle();
+            if (m != null) m.ownAboveHead.set(true);
+            try {
+                BufferedImage img = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+                Graphics2D g = img.createGraphics();
+                g.setPaint(new GradientPaint(0, 0, new Color(0xFF5E62), 128, 128, new Color(0x2B1055)));
+                g.fillRect(0, 0, 128, 128);
+                g.setColor(Color.WHITE);
+                g.fillOval(34, 34, 60, 60);
+                g.dispose();
+                var out = new java.io.ByteArrayOutputStream();
+                ImageIO.write(img, "png", out);
+                com.vortex.client.musik.Cover.testBild("https://i.scdn.co/image/test", out.toByteArray(), 0xFF5E62);
+            } catch (Exception e) { throw new RuntimeException(e); }
+            long jetzt = System.currentTimeMillis();
+            com.vortex.client.musik.MusikDienst.testEigener(new com.vortex.client.musik.Song("t1", "Midnight City Lights", "Vortex Test Band", "Album",
+                    "https://i.scdn.co/image/test", 215000, 64000, true, jetzt, ""));
+        });
+        waehle(ctx, "anim_aurora", "", "");
+        ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        ctx.waitTicks(10);
+        ctx.takeScreenshot("song-card-cover");
+        ctx.runOnClient(mc -> com.vortex.client.musik.MusikDienst.testEigener(new com.vortex.client.musik.Song("", "Song From The App", "Some Artist", "",
+                "", 0, 0, true, System.currentTimeMillis(), "")));
+        ctx.waitTicks(5);
+        ctx.takeScreenshot("song-card-nocover");
+        ctx.runOnClient(mc -> com.vortex.client.musik.MusikDienst.testEigener(null));
+        ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+        // Music-Fenster mit Cover (Testsong als eigener)
+        ctx.runOnClient(mc -> { if (mc.gui.hud.isHidden()) mc.gui.hud.toggle(); });
+        // Galerie im Cosmetics-Menue
+        ctx.runOnClient(mc -> mc.gui.setScreen(new CosmeticsScreen(null)));
+        ctx.waitTicks(30);
+        ctx.takeScreenshot("menu-capes-gallery");
+        ctx.runOnClient(mc -> mc.gui.setScreen(null));
+        ctx.runOnClient(mc -> { if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle(); });
     }
 
     private static void waehle(ClientGameTestContext ctx, String cape, String hut, String partikel) {

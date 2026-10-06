@@ -54,7 +54,7 @@ public final class Spotify {
     private Spotify() {}
 
     /** Client-ID der Vortex-App. Leer = noch keine eingetragen (dann eigene Client-ID noetig). */
-    public static final String STANDARD_CLIENT_ID = "";
+    public static final String STANDARD_CLIENT_ID = "3f6adff6d83a4df0af6433576d88497b";
     public static final int PORT = 47819;
     public static final String REDIRECT = "http://127.0.0.1:" + PORT + "/callback";
     static final String SCOPES = "user-read-playback-state user-read-currently-playing user-modify-playback-state user-read-private";
@@ -344,6 +344,17 @@ public final class Spotify {
     /** Antwort eines Aufrufs: HTTP-Code, JSON (oder null), Spotify-Grund (z. B. PREMIUM_REQUIRED). */
     public record Antwort(int code, JsonObject json, String grund) {
         public boolean ok() { return code >= 200 && code < 300; }
+        /** Spotifys eigene Fehlermeldung (error.message), oder "". */
+        public String nachricht() {
+            try {
+                if (json != null && json.has("error")) {
+                    var e = json.get("error");
+                    if (e.isJsonObject()) return text(e.getAsJsonObject(), "message");
+                    if (e.isJsonPrimitive()) return e.getAsString();
+                }
+            } catch (Throwable ignored) { }
+            return "";
+        }
     }
 
     /** Blockierender Aufruf (nur im POOL). */
@@ -463,7 +474,13 @@ public final class Spotify {
         if ("PREMIUM_REQUIRED".equals(a.grund())) return "Spotify only allows this with Premium.";
         if ("NO_ACTIVE_DEVICE".equals(a.grund()) || a.code() == 404) return "Open Spotify on your PC or phone first (play anything once).";
         if (a.code() == 429) return "Spotify says: too many requests -- wait a moment.";
-        if (a.code() == 403) return "Spotify refused it. Is your Spotify account added to the app (Development Mode, max. 5)?";
+        if (a.code() == 403) {
+            String m = a.nachricht(), kl = m.toLowerCase(java.util.Locale.ROOT);
+            if (kl.contains("premium")) return "Spotify only allows controlling playback with Premium.";
+            if (kl.contains("not registered") || kl.contains("developer") || kl.contains("user may not"))
+                return "This Spotify account is not on the app's user list (Spotify Developer Dashboard > User Management, max. 5).";
+            return "Spotify refused it" + (m.isEmpty() ? "." : ": " + m);
+        }
         if (a.code() == 0) return a.grund();
         return "Spotify error " + a.code() + (a.grund().isEmpty() ? "" : " (" + a.grund() + ")");
     }
