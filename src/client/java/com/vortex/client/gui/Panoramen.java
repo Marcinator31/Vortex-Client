@@ -22,7 +22,6 @@ import javax.imageio.ImageIO;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.ReloadableTexture;
 import net.minecraft.client.renderer.texture.TextureContents;
 import net.minecraft.resources.Identifier;
 
@@ -158,15 +157,16 @@ public final class Panoramen {
         if (Objects.equals(id, aktiv) && id != null) return;
         aktiv = id;
         try {
-            AbstractTexture t = mc.getTextureManager().getTexture(TEXTUR);
-            if (t instanceof ReloadableTexture r) {
-                try (TextureContents c = r.loadContents(mc.getResourceManager())) {
-                    r.apply(c);
-                    LOG.info("[Vortex] Menu panorama {} applied to {} ({}x{})", id, t.getClass().getSimpleName(),
-                            c.image().getWidth(), c.image().getHeight());
-                }
-            } else {
-                LOG.info("[Vortex] Menu panorama {}: texture is {}", id, t == null ? "null" : t.getClass().getName());
+            // Neue Textur anlegen und registrieren (die alte wird dabei geschlossen) --
+            // so sieht jeder, der die Textur holt, sicher die neue.
+            AbstractTexture alt = mc.getTextureManager().getTexture(TEXTUR);
+            net.minecraft.client.renderer.texture.CubeMapTexture neu = new net.minecraft.client.renderer.texture.CubeMapTexture(TEXTUR);
+            try (TextureContents c = neu.loadContents(mc.getResourceManager())) {
+                neu.apply(c);
+                mc.getTextureManager().register(TEXTUR, neu);
+                LOG.info("[Vortex] Menu panorama {} registered ({}x{}), old {} view {} -> new view {}", id, c.image().getWidth(), c.image().getHeight(),
+                        alt == null ? "null" : alt.getClass().getSimpleName(), alt == null ? null : System.identityHashCode(alt.getTextureView()),
+                        System.identityHashCode(mc.getTextureManager().getTexture(TEXTUR).getTextureView()));
             }
         } catch (Throwable e) {
             // Kaputt? Dann lieber Vanilla.
