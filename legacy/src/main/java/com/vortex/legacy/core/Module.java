@@ -8,7 +8,7 @@ import net.minecraft.client.MinecraftClient;
 /** Ein Modul: an/aus, Taste, Einstellungen. */
 public abstract class Module {
     public enum Category {
-        HUD("HUD"), PVP("PvP"), VISUAL("Visual"), MISC("Misc"), PERFORMANCE("Performance");
+        HUD("HUD"), PVP("PvP"), VISUAL("Visual"), MISC("Misc"), PERFORMANCE("Performance"), CHEATS("Cheats");
         public final String label;
         Category(String l) { label = l; }
     }

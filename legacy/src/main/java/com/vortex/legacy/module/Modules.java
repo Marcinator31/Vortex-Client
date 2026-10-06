@@ -5,6 +5,7 @@ import com.vortex.legacy.module.hud.*;
 import com.vortex.legacy.module.pvp.*;
 import com.vortex.legacy.module.visual.*;
 import com.vortex.legacy.module.misc.*;
+import com.vortex.legacy.module.cheats.*;
 
 /** Alle Module des 1.8.9-Clients. */
 public final class Modules {
@@ -34,6 +35,8 @@ public final class Modules {
         m.register(new SaturationModule());
         m.register(new SessionStatsModule());
         m.register(new TpsModule());
+        m.register(new ScoreboardModule());
+        m.register(new PlayerListModule());
         // PvP
         m.register(new ToggleSprint());
         m.register(new ToggleSneak());
@@ -41,6 +44,7 @@ public final class Modules {
         m.register(new HitColor());
         m.register(new Hitboxes());
         m.register(new HitEffects());
+        m.register(new DamageNumbers());
         // Visual
         m.register(new Zoom());
         m.register(new Fullbright());
@@ -58,6 +62,8 @@ public final class Modules {
         m.register(new MotionBlur());
         m.register(new OldAnimations());
         m.register(new ItemPhysics());
+        m.register(new ExplosionTimer());
+        m.register(new GlintColor());
         m.register(new Nametags());
         m.register(new HealthIndicator());
         m.register(new ProjectilePath());
@@ -66,5 +72,8 @@ public final class Modules {
         m.register(new Chat());
         m.register(new AutoGG());
         m.register(new AutoReconnect());
+        m.register(new StreamerMode());
+        // Cheats (auf vielen Servern verboten)
+        m.register(new RadarModule());
     }
 }

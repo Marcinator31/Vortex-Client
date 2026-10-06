@@ -10,6 +10,7 @@
     "DisconnectMixin",
     "GameRendererAccessor",
     "GameRendererMixin",
+    "GlintMixin",
     "HeldItemRendererMixin",
     "HitColorMixin",
     "InGameHudMixin",
@@ -21,6 +22,9 @@
     "NametagMixin",
     "NetworkMixin",
     "OldAnimationsMixin",
+    "PlayerListMixin",
+    "ScoreboardMixin",
+    "StreamerMixin",
     "TitelMixin",
     "TitlePanoramaMixin",
     "WorldRenderMixin"

@@ -34,6 +34,7 @@ public final class MenuStil {
         return s != null && s.getClass().getName().startsWith("net.minecraft.");
     }
 
+    /** Hintergrund des Knopfs (danach zeichnet ein Schieberegler seinen Griff, dann kommt der Text). */
     public static void zeichneKnopf(ButtonWidget b, int mx, int my, int w, int h) {
         long now = System.currentTimeMillis();
         float dt = last == 0 ? 0 : Math.min(0.1f, (now - last) / 1000f);
@@ -47,6 +48,12 @@ public final class MenuStil {
         int bg = b.active ? Render2D.mix(0xB0100D18, Render2D.alpha(Render2D.mix(akz, 0xFF100D18, 0.35f), 0.92f), t) : 0x80100D18;
         Render2D.round(b.x, b.y, w, h, 5, bg);
         Render2D.roundOutline(b.x, b.y, w, h, 5, 1, b.active ? Render2D.mix(0x26FFFFFF, Render2D.alpha(akz, 0.9f), t) : 0x14FFFFFF);
+        GlStateManager.color(1, 1, 1, 1);
+    }
+
+    public static void knopfText(ButtonWidget b, int w, int h) {
+        float[] v = HOVER.get(b);
+        float t = v == null ? 0 : v[0];
         int c = !b.active ? 0xFF6E6880 : Render2D.mix(0xFFE6E2F0, 0xFFFFFFFF, t);
         Render2D.textCentered(b.message, b.x + w / 2f, b.y + (h - 8) / 2f, c, true);
     }
@@ -56,7 +63,11 @@ public final class MenuStil {
         Render2D.gradient(0, 0, width, height / 2f, 0x80050309, 0x20050309, true);
         Render2D.gradient(0, height / 2f, width, height / 2f, 0x20050309, 0xB0050309, true);
         MinecraftClient mc = MinecraftClient.getInstance();
-        float s = 52, cx = width / 2f, cy = 30 + s / 2f;
+        // Platz bis zu den Knoepfen (die beginnen bei height/4 + 48)
+        float frei = height / 4f + 48 - 6;
+        float s = Math.max(24, Math.min(52, frei - 29 - 8));
+        float block = s + 29;
+        float cx = width / 2f, cy = Math.max(4, (frei - block) / 2f) + s / 2f;
         float zeit = (System.currentTimeMillis() - START) / 1000f;
         GlStateManager.enableBlend();
         GlStateManager.blendFuncSeparate(770, 771, 1, 0);

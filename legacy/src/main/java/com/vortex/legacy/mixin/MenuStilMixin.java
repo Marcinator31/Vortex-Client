@@ -25,6 +25,7 @@ public abstract class MenuStilMixin {
         try {
             MenuStil.zeichneKnopf(b, mx, my, width, height);
             mouseDragged(client, mx, my);
+            MenuStil.knopfText(b, width, height);
             ci.cancel();
         } catch (Throwable t) {
             com.vortex.legacy.core.Errors.report("MenuStil", t);
