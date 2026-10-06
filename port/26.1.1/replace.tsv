@@ -13,3 +13,5 @@ net/minecraft/client/gui/Hud;	net/minecraft/client/gui/Gui;
 (\.submitNameTag\([^;]*?), (camState)\)	\1, 0.0, \2)
 # --- Welt-Render: 26.1 zeichnete Rahmen und Feuer noch direkt ---
 "submitBlockOutline"	"renderBlockOutline"	OutlineHideMixin.java
+# Menue-Panorama: Ladebildschirm hiess getOverlay()
+\bmc\.gui\.overlay\(\)	mc.getOverlay()	Panoramen.java

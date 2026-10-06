@@ -98,6 +98,11 @@ public final class Panoramen {
 
     private static void tick(Minecraft mc) {
         try {
+            // Waehrend des Ladebildschirms NICHT: Minecraft laedt die Texturen dann im
+            // Hintergrund und wendet sie spaeter an -- das wuerde unser Bild wieder
+            // mit dem alten ueberschreiben. Danach laedt ein Neuladen (F3+T, Resource
+            // Packs) ueber den Mixin ohnehin unser Bild.
+            if (mc.gui.overlay() != null) return;
             String wahl = gewaehlt();
             if (Objects.equals(wahl, verarbeitet)) return;
             verarbeitet = wahl;
@@ -157,16 +162,12 @@ public final class Panoramen {
         if (Objects.equals(id, aktiv) && id != null) return;
         aktiv = id;
         try {
-            // Neue Textur anlegen und registrieren (die alte wird dabei geschlossen) --
-            // so sieht jeder, der die Textur holt, sicher die neue.
-            AbstractTexture alt = mc.getTextureManager().getTexture(TEXTUR);
-            net.minecraft.client.renderer.texture.CubeMapTexture neu = new net.minecraft.client.renderer.texture.CubeMapTexture(TEXTUR);
-            try (TextureContents c = neu.loadContents(mc.getResourceManager())) {
-                neu.apply(c);
-                mc.getTextureManager().register(TEXTUR, neu);
-                LOG.info("[Vortex] Menu panorama {} registered ({}x{}), old {} view {} -> new view {}", id, c.image().getWidth(), c.image().getHeight(),
-                        alt == null ? "null" : alt.getClass().getSimpleName(), alt == null ? null : System.identityHashCode(alt.getTextureView()),
-                        System.identityHashCode(mc.getTextureManager().getTexture(TEXTUR).getTextureView()));
+            AbstractTexture t = mc.getTextureManager().getTexture(TEXTUR);
+            if (t instanceof net.minecraft.client.renderer.texture.ReloadableTexture r) {
+                try (TextureContents c = r.loadContents(mc.getResourceManager())) {
+                    r.apply(c);
+                }
+                LOG.info("[Vortex] Menu panorama: {}", id == null ? "Minecraft" : id);
             }
         } catch (Throwable e) {
             // Kaputt? Dann lieber Vanilla.
