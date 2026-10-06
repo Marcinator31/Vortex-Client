@@ -13,6 +13,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(InGameHud.class)
 public abstract class InGameHudMixin {
+    /** Vortex-HUD nach dem Vanilla-HUD (Chat, Hotbar ...) zeichnen. */
+    @Inject(method = "render", at = @At("TAIL"))
+    private void vortex$hud(float tickDelta, CallbackInfo ci) {
+        com.vortex.legacy.VortexLegacy.hud(net.minecraft.client.MinecraftClient.getInstance(), tickDelta);
+    }
+
     /** Eigenes Fadenkreuz statt Vanilla (gezeichnet in VortexLegacy.hud). */
     @Inject(method = "showCrosshair", at = @At("HEAD"), cancellable = true)
     private void vortex$fadenkreuz(CallbackInfoReturnable<Boolean> cir) {

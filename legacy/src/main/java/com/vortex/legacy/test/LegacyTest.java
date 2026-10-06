@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.legacyfabric.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.option.KeyBinding;
@@ -61,9 +60,7 @@ public final class LegacyTest {
 
     public static void install() {
         build();
-        ClientTickEvents.END_CLIENT_TICK.register(new ClientTickEvents.EndTick() {
-            public void onEndTick(MinecraftClient mc) { tick(mc); }
-        });
+        VortexLegacy.TICKS.add(new Runnable() { public void run() { tick(MinecraftClient.getInstance()); } });
     }
 
     private static void tick(MinecraftClient mc) {

@@ -13,8 +13,6 @@ import com.vortex.legacy.module.Modules;
 import com.vortex.legacy.module.pvp.Crosshair;
 import com.vortex.legacy.module.pvp.ToggleSprint;
 import net.fabricmc.api.ClientModInitializer;
-import net.legacyfabric.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.legacyfabric.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.LiteralText;
@@ -25,32 +23,31 @@ import org.apache.logging.log4j.Logger;
 public final class VortexLegacy implements ClientModInitializer {
     public static final Logger LOG = LogManager.getLogger("vortexclient");
     private static boolean loaded;
+    /** Weitere Tick-Empfaenger (z. B. der Test im Spiel). */
+    public static final java.util.List<Runnable> TICKS = new java.util.ArrayList<Runnable>();
 
     @Override
     public void onInitializeClient() {
         Modules.registerAll();
-        ClientTickEvents.END_CLIENT_TICK.register(new ClientTickEvents.EndTick() {
-            public void onEndTick(MinecraftClient mc) { tick(mc); }
-        });
-        HudRenderCallback.EVENT.register(new HudRenderCallback() {
-            public void onHudRender(MinecraftClient mc, float delta) { hud(mc, delta); }
-        });
         if (Boolean.getBoolean("vortex.legacy.test")) com.vortex.legacy.test.LegacyTest.install();
         LOG.info("[Vortex] Vortex Client for 1.8.9 loaded with " + ModuleManager.INSTANCE.all().size() + " modules.");
     }
 
-    private static void tick(MinecraftClient mc) {
+    /** Ende jedes Client-Ticks (MinecraftClientMixin). */
+    public static void tick(MinecraftClient mc) {
         try {
             if (!loaded) { loaded = true; Config.load(); }
             Combat.tick();
             ModuleManager.INSTANCE.tick();
             Config.tick();
+            for (Runnable r : TICKS) r.run();
         } catch (Throwable t) {
             Errors.report("tick", t);
         }
     }
 
-    private static void hud(MinecraftClient mc, float delta) {
+    /** Ende von InGameHud.render (InGameHudMixin). */
+    public static void hud(MinecraftClient mc, float delta) {
         try {
             HudRenderer.render(delta);
             Window w = new Window(mc);
