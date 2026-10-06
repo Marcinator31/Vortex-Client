@@ -123,7 +123,7 @@ public class MusikScreen extends Screen {
         Glatt.rund(g, kx, fy + 7, kw, 16, 8, Glatt.alpha(Spotify.verbunden() ? 0x2A1ED760 : 0x18FFFFFF, a));
         Glatt.text(g, konto, kx + 8, fy + 11, Glatt.alpha(Spotify.verbunden() ? GRUEN : DIM, a), Schrift.NORMAL);
 
-        int lx = fx + 12, ly = fy + 40, lw = Math.min(250, fw / 2 - 18), lh = fh - 52;
+        int lx = fx + 12, ly = fy + 40, lw = Math.min(250, fw / 2 - 18), lh = fh - 66;
         jetztSpielt(g, lx, ly, lw, lh, mx, my, a);
 
         int rx = lx + lw + 12, rw = fx + fw - 12 - rx, ry = fy + 40;
@@ -139,21 +139,23 @@ public class MusikScreen extends Screen {
             flaechen.add(new Flaeche(tx, ry, w, 18, () -> { reiter = z; scroll = 0; }));
             tx += w + 6;
         }
-        int iy = ry + 26, ih = fh - 52 - 26;
+        int iy = ry + 26, ih = fh - 66 - 26;
         if (reiter == Reiter.NAEHE) naehe(g, rx, iy, rw, ih, mx, my, a);
         else einstellungen(g, rx, iy, rw, ih, mx, my, a);
 
         String meld = MusikDienst.meldung();
         if (meld == null && Spotify.status() == Spotify.Status.FEHLER) meld = Spotify.fehler();
         if (meld == null && Spotify.verbunden()) meld = MusikDienst.apiFehler();
-        if (meld != null) Glatt.textMitte(g, k(meld, fw - 40, Schrift.NORMAL), fx + fw / 2f, fy + fh - 11, Glatt.alpha(0xFFFFB86B, a), Schrift.NORMAL);
+        if (meld != null) Glatt.textMitte(g, k(meld, fw - 40, Schrift.NORMAL), fx + fw / 2f, fy + fh - 17, Glatt.alpha(0xFFFFB86B, a), Schrift.NORMAL);
     }
 
     /** Linke Karte: Cover, Titel, Fortschritt, Steuerung -- oder "Connect". */
     private void jetztSpielt(GuiGraphicsExtractor g, int x, int y, int w, int h, int mx, int my, float a) {
         Glatt.rund(g, x, y, w, h, 8, Glatt.alpha(0xF0120E1B, a));
         Song s = MusikDienst.eigener();
-        float c = Math.min(w - 24, 104);
+        // Unter dem Cover: 3 Textzeilen, Fortschritt, Steuerung, (Lautstaerke), Knopf -- das Cover nimmt den Rest
+        float unten = Spotify.verbunden() ? 132 : 150;
+        float c = Math.max(32, Math.min(Math.min(w - 24, 104), h - 12 - unten));
         float cx = x + (w - c) / 2f, cy = y + 12;
         Identifier id = s == null ? null : Cover.von(s.cover());
         if (id != null) {
@@ -196,7 +198,7 @@ public class MusikScreen extends Screen {
             rundKnopf(g, mitte + 22, sy, 24, Symbol.VOR, mx, my, MusikDienst::naechster, false, a);
             // Lautstaerke
             int vol = MusikDienst.lautstaerke();
-            if (vol >= 0 && sy + 42 < y + h - 16) {
+            if (vol >= 0 && sy + 46 < y + h - 24) {
                 float vx = x + 30, vw = w - 60, vy = sy + 40;
                 Glatt.symbol(g, Symbol.KOPFHOERER, x + 12, vy - 5, 11, Glatt.alpha(DIM, a));
                 Glatt.rund(g, vx, vy, vw, 3, 1.5f, Glatt.alpha(0x30FFFFFF, a));
@@ -262,7 +264,8 @@ public class MusikScreen extends Screen {
             Identifier id = Cover.von(s.cover());
             if (id != null) g.blit(RenderPipelines.GUI_TEXTURED, id, x + 5, Math.round(zy + 5), 0f, 0f, 30, 30, 128, 128, 128, 128, Glatt.alpha(0xFFFFFFFF, a));
             else { Glatt.rund(g, x + 5, zy + 5, 30, 30, 5, Glatt.alpha(0xFF1B1726, a)); Glatt.symbol(g, Symbol.NOTE, x + 12, zy + 12, 16, Glatt.alpha(GRUEN, a)); }
-            float bw = 78;
+            boolean schmal = w < 280;
+            float bw = schmal ? 48 : 78;
             float tw = w - 44 - bw - 10;
             double d = MusikDienst.abstand(this.minecraft, f.uuid());
             String kopf = f.name() + (d < 1000 ? "  ·  " + Math.round(d) + "m" : "");
@@ -275,7 +278,7 @@ public class MusikScreen extends Screen {
             if (zy >= y && zy + zh <= y + h) {
                 final UUID u = f.uuid();
                 if (dabei) knopf(g, x + w - bw - 8, zy + 12, bw, 16, "Stop", mx, my, () -> MusikDienst.mithoerenUmschalten(u), true, a);
-                else knopfGruen(g, x + w - bw - 8, zy + 12, bw, 16, "Listen along", mx, my, () -> MusikDienst.mithoerenUmschalten(u), a);
+                else knopfGruen(g, x + w - bw - 8, zy + 12, bw, 16, schmal ? "Listen" : "Listen along", mx, my, () -> MusikDienst.mithoerenUmschalten(u), a);
             }
         }
         g.disableScissor();
