@@ -148,7 +148,7 @@ public final class MusikDienst {
         Song s;
         if (p == mc.player) {
             if (!m.ownAboveHead.get()) return null;
-            s = testEigener != null ? testEigener : CoverSuche.ergaenze(eigener);
+            s = CoverSuche.ergaenze(testEigener != null ? testEigener : eigener);
         } else {
             if (mc.player == null || p.distanceTo(mc.player) > m.headDistance.get()) return null;
             s = songVon(p.getUUID());
