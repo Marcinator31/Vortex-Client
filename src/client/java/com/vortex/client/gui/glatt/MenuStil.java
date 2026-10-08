@@ -245,7 +245,8 @@ public final class MenuStil {
         float gesamt = lg + 12 + tw;
         float x = (breite - gesamt) / 2f;
         Glatt.licht(ctx, x + lg / 2f, y + lg / 2f, lg * 1.4f, Glatt.alpha(VortexStyle.VIOLETT, alpha * 0.35f));
-        Glatt.logo(ctx, x, y, lg, alpha, 1f);
+        // Beim Einblenden des Hauptmenues falten sich die Klingen zum V
+        Glatt.logo(ctx, x, y, lg, alpha, alpha);
         float ty = y + (lg - 36) / 2f;
         Glatt.text(ctx, name, x + lg + 10, ty, Glatt.alpha(0xFFFFFFFF, alpha), Schrift.GROSS);
         String unter = "Minecraft " + mcVersion();

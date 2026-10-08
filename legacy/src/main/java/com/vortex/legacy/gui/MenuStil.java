@@ -19,7 +19,6 @@ public final class MenuStil {
     private MenuStil() {}
     private static final Map<ButtonWidget, float[]> HOVER = new WeakHashMap<ButtonWidget, float[]>();
     private static long last;
-    private static final Identifier RING = new Identifier("vortexclient", "textures/gui/logo_ring.png");
     private static final Identifier V = new Identifier("vortexclient", "textures/gui/logo_v.png");
     private static final long START = System.currentTimeMillis();
 
@@ -72,12 +71,6 @@ public final class MenuStil {
         GlStateManager.enableBlend();
         GlStateManager.blendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1, 1, 1, 1);
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(cx, cy, 0);
-        GlStateManager.rotate(zeit * 12f % 360, 0, 0, 1);
-        mc.getTextureManager().bindTexture(RING);
-        DrawableHelper.drawTexture((int) (-s / 2), (int) (-s / 2), 0, 0, (int) s, (int) s, s, s);
-        GlStateManager.popMatrix();
         mc.getTextureManager().bindTexture(V);
         float bob = (float) Math.sin(zeit * 1.6) * 1.5f;
         DrawableHelper.drawTexture((int) (cx - s / 2), (int) (cy - s / 2 + bob), 0, 0, (int) s, (int) s, s, s);

@@ -5,23 +5,19 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
 /**
- * Das Vortex-Logo, lebendig gezeichnet (neu in 4.6.0).
+ * Das Vortex-Logo als Sprite (Rueckfall fuer Glatt.logo und fuer das alte Menue).
  *
- * Das Logo besteht aus zwei Teilen, die getrennt als Bild vorliegen:
- *   logo_v     das "V" -- zwei Klingen, Violett und Blau
- *   logo_ring  der Bogen unter dem V
- *
- * Seit 4.18 (neues Logo) steht der Bogen still unter dem V; beim Oeffnen
- * waechst das Logo herein und der Bogen schwingt mit einer kleinen Drehung
- * an seinen Platz.
- *
- * logo (beides zusammen, unbewegt) bleibt als Rueckfall, falls das Drehen
- * einmal nicht geht.
+ * Seit 4.28 ist es Logo A "Faltung": zwei Klingen, getrennt als Bild
+ *   logo_a_l   linke Klinge (Lila)
+ *   logo_a_r   rechte Klinge (Blau)
+ * Beim Oeffnen kommen sie von links oben und rechts oben und falten sich
+ * zum V. logo (beide zusammen, unbewegt) bleibt fuer kleine Stellen und als
+ * Rueckfall, falls das Bewegen einmal nicht geht.
  */
 public final class LogoRenderer {
 
-    private static final Identifier V = Identifier.fromNamespaceAndPath("vortexclient", "logo_v");
-    private static final Identifier RING = Identifier.fromNamespaceAndPath("vortexclient", "logo_ring");
+    private static final Identifier L = Identifier.fromNamespaceAndPath("vortexclient", "logo_a_l");
+    private static final Identifier R = Identifier.fromNamespaceAndPath("vortexclient", "logo_a_r");
     private static final Identifier GANZ = Identifier.fromNamespaceAndPath("vortexclient", "logo");
 
     /** Einmal gescheitert -> ab dann das unbewegte Bild. */
@@ -32,11 +28,12 @@ public final class LogoRenderer {
     /**
      * @param g        Kantenlaenge in Pixeln
      * @param alpha    Deckkraft 0..1
-     * @param oeffnen  Fortschritt des Oeffnens 0..1 (fuer das Hereinwachsen)
+     * @param oeffnen  Fortschritt des Oeffnens 0..1 (fuer das Zusammenfalten)
      */
     public static void zeichne(GuiGraphicsExtractor ctx, int x, int y, int g, float alpha, float oeffnen) {
         if (alpha <= 0.01f) return;
-        float e = 1f - (1f - clamp(oeffnen)) * (1f - clamp(oeffnen)) * (1f - clamp(oeffnen));
+        float o = clamp(oeffnen);
+        float e = 1f - (1f - o) * (1f - o) * (1f - o);
         if (nurStatisch) {
             statisch(ctx, x, y, g, alpha);
             return;
@@ -45,17 +42,18 @@ public final class LogoRenderer {
         p.pushMatrix();
         try {
             p.translate(x + g / 2f, y + g / 2f);
-            float s = 0.80f + 0.20f * e;
+            float s = 0.86f + 0.14f * e;
             p.scale(s, s);
             int h = g / 2;
-            // Bogen: dreht sich stetig, beim Oeffnen mit Schwung hinein
+            float weg = (1f - e) * g * 0.16f;
             p.pushMatrix();
-            // Neues Logo (4.18): der Bogen steht still unter dem V und
-                // schwingt nur beim Oeffnen mit einer kleinen Drehung herein.
-                p.rotate(-(1f - e) * 0.9f);
-            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, RING, -h, -h, g, g, alpha);
+            p.translate(-weg, -weg * 0.7f);
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, L, -h, -h, g, g, alpha);
             p.popMatrix();
-            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, V, -h, -h, g, g, alpha);
+            p.pushMatrix();
+            p.translate(weg, -weg * 0.7f);
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, R, -h, -h, g, g, alpha);
+            p.popMatrix();
         } catch (Throwable t) {
             nurStatisch = true;
         } finally {
