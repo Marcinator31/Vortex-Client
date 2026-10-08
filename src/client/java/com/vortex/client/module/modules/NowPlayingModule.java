@@ -31,7 +31,7 @@ public class NowPlayingModule extends Module implements HudElement {
         addSetting(showListening);
     }
 
-    public static final int BREITE = 168, HOEHE = 40;
+    public static final int BREITE = 184, HOEHE = 50;
 
     @Override public String hudName() { return "Now Playing"; }
     @Override public NumberSetting hudX() { return x; }

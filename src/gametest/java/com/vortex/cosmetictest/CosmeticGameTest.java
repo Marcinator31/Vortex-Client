@@ -246,6 +246,24 @@ public class CosmeticGameTest implements FabricClientGameTest {
         ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
         ctx.waitTicks(10);
         ctx.takeScreenshot("song-card-cover");
+        // HUD "Now Playing" mit derselben Karte
+        ctx.runOnClient(mc -> {
+            var np = com.vortex.client.module.ModuleManager.INSTANCE.get(com.vortex.client.module.modules.NowPlayingModule.class);
+            if (np != null && !np.isEnabled()) np.toggle();
+            if (mc.gui.hud.isHidden()) mc.gui.hud.toggle();
+        });
+        ctx.waitTicks(5);
+        ctx.takeScreenshot("song-hud-cover");
+        // Song aus der Spotify-App (ohne Cover/Laenge): Cover und Laenge kommen aus der iTunes-Suche
+        ctx.runOnClient(mc -> com.vortex.client.musik.MusikDienst.testEigener(new com.vortex.client.musik.Song("", "Blinding Lights", "The Weeknd", "",
+                "", 0, 0, true, System.currentTimeMillis(), "")));
+        ctx.waitTicks(200);
+        ctx.runOnClient(mc -> {
+            var e = com.vortex.client.musik.MusikDienst.eigener();
+            System.out.println("[vortex-test] app song cover=" + e.cover() + " dauer=" + e.dauer());
+        });
+        ctx.takeScreenshot("song-app-itunes");
+        ctx.runOnClient(mc -> { if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle(); });
         ctx.runOnClient(mc -> com.vortex.client.musik.MusikDienst.testEigener(new com.vortex.client.musik.Song("", "Song From The App", "Some Artist", "",
                 "", 0, 0, true, System.currentTimeMillis(), "")));
         ctx.waitTicks(5);

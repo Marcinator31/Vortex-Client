@@ -99,7 +99,7 @@ public final class MusikDienst {
     // ======================================================================
 
     /** Was ich gerade hoere (oder null). */
-    public static Song eigener() { return eigener; }
+    public static Song eigener() { return CoverSuche.ergaenze(testEigener != null ? testEigener : eigener); }
     public static String quelle() { return quelle; }
     public static String geraet() { return geraet; }
     public static int lautstaerke() { return lautstaerke; }
@@ -110,7 +110,7 @@ public final class MusikDienst {
     /** Song eines anderen Spielers (oder null). */
     public static Song songVon(UUID spieler) {
         Fremd f = FREMDE.get(spieler);
-        return f == null || System.currentTimeMillis() - f.empfangen > 15_000 ? null : f.song;
+        return f == null || System.currentTimeMillis() - f.empfangen > 15_000 ? null : CoverSuche.ergaenze(f.song);
     }
 
     /** Spieler in der Naehe mit Song, naechste zuerst. */
@@ -148,7 +148,7 @@ public final class MusikDienst {
         Song s;
         if (p == mc.player) {
             if (!m.ownAboveHead.get()) return null;
-            s = testEigener != null ? testEigener : eigener;
+            s = testEigener != null ? testEigener : CoverSuche.ergaenze(eigener);
         } else {
             if (mc.player == null || p.distanceTo(mc.player) > m.headDistance.get()) return null;
             s = songVon(p.getUUID());
@@ -200,36 +200,65 @@ public final class MusikDienst {
 
     // --- 1. eigener Song ----------------------------------------------------
 
+    /** Die Web-API meldet gerade nichts (204/kein Song) -- dann hilft die Spotify-App aus. */
+    private static volatile boolean apiLeer;
+
     private static void eigenenAbfragen(SpotifyModule m, long t) {
+        boolean app = m.desktopApp.get() && DesktopSpotify.moeglich();
         if (Spotify.verbunden()) {
-            if (abfrageLaeuft || t < naechsteAbfrage) return;
-            abfrageLaeuft = true;
-            naechsteAbfrage = t + (fensterOffen || ziel != null ? 1000 : 2500);
-            Spotify.async("GET", "/me/player?additional_types=track", null).thenAccept(a -> {
-                try { verarbeite(a); } finally { abfrageLaeuft = false; }
-            });
-        } else if (m.desktopApp.get() && DesktopSpotify.moeglich()) {
-            if (appAbfrageLaeuft || t < naechsteApp) return;
-            appAbfrageLaeuft = true;
-            naechsteApp = t + 2000;
-            Spotify.POOL.execute(() -> {
-                try {
-                    Song s = DesktopSpotify.song(DesktopSpotify.fensterTitel());
-                    Song alt = eigener;
-                    // Gleicher Song: Startzeit behalten (die App verraet keine Position)
-                    if (s != null && alt != null && s.gleich(alt) && "app".equals(quelle)) s = alt;
-                    eigener = s;
-                    quelle = s == null ? "" : "app";
-                } finally { appAbfrageLaeuft = false; }
-            });
-        } else {
+            // Laeuft der Song gleich zu Ende: sofort nachfragen (naechster Song ohne Verzoegerung)
+            Song e = eigener;
+            if (e != null && e.spielt() && e.dauer() > 0 && e.jetzt() >= e.dauer() - 250 && "spotify".equals(quelle)) naechsteAbfrage = Math.min(naechsteAbfrage, t + 300);
+            if (!abfrageLaeuft && t >= naechsteAbfrage) {
+                abfrageLaeuft = true;
+                // Laeuft nichts: oefter fragen, damit ein neuer Song sofort erscheint
+                boolean spielt = e != null && e.spielt() && "spotify".equals(quelle);
+                naechsteAbfrage = t + (fensterOffen || ziel != null ? 1000 : spielt ? 2500 : 1200);
+                Spotify.async("GET", "/me/player?additional_types=track", null).thenAccept(a -> {
+                    try { verarbeite(a); } finally { abfrageLaeuft = false; }
+                });
+            }
+            // Die Web-API kennt den Song manchmal erst nach Pause/Weiter -- bis dahin die App lesen
+            if (!(app && (apiLeer || !"spotify".equals(quelle)))) return;
+        } else if (!app) {
             eigener = null;
             quelle = "";
+            return;
         }
+        if (appAbfrageLaeuft || t < naechsteApp) return;
+        appAbfrageLaeuft = true;
+        naechsteApp = t + 1000;
+        Spotify.POOL.execute(() -> {
+            try {
+                String titel = DesktopSpotify.fensterTitel();
+                Song s = DesktopSpotify.song(titel);
+                Song alt = eigener;
+                boolean warApp = alt != null && "app".equals(quelle);
+                long jetzt = System.currentTimeMillis();
+                if (Spotify.verbunden() && !apiLeer && "spotify".equals(quelle)) return;   // API war schneller
+                if (s != null) {
+                    if (warApp && s.gleich(alt)) {
+                        // Gleicher Song: Position laeuft weiter (nach Pause von der gemerkten Stelle)
+                        s = alt.spielt() ? alt : new Song(alt.id(), alt.titel(), alt.kuenstler(), alt.album(), alt.cover(), alt.dauer(), alt.position(), true, jetzt, "");
+                    }
+                    // sonst: neuer Song -- die App verraet keine Position, also ab jetzt zaehlen
+                } else if (titel != null && warApp) {
+                    // App offen, aber pausiert: Song bleiben lassen, Position anhalten
+                    s = alt.spielt() ? new Song(alt.id(), alt.titel(), alt.kuenstler(), alt.album(), alt.cover(), alt.dauer(), alt.jetzt(), false, jetzt, "") : alt;
+                }
+                eigener = s;
+                quelle = s == null ? "" : "app";
+            } finally { appAbfrageLaeuft = false; }
+        });
     }
 
     private static void verarbeite(Spotify.Antwort a) {
-        if (a.code() == 204) { eigener = null; quelle = ""; apiFehler = null; geraet = ""; return; }
+        if (a.code() == 204) {
+            apiLeer = true;
+            if (!"app".equals(quelle)) { eigener = null; quelle = ""; }
+            apiFehler = null; geraet = "";
+            return;
+        }
         if (!a.ok() || a.json() == null) {
             if (a.code() != 429) apiFehler = Spotify.grundText(a);
             return;
@@ -241,10 +270,11 @@ public final class MusikDienst {
         lautstaerke = dev != null && dev.has("volume_percent") && !dev.get("volume_percent").isJsonNull() ? dev.get("volume_percent").getAsInt() : -1;
         JsonObject item = j.has("item") && j.get("item").isJsonObject() ? j.getAsJsonObject("item") : null;
         if (item == null || !"track".equals(Spotify.text(j, "currently_playing_type"))) {
-            eigener = null;
-            quelle = "";
+            apiLeer = true;
+            if (!"app".equals(quelle)) { eigener = null; quelle = ""; }
             return;
         }
+        apiLeer = false;
         StringBuilder kuenstler = new StringBuilder();
         if (item.has("artists") && item.get("artists").isJsonArray()) {
             for (JsonElement e : item.getAsJsonArray("artists")) {
@@ -285,9 +315,10 @@ public final class MusikDienst {
             return;
         }
         String mit = m.shareWith.getIndex() == 1 ? "friends" : "everyone";
+        s = CoverSuche.ergaenze(s);
         Song g = geteilt;
         boolean neu = g == null || !s.gleich(g) || s.spielt() != g.spielt() || !mit.equals(geteiltMit)
-                || t - geteiltUm > 20_000 || Math.abs(s.jetzt() - g.jetzt()) > 3000;
+                || t - geteiltUm > 20_000 || Math.abs(s.jetzt() - g.jetzt()) > 3000 || !s.cover().equals(g.cover());
         if (!neu || t - geteiltUm < 1500) return;
         JsonObject track = new JsonObject();
         track.addProperty("id", s.mitId() ? s.id() : "");

@@ -59,8 +59,16 @@ public final class MusikHud {
                     ctx.blit(RenderPipelines.GUI_TEXTURED, id, 5, 5, 0f, 0f, (int) c, (int) c, 128, 128, 128, 128, Glatt.alpha(0xFFFFFFFF, a));
                 } else {
                     Glatt.rund(ctx, 5, 5, c, c, 5, Glatt.alpha(Glatt.mix(0xFF1B1726, akzent, 0.25f), a));
-                    Glatt.symbol(ctx, Symbol.NOTE, 5 + c / 2 - 7, 5 + c / 2 - 7, 14, Glatt.alpha(akzent, a));
+                    Glatt.symbol(ctx, Symbol.NOTE, 5 + c / 2 - 8, 5 + c / 2 - 10, 16, Glatt.alpha(akzent, a));
                 }
+                // kleines Spotify-Abzeichen unten auf dem Cover
+                Glatt.rund(ctx, 6, 5 + c - 9, c - 2, 8, 2, Glatt.alpha(0xC8000000, a));
+                Glatt.symbol(ctx, Symbol.NOTE, 7.5f, 5 + c - 8, 6, Glatt.alpha(0xFF1ED760, a));
+                p.pushMatrix();
+                p.translate(14f, 5 + c - 7.6f);
+                p.scale(0.62f, 0.62f);
+                Glatt.text(ctx, "Spotify", 0, 0, Glatt.alpha(0xFFFFFFFF, a), Schrift.FETT);
+                p.popMatrix();
                 tx = 5 + c + 7;
             }
             float maxW = w - tx - 8;
@@ -72,9 +80,16 @@ public final class MusikHud {
             if (!s.spielt()) Glatt.symbol(ctx, Symbol.PAUSE, w - 14, 6, 8, Glatt.alpha(0xFFB9B3CC, a));
 
             if (m.progress.get() && s.dauer() > 0) {
-                float by = h - 8, bw = maxW;
+                float by = 32, bw = maxW;
                 Glatt.rund(ctx, tx, by, bw, 2.5f, 1.25f, Glatt.alpha(0x33FFFFFF, a));
                 Glatt.rund(ctx, tx, by, Math.max(2.5f, bw * s.anteil()), 2.5f, 1.25f, Glatt.alpha(akzent, a));
+                // Zeiten unter dem Balken (kleiner)
+                p.pushMatrix();
+                p.translate(tx, by + 5);
+                p.scale(0.78f, 0.78f);
+                Glatt.text(ctx, Song.zeit(s.jetzt()), 0, 0, Glatt.alpha(0xFFB9B3CC, a), Schrift.NORMAL);
+                Glatt.textRechts(ctx, Song.zeit(s.dauer()), bw / 0.78f, 0, Glatt.alpha(0xFFB9B3CC, a), Schrift.NORMAL);
+                p.popMatrix();
             }
         } finally {
             p.popMatrix();

@@ -50,7 +50,8 @@ public final class Cover {
 
     /** Textur des Covers, oder null (wird dann im Hintergrund geladen). Nur Render-Thread. */
     public static Identifier von(String url) {
-        if (url == null || !url.startsWith("https://i.scdn.co/image/")) return null;
+        // Nur Spotify-Cover und iTunes-Cover (CoverSuche) -- keine beliebigen Adressen
+        if (url == null || !(url.startsWith("https://i.scdn.co/image/") || url.matches("https://is[1-5]-ssl\\.mzstatic\\.com/image/thumb/[A-Za-z0-9/._%-]{10,300}"))) return null;
         Identifier id = FERTIG.get(url);
         if (id != null || KAPUTT.contains(url) || !LAEDT.add(url)) return id;
         Spotify.POOL.execute(() -> {
