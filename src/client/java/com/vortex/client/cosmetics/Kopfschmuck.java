@@ -138,7 +138,7 @@ public final class Kopfschmuck {
             int[] farben = { 0xFF5EEAFF, 0xFFFF5EDB, 0xFFFFD45E };
             for (int i = 0; i < 3; i++) {
                 n.push();
-                n.verschiebe(0, -2.2f, 0);
+                n.verschiebe(0, -1.2f, 0);
                 n.drehX(0.35f * cos(i * 2.1f));
                 n.drehZ(0.35f * sin(i * 2.1f));
                 for (int k = 0; k < 7; k++) {
@@ -146,7 +146,7 @@ public final class Kopfschmuck {
                     float r = k == 0 ? 1.05f : 0.7f * (1 - k / 8f);
                     n.leuchten(k == 0 ? 1f : 0.85f - k * 0.1f);
                     int f = k == 0 ? Netz.mische(farben[i], 0xFFFFFFFF, 0.35f) : farben[i];
-                    n.kugel(6.4f * cos(a), 0, 6.4f * sin(a), r, k == 0 ? 14 : 8, f, farben[i]);
+                    n.kugel(7.4f * cos(a), 0, 7.4f * sin(a), r, k == 0 ? 14 : 8, f, farben[i]);
                 }
                 n.pop();
             }
@@ -165,7 +165,7 @@ public final class Kopfschmuck {
                 n.drehY(t * 0.06f + i);
                 n.drehZ(0.25f * sin(t * 0.05f + i));
                 int f1 = i % 2 == 0 ? 0xFF8FF7FF : 0xFFC7A6FF, f2 = i % 2 == 0 ? 0xFFE8FFFF : 0xFFF1E6FF;
-                n.kristall(0, 0, 0, 0.9f, 2.0f, 1.1f, 6, f1, f2);
+                n.kristall(0, 0, 0, 1.15f, 2.6f, 1.4f, 6, f1, f2);
                 n.pop();
             }
             // grosser Kristall in der Mitte oben
@@ -173,7 +173,7 @@ public final class Kopfschmuck {
             n.push();
             n.verschiebe(0, 4.8f + 0.5f * sin(t * 0.07f), 0);
             n.drehY(-t * 0.04f);
-            n.kristall(0, 0, 0, 1.3f, 2.8f, 1.6f, 6, 0xFFB794FF, 0xFFF5EEFF);
+            n.kristall(0, 0, 0, 1.6f, 3.4f, 2.0f, 6, 0xFFB794FF, 0xFFF5EEFF);
             n.pop();
             n.leuchten(0);
         });
