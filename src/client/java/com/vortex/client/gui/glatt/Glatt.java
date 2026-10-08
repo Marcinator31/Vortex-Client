@@ -319,13 +319,15 @@ public final class Glatt {
     // Logo
     // ------------------------------------------------------------------
 
-    private static final Identifier LOGO_V = Identifier.fromNamespaceAndPath("vortexclient", "textures/gui/sprites/logo_v.png");
-    private static final Identifier LOGO_RING = Identifier.fromNamespaceAndPath("vortexclient", "textures/gui/sprites/logo_ring.png");
+    // Logo A "Faltung" (4.28): zwei Klingen, die beim Oeffnen zusammenklappen.
+    private static final Identifier LOGO_L = Identifier.fromNamespaceAndPath("vortexclient", "textures/gui/sprites/logo_a_l.png");
+    private static final Identifier LOGO_R = Identifier.fromNamespaceAndPath("vortexclient", "textures/gui/sprites/logo_a_r.png");
     private static boolean logoKaputt = false;
 
     /**
      * Das Vortex-Logo, in echter Pixelgroesse sauber verkleinert (statt aus
-     * dem 256er Bild Punkte herauszugreifen). Der Bogen dreht sich langsam.
+     * dem 512er Bild Punkte herauszugreifen). Beim Oeffnen kommen die beiden
+     * Klingen von links oben und rechts oben und falten sich zum V.
      */
     public static void logo(GuiGraphicsExtractor ctx, float x, float y, float g, float alpha, float oeffnen) {
         if (alpha <= 0.01f) return;
@@ -336,23 +338,25 @@ public final class Glatt {
         int s = skala();
         int n = Math.max(8, px(g, s));
         try {
-            Masken.Maske v = logoTeil(LOGO_V, n);
-            Masken.Maske ring = logoTeil(LOGO_RING, n);
-            if (v == null || ring == null) throw new IllegalStateException("logo");
+            Masken.Maske l = logoTeil(LOGO_L, n);
+            Masken.Maske r = logoTeil(LOGO_R, n);
+            if (l == null || r == null) throw new IllegalStateException("logo");
             float e = 1f - (float) Math.pow(1f - Masken.klemme(oeffnen), 3);
             int farbe = (Math.round(Masken.klemme(alpha) * 255f) << 24) | 0xFFFFFF;
+            float weg = (1f - e) * n * 0.16f;
             Matrix3x2fStack p = pixel(ctx, s);
             try {
                 p.translate(x * s + n / 2f, y * s + n / 2f);
-                float k = 0.80f + 0.20f * e;
+                float k = 0.86f + 0.14f * e;
                 p.scale(k, k);
                 p.pushMatrix();
-                // Neues Logo (4.18): der Bogen steht still unter dem V und
-                // schwingt nur beim Oeffnen mit einer kleinen Drehung herein.
-                p.rotate(-(1f - e) * 0.9f);
-                ctx.blit(RenderPipelines.GUI_TEXTURED, ring.id, -n / 2, -n / 2, 0f, 0f, n, n, n, n, farbe);
+                p.translate(-weg, -weg * 0.7f);
+                ctx.blit(RenderPipelines.GUI_TEXTURED, l.id, -n / 2, -n / 2, 0f, 0f, n, n, n, n, farbe);
                 p.popMatrix();
-                ctx.blit(RenderPipelines.GUI_TEXTURED, v.id, -n / 2, -n / 2, 0f, 0f, n, n, n, n, farbe);
+                p.pushMatrix();
+                p.translate(weg, -weg * 0.7f);
+                ctx.blit(RenderPipelines.GUI_TEXTURED, r.id, -n / 2, -n / 2, 0f, 0f, n, n, n, n, farbe);
+                p.popMatrix();
             } finally {
                 ende(p);
             }
