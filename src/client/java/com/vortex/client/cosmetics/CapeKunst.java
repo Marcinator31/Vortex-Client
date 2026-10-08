@@ -22,7 +22,7 @@ import java.util.Map;
 public final class CapeKunst {
     private CapeKunst() {}
 
-    public static final int S = 8, W = 64 * S, H = 32 * S;
+    public static final int S = 12, W = 64 * S, H = 32 * S;
     static final float BREITE = 0.625f;
 
     /** Ein Bildpunkt: Grundfarbe (beleuchtet) und Leuchten (Farbe + Deckkraft). */
@@ -143,24 +143,30 @@ public final class CapeKunst {
     static void punkt(Design d, float x, float y, float t, Px p) {
         p.leer();
         d.maler.male(x, y, t, p);
-        // weicher Faltenwurf: Stoff wirkt nicht wie ein flaches Bild
-        float falte = 0.93f + 0.07f * (float) Math.cos(x * 26f + Math.sin(y * 3.1f + t * 0.6f) * 0.8f);
-        p.hell(falte);
-        // Borte am Rand
+        // weicher Faltenwurf und Stoffstruktur: wirkt wie Stoff statt wie ein flaches Bild
+        float falte = 0.94f + 0.06f * (float) Math.cos(x * 26f + Math.sin(y * 3.1f + t * 0.6f) * 0.8f);
+        float faden = 0.975f + 0.05f * (rausch(x * 260f, y * 30f) - 0.5f);
+        // Rand etwas dunkler (Tiefe)
+        float rand0 = Math.min(Math.min(x, BREITE - x) / BREITE, Math.min(y, 1 - y));
+        float vignette = 0.82f + 0.18f * glatt(0f, 0.22f, rand0);
+        p.hell(falte * faden * vignette);
+        // Borte am Rand: schmal, mit heller Kante (wie gestickt)
         float rand = Math.min(Math.min(x, BREITE - x), Math.min(y, 1 - y) * 0.9f);
-        if (rand < 0.028f) {
-            float k = glatt(0.028f, 0.018f, rand);
+        if (rand < 0.022f) {
+            float k = glatt(0.022f, 0.014f, rand);
             Px q = HILFE.get();
-            borte(d, y + x, t, rand / 0.028f, q);
+            borte(d, y + x, t, rand / 0.022f, q);
             p.r += (q.r - p.r) * k; p.g += (q.g - p.g) * k; p.b += (q.b - p.b) * k;
             p.leuchte(packe(q.lr, q.lg, q.lb), q.la * k);
         }
-        // wandernder Glanz (diagonal, alle ~5 s)
+        // wandernder Glanz: feiner, weicher Lichtstreif in der Akzentfarbe, alle ~7 s
         if (d.glanz > 0) {
-            float pos = (t * 0.32f) % 2.6f - 0.6f;
-            float s = x * 0.8f + y * 0.55f - pos;
-            float band = (float) Math.exp(-s * s / 0.0011f) + 0.3f * (float) Math.exp(-s * s / 0.01f);
-            p.leuchte(0xFFFFFF, band * d.glanz);
+            float pos = (t * 0.3f) % 2.1f - 0.5f;
+            float s = x * 0.75f + y * 0.6f - pos;
+            if (s > -0.25f && s < 0.25f) {
+                float band = (float) Math.exp(-s * s / 0.0006f) * 0.8f + 0.25f * (float) Math.exp(-s * s / 0.008f);
+                p.leuchte(mischRgb(d.akzent, 0xFFFFFF, 0.7f), band * d.glanz * 0.75f);
+            }
         }
         // Glitzer: kleine Sterne mit vier Strahlen, die auf- und abblenden
         if (d.funkeln > 0) {

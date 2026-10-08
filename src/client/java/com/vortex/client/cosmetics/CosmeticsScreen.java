@@ -72,7 +72,7 @@ public class CosmeticsScreen extends Screen {
             }
             case HATS -> {
                 k.add(new Kachel("", "None", "No hat"));
-                for (Huete.Hut h : Huete.alle().values()) k.add(new Kachel(h.id(), h.name(), "Hat"));
+                for (Huete.Hut h : Huete.alle().values()) k.add(new Kachel(h.id(), h.name(), h.text()));
             }
             case PARTICLES -> {
                 k.add(new Kachel("", "None", "No particles"));
@@ -238,8 +238,8 @@ public class CosmeticsScreen extends Screen {
                 var basis = AnimCapes.basis(d.id());
                 var glow = AnimCapes.glow(d.id());
                 if (basis != null) {
-                    g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, basis, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
-                    if (glow != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, glow, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                    g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, basis, bx, by, CapeKunst.S, CapeKunst.S, tw, th, 10 * CapeKunst.S, 16 * CapeKunst.S, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                    if (glow != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, glow, bx, by, CapeKunst.S, CapeKunst.S, tw, th, 10 * CapeKunst.S, 16 * CapeKunst.S, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
                 }
             } else {
                 Glatt.rund(g, bx, by, tw, th, 4, 0xFF1B1726);
@@ -290,8 +290,8 @@ public class CosmeticsScreen extends Screen {
             var basis = AnimCapes.basis(gross.id());
             var glow = AnimCapes.glow(gross.id());
             if (basis != null) {
-                g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, basis, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
-                if (glow != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, glow, bx, by, 8f, 8f, tw, th, 80, 128, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, basis, bx, by, CapeKunst.S, CapeKunst.S, tw, th, 10 * CapeKunst.S, 16 * CapeKunst.S, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
+                if (glow != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, glow, bx, by, CapeKunst.S, CapeKunst.S, tw, th, 10 * CapeKunst.S, 16 * CapeKunst.S, CapeKunst.W, CapeKunst.H, 0xFFFFFFFF);
             }
             Glatt.textMitte(g, gross.name(), x + w / 2f, by + th + 8, TEXT, Glatt.Schrift.FETT);
             return;

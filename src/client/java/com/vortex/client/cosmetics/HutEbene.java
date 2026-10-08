@@ -34,22 +34,19 @@ public class HutEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
     public void submit(PoseStack pose, SubmitNodeCollector collector, int licht, AvatarRenderState state, float yRot, float xRot) {
         try {
             if (state.isInvisible) return;
-            Huete.Hut hut = Huete.get(Cosmetics.fuerEntity(state.id).hut());
+            Kopfschmuck.Design hut = Kopfschmuck.get(Cosmetics.fuerEntity(state.id).hut());
             if (hut == null) return;
             final float t = state.ageInTicks;
+            Netz netz = new Netz();
+            hut.bauer().baue(netz, t);
             pose.pushPose();
             getParentModel().head.translateAndRotate(pose);
-            // Kleine Bewegungen: der Heiligenschein schwebt und dreht sich, Bommel wippen
-            if ("halo".equals(hut.id())) {
-                pose.translate(0f, -0.35f / 16f * (float) Math.sin(t * 0.09f), 0f);
-                pose.mulPose(new org.joml.Quaternionf().rotationY(t * 0.025f));
-            }
             collector.submitCustomGeometry(pose, RenderTypes.entitySolid(WEISS), (p, vc) -> {
-                for (Huete.Quader q : hut.teile()) quader(p, vc, q, q.leuchtet() ? HELL : licht);
+                for (Netz.Flaeche f : netz.flaechen) flaeche(p, vc, f, f.leuchten > 0.3f ? HELL : licht);
             });
-            // Glanz: ein heller Streifen wandert ueber den Hut, Edelsteine und Leuchtendes pulsieren
+            // Leuchten und Glanz: eigene Ebene darueber (leuchtet auch nachts)
             collector.submitCustomGeometry(pose, RenderTypes.eyes(WEISS), (p, vc) -> {
-                for (Huete.Quader q : hut.teile()) glanz(p, vc, q, t);
+                for (Netz.Flaeche f : netz.flaechen) glanz(p, vc, f, t);
             });
             pose.popPose();
         } catch (Throwable t) {
@@ -57,86 +54,44 @@ public class HutEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
         }
     }
 
-    /**
-     * Ein Quader aus sechs Flaechen. Im Modellraum zeigt y nach UNTEN und ein
-     * Pixel ist 1/16 -- deshalb das Minus und das Teilen.
-     */
-    private static void quader(PoseStack.Pose p, VertexConsumer vc, Huete.Quader q, int licht) {
-        float x0 = q.x0() / 16f, x1 = q.x1() / 16f;
-        float y0 = -(KOPF_OBEN + q.y1()) / 16f, y1 = -(KOPF_OBEN + q.y0()) / 16f;   // oben = kleiner
-        float z0 = q.z0() / 16f, z1 = q.z1() / 16f;
-        int c = q.farbe();
-        // Seiten etwas dunkler als oben -- wie bei Minecraft-Bloecken, sonst wirkt es flach
-        // Leuchtende Teile (Heiligenschein, Edelsteine) ueberall gleich hell
-        int seite = q.leuchtet() ? c : dunkler(c, 0.82f), unten = q.leuchtet() ? c : dunkler(c, 0.6f);
-        flaeche(p, vc, licht, c, 0, -1, 0, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);       // oben (y0 ist oben)
-        flaeche(p, vc, licht, unten, 0, 1, 0, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);    // unten
-        flaeche(p, vc, licht, seite, 0, 0, -1, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);   // vorne
-        flaeche(p, vc, licht, seite, 0, 0, 1, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);    // hinten
-        flaeche(p, vc, licht, seite, -1, 0, 0, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);   // links
-        flaeche(p, vc, licht, seite, 1, 0, 0, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);    // rechts
-    }
+    /** Netz-Koordinaten (Pixel, y nach oben ab Kopfoberkante) in den Modellraum (y nach unten, 1/16). */
+    private static float mx(float x) { return x / 16f; }
+    private static float my(float y) { return -(KOPF_OBEN + y) / 16f; }
+    private static float mz(float z) { return z / 16f; }
 
-    /**
-     * Vier Ecken einer Flaeche. Die Reihenfolge wird an der Normale geprueft
-     * und notfalls umgedreht -- so zeigt jede Flaeche sicher nach aussen und
-     * wird nicht weggeschnitten.
-     */
-    private static void flaeche(PoseStack.Pose p, VertexConsumer vc, int licht, int farbe, float nx, float ny, float nz,
-                                float ax, float ay, float az, float bx, float by, float bz,
-                                float cx, float cy, float cz, float dx, float dy, float dz) {
-        float ux = bx - ax, uy = by - ay, uz = bz - az, wx = cx - ax, wy = cy - ay, wz = cz - az;
-        float kx = uy * wz - uz * wy, ky = uz * wx - ux * wz, kz = ux * wy - uy * wx;
-        boolean richtig = kx * nx + ky * ny + kz * nz >= 0;
-        float[][] e = richtig
-                ? new float[][] { {ax, ay, az}, {bx, by, bz}, {cx, cy, cz}, {dx, dy, dz} }
-                : new float[][] { {ax, ay, az}, {dx, dy, dz}, {cx, cy, cz}, {bx, by, bz} };
-        // Leuchtend: Minecraft schattiert Flaechen nach ihrer Normale (seitlich ~70 %
-        // hell) -- mit einer Normale nach oben bleibt jede Seite voll hell.
-        boolean hell = licht == HELL;
-        for (float[] v : e) {
-            vc.addVertex(p, v[0], v[1], v[2]).setColor(farbe).setUv(0.5f, 0.5f)
-                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(licht)
-                    .setNormal(p, hell ? 0 : nx, hell ? -1 : ny, hell ? 0 : nz);
+    /** Die y-Spiegelung kehrt die Umlaufrichtung um -- deshalb Ecken rueckwaerts (sonst sieht man die Innenseiten). */
+    private static final int[] REIHE = { 0, 3, 2, 1 };
+
+    private static void flaeche(PoseStack.Pose p, VertexConsumer vc, Netz.Flaeche f, int licht) {
+        for (int i : REIHE) {
+            vc.addVertex(p, mx(f.p[i * 3]), my(f.p[i * 3 + 1]), mz(f.p[i * 3 + 2])).setColor(f.farbe[i] | 0xFF000000).setUv(0.5f, 0.5f)
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(licht).setNormal(p, f.n[i * 3], -f.n[i * 3 + 1], f.n[i * 3 + 2]);
         }
     }
 
-    /** Glanz-Ebene eines Quaders: Deckkraft je Ecke aus dem wandernden Lichtstreifen. */
-    private static void glanz(PoseStack.Pose p, VertexConsumer vc, Huete.Quader q, float t) {
-        float x0 = q.x0() / 16f, x1 = q.x1() / 16f;
-        float y0 = -(KOPF_OBEN + q.y1()) / 16f, y1 = -(KOPF_OBEN + q.y0()) / 16f;
-        float z0 = q.z0() / 16f, z1 = q.z1() / 16f;
+    /** Leuchtende Teile hell ueberlagern; Metall bekommt einen wandernden Glanzstreifen. */
+    private static void glanz(PoseStack.Pose p, VertexConsumer vc, Netz.Flaeche f, float t) {
+        if (f.leuchten <= 0.01f && !f.metall) return;
         float pos = ((t * 0.32f) % 30f) - 12f;
-        float puls = q.leuchtet() ? 0.3f + 0.25f * (float) Math.sin(t * 0.18f + q.x0()) : 0f;
-        int grund = q.leuchtet() ? (q.farbe() & 0xFFFFFF) : 0xFFFFFF;
-        float[][] ecken = {
-                {x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}, {x0, y0, z1},
-                {x0, y1, z0}, {x1, y1, z0}, {x1, y1, z1}, {x0, y1, z1}};
-        int[] farbe = new int[8];
-        for (int i = 0; i < 8; i++) {
-            float px = ecken[i][0] * 16f, py = -ecken[i][1] * 16f, pz = ecken[i][2] * 16f;
-            float s = px * 0.8f + py * 1.1f - pz * 0.3f - pos;
-            float a = (float) Math.exp(-s * s / 5f) * 0.6f + puls;
+        int[] c = new int[4];
+        boolean sichtbar = false;
+        for (int i = 0; i < 4; i++) {
+            float a = f.leuchten * 0.75f;
+            int farbe = f.farbe[i] & 0xFFFFFF;
+            if (f.metall) {
+                float s = f.p[i * 3] * 0.8f + f.p[i * 3 + 1] * 1.1f - f.p[i * 3 + 2] * 0.3f - pos;
+                float g = (float) Math.exp(-s * s / 5f) * 0.65f;
+                if (g > a) farbe = Netz.mische(0xFF000000 | farbe, 0xFFFFFFFF, 0.6f) & 0xFFFFFF;
+                a = Math.max(a, g);
+            }
             int al = Math.max(0, Math.min(255, Math.round(a * 255f)));
-            int c = q.leuchtet() && a > puls + 0.2f ? 0xFFFFFF : grund;
-            farbe[i] = (al << 24) | c;
+            if (al > 3) sichtbar = true;
+            c[i] = (al << 24) | farbe;
         }
-        // Flaechen: oben, unten, vorne, hinten, links, rechts (Ecken-Indizes)
-        int[][] f = { {0, 1, 2, 3}, {4, 7, 6, 5}, {0, 4, 5, 1}, {3, 2, 6, 7}, {0, 3, 7, 4}, {1, 5, 6, 2} };
-        for (int[] fl : f) {
-            boolean sichtbar = false;
-            for (int i : fl) if ((farbe[i] >>> 24) > 3) sichtbar = true;
-            if (!sichtbar) continue;
-            for (int k = 3; k >= 0; k--) {          // beide Richtungen: ohne Backface-Probleme
-                float[] v = ecken[fl[k]];
-                vc.addVertex(p, v[0], v[1], v[2]).setColor(farbe[fl[k]]).setUv(0.5f, 0.5f)
-                        .setOverlay(OverlayTexture.NO_OVERLAY).setLight(HELL).setNormal(p, 0, -1, 0);
-            }
-            for (int k = 0; k < 4; k++) {
-                float[] v = ecken[fl[k]];
-                vc.addVertex(p, v[0], v[1], v[2]).setColor(farbe[fl[k]]).setUv(0.5f, 0.5f)
-                        .setOverlay(OverlayTexture.NO_OVERLAY).setLight(HELL).setNormal(p, 0, -1, 0);
-            }
+        if (!sichtbar) return;
+        for (int i : REIHE) {
+            vc.addVertex(p, mx(f.p[i * 3]), my(f.p[i * 3 + 1]), mz(f.p[i * 3 + 2])).setColor(c[i]).setUv(0.5f, 0.5f)
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(HELL).setNormal(p, 0, -1, 0);
         }
     }
 

@@ -213,14 +213,23 @@ public class CosmeticGameTest implements FabricClientGameTest {
         srv.runCommand("tp @a 0.5 ~ 0.5 0 0");
         ctx.waitTicks(10);
         // Huete mit Glanz von vorne
-        for (String h : new String[] { "crown", "top_hat", "halo" }) {
+        for (String h : Huete.alle().keySet()) {
             waehle(ctx, "anim_royal", h, "");
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
             ctx.waitTicks(8);
-            ctx.takeScreenshot("shine-" + h + "-1");
-            ctx.waitTicks(9);
-            ctx.takeScreenshot("shine-" + h + "-2");
+            ctx.takeScreenshot("hat3d-" + h + "-front");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            ctx.waitTicks(6);
+            ctx.takeScreenshot("hat3d-" + h + "-back");
         }
+        srv.runCommand("time set midnight");
+        for (String h : new String[] { "halo", "flame", "headphones" }) {
+            waehle(ctx, "anim_vortex", h, "");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("hat3d-night-" + h);
+        }
+        srv.runCommand("time set noon");
         // Song ueber dem Kopf: mit Cover und ohne
         ctx.runOnClient(mc -> {
             var m = com.vortex.client.module.ModuleManager.INSTANCE.get(com.vortex.client.module.modules.SpotifyModule.class);
