@@ -468,9 +468,10 @@ def auras():
     aura('music', 'Music Aura', 'orbit', 5,
          [["..kk", "..kK", "..k.", "..k.", "kkk.", "kk.."], [".kkkk", ".k..k", ".k..k", "kk.kk", "kk.kk"]],
          {'k': 'B26BFF', 'K': 'E2C6FF'}, glow='kK', legacy='notes')
-    aura('lightning', 'Lightning Aura', 'flicker', 5,
-         [["..yy", ".yy.", "yyyy", ".yy.", "yy..", "y..."]],
-         {'y': 'FFF36A'}, glow='y', px=0.6, legacy='electric', size=1.2)
+    aura('lightning', 'Lightning Aura', 'flicker', 7,
+         [["....yy", "...yWy", "..yWy.", ".yWy..", "yWWWWy", "..yWy.", ".yWy..", ".yy...", "yy....", "y....."],
+          ["..yy", ".yW.", "yWWy", ".yWy", "yW..", "y..."]],
+         {'y': '7FD8FF', 'W': 'FFFFFF'}, glow='yW', px=0.6, legacy='electric')
     aura('bubbles', 'Bubble Aura', 'rise', 10,
          [[".bb.", "bWcb", "bccb", ".bb."], [".b.", "bWb", ".b."]],
          {'b': '7FD4FF', 'c': 'CDEFFF', 'W': 'FFFFFF'}, spin=0)
@@ -493,6 +494,14 @@ def shields():
     def skin(id_, name, front, rim, back, handle):
         img = Image.new('RGBA', (128, 128), (0, 0, 0, 0))
         px = img.load()
+        grund = back
+        def back(x, y):
+            # Rueckseite (sieht man in der Ich-Perspektive): Rahmen + Bretter mit Fugen
+            if x < 2 or y < 2 or x >= W - 2 or y >= H - 2: return rim
+            c = grund(x, y)
+            if (y - 2) % 7 == 6: return mix(c, (0, 0, 0, 255), 0.35)
+            if x == (11 if ((y - 2) // 7) % 2 else 5) or x == (17 if ((y - 2) // 7) % 2 else 19): return mix(c, (0, 0, 0, 255), 0.2)
+            return mix(c, (255, 255, 255, 255), 0.06) if (x * 3 + y) % 9 == 0 else c
         for y in range(H):
             for x in range(W):
                 c = front(x, y)

@@ -242,14 +242,19 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
             }
             if (groesse <= 0.02f) continue;
             float s = au.px() * au.groesse() * groesse;
-            pose.pushPose();
-            pose.translate(x, y, z);
-            pose.mulPose(Axis.YP.rotationDegrees(drehY));
-            if (drehX != 0) pose.mulPose(Axis.XP.rotationDegrees(drehX));
-            if (drehZ != 0) pose.mulPose(Axis.ZP.rotationDegrees(drehZ));
-            pose.scale(s * fluegel, s, s);
-            zeichne(pose, c, Zubehoer.netz(sp), licht, t);
-            pose.popPose();
+            // Kreuz aus zwei Bildern (wie Pflanzen): von keiner Seite nur eine duenne Kante
+            String bw = au.bewegung();
+            boolean kreuz = !(bw.equals("rings") || bw.equals("flutter") || bw.equals("twin"));
+            for (int k = 0; k < (kreuz ? 2 : 1); k++) {
+                pose.pushPose();
+                pose.translate(x, y, z);
+                pose.mulPose(Axis.YP.rotationDegrees(drehY + k * 90));
+                if (drehX != 0) pose.mulPose(Axis.XP.rotationDegrees(drehX));
+                if (drehZ != 0) pose.mulPose(Axis.ZP.rotationDegrees(drehZ));
+                pose.scale(s * fluegel, s, s);
+                zeichne(pose, c, Zubehoer.netz(sp), licht, t);
+                pose.popPose();
+            }
         }
     }
 

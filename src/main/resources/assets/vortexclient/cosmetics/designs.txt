@@ -191,10 +191,10 @@ end
 name: Camo
 colors: g=4B5E2E d=2F3B1E b=7A6A45
 ring: y0=5.0 px=0.5 knot=g tails=gd
-  gbbbbggggggggggggggggggggggggggggggggggggbbbbbgggggggggggggggggg
-  ggggggggggggbbbggggggggggggggbbbbbbbbggggbbbbddbbgggggggggbbbbgg
-  ggbbbbbbggbbbbbggggggggggggggbbbbbbbbggggbbbbbbbbgggggggggbbbbgg
-  gbbbbbbgggggbbgggggggggggggggbbggbbbbggggbbbbbbbbggggggggggggggg
+  ddddggggggggdddggggdddddddddddgggdddddddddddddddddgggggggggggggd
+  gggggggggggggggggggdddddddddggggggbgggdddddddddbgggggggggggggggg
+  gggggggggggggggggggddddddddddggggggggdddddbbgddbgggggggddddggggg
+  dddgggggggggbbgggggdddddddddddggggbbddddddbbgggggggggggddddggggd
 end
 
 == bandana galaxy
@@ -896,20 +896,32 @@ end
 
 == aura lightning
 name: Lightning Aura
-colors: y=FFF36A
-glow: y
+colors: y=7FD8FF W=FFFFFF
+glow: yW
 motion: flicker
-count: 5
+count: 7
 px: 0.6
 spin: 1.0
-size: 1.2
+size: 1.0
 legacy: electric
 sprite:
+  ....yy
+  ...yWy
+  ..yWy.
+  .yWy..
+  yWWWWy
+  ..yWy.
+  .yWy..
+  .yy...
+  yy....
+  y.....
+end
+sprite:
   ..yy
-  .yy.
-  yyyy
-  .yy.
-  yy..
+  .yW.
+  yWWy
+  .yWy
+  yW..
   y...
 end
 
