@@ -119,18 +119,18 @@ def face():
     F = 0.25   # feine Brillen: halbe Pixel der alten Version
     # --- Pixel Shades: schwarze Sonnenbrille, feiner, mit Glanzstreifen
     def shades(x, y):
-        u, v = x / 4, y / 4                     # in alten Pixeln (18 x 4)
+        u, v = x / 2, y / 2                     # in alten Pixeln (18 x 4)
         if v < 1.0: return 'k'                  # oberer Steg
         for x0 in (0.3, 9.7):                   # zwei Glaeser, unten schraeg
             lx = u - x0
             if 0 <= lx <= 8.0 and v <= 4.0 - max(0, (lx - 5.2) * 0.9) - max(0, (1.6 - lx) * 0.9):
-                if 1.35 < v < 2.0 and 1.2 < lx - (v - 1.35) < 1.8: return 'w'
-                if 2.0 < v < 2.6 and 2.2 < lx - (v - 2.0) < 2.7: return 'w'
+                if 1.2 < v < 3.0 and abs(lx - (v - 1.2) - 1.3) < 0.55: return 'w'
+                if 1.2 < v < 2.4 and abs(lx - (v - 1.2) - 2.6) < 0.3: return 'w'
                 return 'K' if v > 3.0 else 'k'
         if 8.2 <= u <= 9.8 and v < 1.6: return 'k'
         return '.'
     design('face', 'pixel_shades', 'Pixel Shades', arms='k', colors={'k': '101016', 'K': '24242E', 'w': 'E6E8FF'},
-           parts=[part(raster(72, 16, shades), {}, at=(0, 4.0, -4.85), px=F),
+           parts=[part(raster(36, 8, shades), {}, at=(0, 4.0, -4.85), px=F),
                   part(["W.", "WW", ".W"], {'W': 'FFFFFF'}, at=(0, 4.2, -5.0), px=0.35, depth=0.3, rot=(0, 0, -20), glow='W', anim='glint:3.6')])
 
     # --- Heart Glasses: glatte Herzen mit Glanz, duenner Rahmen

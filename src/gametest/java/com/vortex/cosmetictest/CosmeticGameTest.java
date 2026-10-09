@@ -327,6 +327,8 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("aura-" + d.id() + "-b");
         }
         srv.runCommand("item replace entity @a weapon.offhand with minecraft:shield");
+        // Skins ohne Shield-Status-Farbe zeigen (die kommt unten extra)
+        ctx.runOnClient(mc -> com.vortex.client.module.ModuleManager.INSTANCE.get(com.vortex.client.module.modules.ShieldStatusModule.class).setEnabled(false));
         for (var d : com.vortex.client.cosmetics.Zubehoer.von(com.vortex.client.cosmetics.Zubehoer.Kategorie.SHIELD)) {
             setze.accept(d.id(), a -> a.mitSchild(d.id()));
             // Blocken: der Schild zeigt mit der Vorderseite nach vorne
@@ -337,6 +339,7 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ansicht(ctx, "shield-" + d.id() + "-hold", CameraType.THIRD_PERSON_FRONT, 0);
             vorschau(ctx, "shield-" + d.id() + "-back", 6, 200f);
         }
+        ctx.runOnClient(mc -> com.vortex.client.module.ModuleManager.INSTANCE.get(com.vortex.client.module.modules.ShieldStatusModule.class).setEnabled(true));
         // Shield Status: gelb beim Hochnehmen, gruen beim Blocken, rot wenn gebrochen -- mit Skin und Vanilla
         for (String id : new String[] { "vortex", "" }) {
             String n = id.isEmpty() ? "vanilla" : id;

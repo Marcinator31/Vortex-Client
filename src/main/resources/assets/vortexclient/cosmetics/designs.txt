@@ -5,22 +5,14 @@ name: Pixel Shades
 colors: k=101016 K=24242E w=E6E8FF
 arms: k
 part: at=0,4.0,-4.85 px=0.25 depth=1 rot=0,0,0
-  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-  .kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
-  .kkkkkwwkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkwwkkkkkkkkkkkkkkkkkkkkkkkkk.
-  .kkkkkkwwkkkkkkkkkkkkkkkkkkkkkkkk......kkkkkkwwkkkkkkkkkkkkkkkkkkkkkkk..
-  .kkkkkkkwwkkkkkkkkkkkkkkkkkkkkk........kkkkkkkwwkkkkkkkkkkkkkkkkkkkkk...
-  .kkkkkkkkkkwkkkkkkkkkkkkkkkkkk.........kkkkkkkkkwwkkkkkkkkkkkkkkkkkk....
-  .kkkkkkkkkkkwkkkkkkkkkkkkkkkk..........kkkkkkkkkkwwkkkkkkkkkkkkkkkk.....
-  .kkkkkkkkkkkkkkkkkkkkkkkkkkk...........kkkkkkkkkkkkkkkkkkkkkkkkkkk......
-  ...kkkkkkkkkkkkkkkkkkkkkkkk.............kkkkkkkkkkkkkkkkkkkkkkkkk.......
-  ....KKKKKKKKKKKKKKKKKKKKKK...............KKKKKKKKKKKKKKKKKKKKKK.........
-  .....KKKKKKKKKKKKKKKKKKKK.................KKKKKKKKKKKKKKKKKKKK..........
-  ......KKKKKKKKKKKKKKKKKK....................KKKKKKKKKKKKKKKKK...........
-  .......KKKKKKKKKKKKKKKK......................KKKKKKKKKKKKKKK............
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  .kwwkwkkkkkkkkkkkkkkkwwkwkkkkkkkkkk.
+  .kkwwkwkkkkkkkkk...kkkwwkwkkkkkkkkk.
+  .kkkwwkwkkkkkkk....kkkkwwkwkkkkkkk..
+  .kkkkwwkkkkkkk......kkkkwwkkkkkkk...
+  ..KKKKKKKKKKK........KKKKKKKKKK.....
+  ...KKKKKKKKK..........KKKKKKKK......
 end
 part: at=0,4.2,-5.0 px=0.35 depth=0.3 rot=0,0,-20 glow=W anim=glint:3.6
 colors: W=FFFFFF
@@ -340,10 +332,10 @@ end
 name: Camo
 colors: g=4B5E2E d=2F3B1E b=7A6A45
 ring: y0=5.0 px=0.5 knot=g tails=gd
-  ggbbbggggggggggggggggggggggggggggggggggggbbbbbgggggggggggggggggg
-  ggggggggggggggggggggggggggggggggbbbbbggggbbbdddbbgggggggggbbgggg
-  gggggbbbggbbbbggggggggggggggggbgbbbbbggggbbbgggbbgggggggggbbbbgg
-  ggggbbbgggggbbgggggggggggggggbbggbbbbggggbbbgggbbggggggggggggggg
+  gggggggggggggggggggggggggggggggggggggggggdbbbbgggggggggggggggggg
+  ggggggggggggggggggggggggggggggggggbggggggddddddggggggggggggggggg
+  ggggggggggggggggggggggggggggggggggggggggggbbgggggggggggggggggggg
+  ggggggggggggggggggggggggggggggggggggggggggbbgggggggggggggggggggg
 end
 
 == bandana galaxy

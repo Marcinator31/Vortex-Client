@@ -60,8 +60,11 @@ public final class SchildStatus {
         }
     }
 
-    /** Farbe fuer diesen Schild in der Hand dieses Wesens; 0 = normal. */
-    public static int farbe(LivingEntity e, ItemStack stack) {
+    /**
+     * Farbe fuer diesen Schild in der Hand dieses Wesens; 0 = normal.
+     * Auf Skins schwaecher, damit das Motiv sichtbar bleibt (gebrochen bleibt deutlich).
+     */
+    public static int farbe(LivingEntity e, ItemStack stack, boolean skin) {
         if (e == null || stack == null || stack.isEmpty()) return 0;
         ShieldStatusModule m = modul();
         if (m == null) return 0;
@@ -80,15 +83,17 @@ public final class SchildStatus {
         }
         if (rest > 0) {
             int voll = m.grayscaleBroken.get() ? GRAU : ROT;
-            return m.smoothColor.get() ? mischen(0xFFFFFFFF, voll, Math.min(1f, 0.25f + rest)) : voll;
+            float staerke = m.smoothColor.get() ? Math.min(1f, 0.25f + rest) : 1f;
+            return mischen(0xFFFFFFFF, voll, staerke * (skin ? 0.8f : 1f));
         }
         if (e.isUsingItem() && e.getUseItem() == stack) {
-            return e.isBlocking() ? GRUEN : GELB;
+            int f = e.isBlocking() ? GRUEN : GELB;
+            return skin ? mischen(0xFFFFFFFF, f, 0.5f) : f;
         }
         return 0;
     }
 
-    static int mischen(int a, int b, float t) {
+    public static int mischen(int a, int b, float t) {
         int r = 0xFF000000;
         for (int s = 0; s < 24; s += 8) {
             int ca = (a >> s) & 0xFF, cb = (b >> s) & 0xFF;

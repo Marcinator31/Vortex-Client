@@ -47,7 +47,7 @@ public final class SchildSkins {
         LivingEntity e = AKTUELL.get();
         if (e == null || daten == null) return daten;
         String id = skinVon(e);
-        int farbe = SchildStatus.farbe(e, stack);
+        int farbe = SchildStatus.farbe(e, stack, id != null);
         if (id == null && farbe == 0) return daten;
         CompoundTag tag = new CompoundTag();
         if (id != null) tag.putString(MARKE, id);
