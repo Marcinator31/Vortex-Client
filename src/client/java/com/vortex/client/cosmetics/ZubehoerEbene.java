@@ -53,7 +53,7 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
                 float wippen = (float) Math.sin(state.walkAnimationPos * 0.6662f * 2) * Math.min(1f, state.walkAnimationSpeed) * 0.35f;
                 // Mit Cape: hinter das Cape, sonst verschwindet das Teil darunter
                 // (Schultergurte bleiben am Koerper)
-                boolean cape = !a.cape().isEmpty() || state.showCape;
+                boolean cape = !a.cape().isEmpty() || (state.showCape && state.skin != null && state.skin.cape() != null);
                 for (Zubehoer.Teil teil : back.teile()) {
                     boolean gurt = teil.anim().equals("strap");
                     if (cape && !gurt) { pose.pushPose(); pose.translate(0, 0, 1.25f); }
