@@ -13,14 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Das Cosmetics-Menue: Capes, Huete, Partikel -- mit drehbarer 3D-Vorschau
+ * Das Cosmetics-Menue: Capes, Huete, Bandanas, Face, Back, Auras, Shields, Emotes -- mit drehbarer 3D-Vorschau
  * des eigenen Charakters (ziehen mit der Maus).
  *
  * Eine Auswahl gilt sofort und wird gespeichert (Cosmetics). Capes: aus dem
  * Vortex-Verzeichnis oder ein eigenes Bild (EigenesCape).
  */
 public class CosmeticsScreen extends Screen {
-    private enum Reiter { CAPES, HATS, PARTICLES, EMOTES }
+    private enum Reiter { CAPES, HATS, BANDANAS, FACE, BACK, AURAS, SHIELDS, EMOTES }
 
     private record Kachel(String id, String name, String unter) {}
     private record Flaeche(int x, int y, int w, int h, Runnable aktion) {
@@ -74,14 +74,10 @@ public class CosmeticsScreen extends Screen {
                 k.add(new Kachel("", "None", "No hat"));
                 for (Huete.Hut h : Huete.alle().values()) k.add(new Kachel(h.id(), h.name(), h.text()));
             }
-            case PARTICLES -> {
-                k.add(new Kachel("", "None", "No particles"));
-                for (Partikel.Effekt e : Partikel.alle().values()) k.add(new Kachel(e.id(), e.name(), switch (e.art()) {
-                    case KREIS -> "Circle around you";
-                    case SPIRALE -> "Spiral upwards";
-                    case REGEN -> "Falling from above";
-                    case WOLKE -> "Cloud around you";
-                }));
+            case BANDANAS, FACE, BACK, AURAS, SHIELDS -> {
+                Zubehoer.Kategorie kat = kategorie(reiter);
+                k.add(new Kachel("", "None", "Nothing"));
+                for (Zubehoer.Design d : Zubehoer.von(kat)) k.add(new Kachel(d.id(), d.name(), ""));
             }
             case EMOTES -> {
                 for (Emotes.Emote e : Emotes.alle().values()) k.add(new Kachel(e.id(), e.name(), "Click to play -- or press " + emoteTaste()));
@@ -95,7 +91,11 @@ public class CosmeticsScreen extends Screen {
         return switch (reiter) {
             case CAPES -> a.cape();
             case HATS -> a.hut();
-            case PARTICLES -> a.partikel();
+            case BANDANAS -> a.bandana();
+            case FACE -> a.gesicht();
+            case BACK -> a.ruecken();
+            case AURAS -> a.partikel();
+            case SHIELDS -> a.schild();
             case EMOTES -> "";
         };
     }
@@ -115,7 +115,7 @@ public class CosmeticsScreen extends Screen {
                 meldung = "Your picture is on the cape now.";
                 Cosmetics.Auswahl b = Cosmetics.eigene();
                 // Auch wenn "custom" schon gewaehlt war: das neue Bild laden
-                Cosmetics.speichern(new Cosmetics.Auswahl(EigenesCape.ID, b.hut(), b.partikel(), b.dichte()), Cosmetics.partikelErstePerson());
+                Cosmetics.speichern(b.mitCape(EigenesCape.ID), Cosmetics.partikelErstePerson());
                 ActiveCape.neuLaden();
             }));
             return;
@@ -123,9 +123,13 @@ public class CosmeticsScreen extends Screen {
         meldung = null;
         if (reiter == Reiter.EMOTES) { Emotes.spielen(id); return; }
         Cosmetics.Auswahl neu = switch (reiter) {
-            case CAPES -> new Cosmetics.Auswahl(id, a.hut(), a.partikel(), a.dichte());
-            case HATS -> new Cosmetics.Auswahl(a.cape(), id, a.partikel(), a.dichte());
-            case PARTICLES -> new Cosmetics.Auswahl(a.cape(), a.hut(), id, a.dichte());
+            case CAPES -> a.mitCape(id);
+            case HATS -> a.mitHut(id);
+            case BANDANAS -> a.mitBandana(id);
+            case FACE -> a.mitGesicht(id);
+            case BACK -> a.mitRuecken(id);
+            case AURAS -> a.mitAura(id);
+            case SHIELDS -> a.mitSchild(id);
             case EMOTES -> a;
         };
         Cosmetics.speichern(neu, Cosmetics.partikelErstePerson());
@@ -150,16 +154,23 @@ public class CosmeticsScreen extends Screen {
         // Reiter links
         int ry = fy + 40;
         for (Reiter r : Reiter.values()) {
-            String name = switch (r) { case CAPES -> "Capes"; case HATS -> "Hats"; case PARTICLES -> "Particles"; case EMOTES -> "Emotes"; };
-            Symbole.Symbol sym = switch (r) { case CAPES -> Symbole.Symbol.HEMD; case HATS -> Symbole.Symbol.STERN; case PARTICLES -> Symbole.Symbol.BLITZ; case EMOTES -> Symbole.Symbol.PERSON; };
-            boolean an = r == reiter, hov = !an && mouseX >= fx + 10 && mouseX < fx + 100 && mouseY >= ry && mouseY < ry + 22;
-            if (an || hov) Glatt.rund(g, fx + 10, ry, 90, 22, 6, an ? 0x338B5CF6 : 0x18FFFFFF);
-            if (an) Glatt.rund(g, fx + 10, ry + 5, 2.5f, 12, 1.2f, AKZENT);
-            Glatt.symbol(g, sym, fx + 18, ry + 5, 12, an ? TEXT : DIM);
-            Glatt.text(g, name, fx + 36, ry + 7, an ? TEXT : DIM, Glatt.Schrift.NORMAL);
+            String name = switch (r) {
+                case CAPES -> "Capes"; case HATS -> "Hats"; case BANDANAS -> "Bandanas"; case FACE -> "Face";
+                case BACK -> "Back"; case AURAS -> "Auras"; case SHIELDS -> "Shields"; case EMOTES -> "Emotes";
+            };
+            Symbole.Symbol sym = switch (r) {
+                case CAPES -> Symbole.Symbol.HEMD; case HATS, BANDANAS -> Symbole.Symbol.STERN; case FACE -> Symbole.Symbol.PERSON;
+                case BACK -> Symbole.Symbol.HEMD; case AURAS -> Symbole.Symbol.BLITZ; case SHIELDS -> Symbole.Symbol.HAKEN; case EMOTES -> Symbole.Symbol.PERSON;
+            };
+            int rh = Math.max(16, Math.min(22, (fh - 52) / Reiter.values().length - 3)), rabstand = rh + 3;
+            boolean an = r == reiter, hov = !an && mouseX >= fx + 10 && mouseX < fx + 100 && mouseY >= ry && mouseY < ry + rh;
+            if (an || hov) Glatt.rund(g, fx + 10, ry, 90, rh, 6, an ? 0x338B5CF6 : 0x18FFFFFF);
+            if (an) Glatt.rund(g, fx + 10, ry + (rh - 12) / 2f, 2.5f, 12, 1.2f, AKZENT);
+            Glatt.symbol(g, sym, fx + 18, ry + (rh - 12) / 2f, 12, an ? TEXT : DIM);
+            Glatt.text(g, name, fx + 36, ry + (rh - 8) / 2f, an ? TEXT : DIM, Glatt.Schrift.NORMAL);
             final Reiter ziel = r;
-            flaechen.add(new Flaeche(fx + 10, ry, 90, 22, () -> { reiter = ziel; scroll = 0; meldung = null; }));
-            ry += 26;
+            flaechen.add(new Flaeche(fx + 10, ry, 90, rh, () -> { reiter = ziel; scroll = 0; meldung = null; }));
+            ry += rabstand;
         }
 
         // Vorschau rechts
@@ -169,7 +180,7 @@ public class CosmeticsScreen extends Screen {
 
         // Kacheln in der Mitte
         int lx = fx + 110, lw = px - lx - 10, ly = fy + 40, lh = fh - 52;
-        if (reiter == Reiter.PARTICLES) {
+        if (reiter == Reiter.AURAS) {
             partikelOptionen(g, lx, ly, lw, mouseX, mouseY);
             ly += 26; lh -= 26;
         } else if (reiter == Reiter.CAPES) {
@@ -180,6 +191,8 @@ public class CosmeticsScreen extends Screen {
         }
         if (reiter == Reiter.CAPES) {
             capeKacheln(g, lx, ly, lw, lh, mouseX, mouseY);
+        } else if (kategorie(reiter) != null) {
+            galerie(g, lx, ly, lw, lh, mouseX, mouseY, kategorie(reiter));
         } else {
         int spalten = lw >= 260 ? 2 : 1, kw = (lw - (spalten - 1) * 6) / spalten, kh = 34;
         List<Kachel> liste = kacheln();
@@ -261,13 +274,100 @@ public class CosmeticsScreen extends Screen {
     private void partikelOptionen(GuiGraphicsExtractor g, int x, int y, int w, int mouseX, int mouseY) {
         Cosmetics.Auswahl a = Cosmetics.eigene();
         String dichte = "Amount: " + (a.dichte() == 1 ? "Low" : a.dichte() == 3 ? "High" : "Medium");
-        knopf(g, x, y, 110, 18, dichte, mouseX, mouseY, () -> {
+        knopf(g, x, y, 120, 18, dichte, mouseX, mouseY, () -> {
             Cosmetics.Auswahl b = Cosmetics.eigene();
-            Cosmetics.speichern(new Cosmetics.Auswahl(b.cape(), b.hut(), b.partikel(), b.dichte() % 3 + 1), Cosmetics.partikelErstePerson());
+            Cosmetics.speichern(b.mitDichte(b.dichte() % 3 + 1), Cosmetics.partikelErstePerson());
         }, false);
-        boolean ich = Cosmetics.partikelErstePerson();
-        knopf(g, x + 116, y, Math.min(170, w - 116), 18, "First person: " + (ich ? "On" : "Off"), mouseX, mouseY,
-                () -> Cosmetics.speichern(Cosmetics.eigene(), !Cosmetics.partikelErstePerson()), ich);
+    }
+
+    private static Zubehoer.Kategorie kategorie(Reiter r) {
+        return switch (r) {
+            case BANDANAS -> Zubehoer.Kategorie.BANDANA;
+            case FACE -> Zubehoer.Kategorie.FACE;
+            case BACK -> Zubehoer.Kategorie.BACK;
+            case AURAS -> Zubehoer.Kategorie.AURA;
+            case SHIELDS -> Zubehoer.Kategorie.SHIELD;
+            default -> null;
+        };
+    }
+
+    /** Galerie mit Bild je Karte: das Pixelbild des Designs (Schilde: ihre Textur). */
+    private void galerie(GuiGraphicsExtractor g, int lx, int ly, int lw, int lh, int mouseX, int mouseY, Zubehoer.Kategorie kat) {
+        List<Kachel> liste = kacheln();
+        int spalten = Math.max(2, Math.min(5, lw / 76));
+        int kw = (lw - (spalten - 1) * 6) / spalten;
+        int bild = Math.min(46, kw - 16), kh = bild + 30;
+        int zeilen = (liste.size() + spalten - 1) / spalten;
+        float max = Math.max(0, zeilen * (kh + 6) - 6 - lh);
+        scroll = Math.max(0, Math.min(scroll, max));
+        String sel = gewaehlt();
+        g.enableScissor(lx, ly, lx + lw, ly + lh);
+        for (int i = 0; i < liste.size(); i++) {
+            Kachel k = liste.get(i);
+            int kx = lx + (i % spalten) * (kw + 6), ky = ly + (i / spalten) * (kh + 6) - Math.round(scroll);
+            if (ky + kh < ly || ky > ly + lh) continue;
+            boolean an = k.id().equals(sel);
+            boolean hov = mouseX >= kx && mouseX < kx + kw && mouseY >= ky && mouseY < ky + kh && mouseY >= ly && mouseY < ly + lh;
+            Glatt.rund(g, kx, ky, kw, kh, 8, hov ? KARTE_HOV : KARTE);
+            int bx = kx + (kw - bild) / 2, by = ky + 6;
+            Zubehoer.Design d = Zubehoer.get(kat, k.id());
+            if (d == null) {
+                Glatt.symbol(g, Symbole.Symbol.KREUZ, bx + bild / 2f - 8, by + bild / 2f - 8, 16, DIM);
+            } else if (kat == Zubehoer.Kategorie.SHIELD) {
+                int sh = bild, sw = Math.round(sh * 24f / 44f);
+                g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "textures/cosmetics/shield/" + d.id() + ".png"),
+                        bx + (bild - sw) / 2, by, 2, 2, sw, sh, 24, 44, 128, 128, 0xFFFFFFFF);
+            } else {
+                pixelBild(g, vorschauBild(d), bx, by, bild, bild);
+            }
+            Glatt.textMitte(g, Glatt.kuerzen(k.name(), kw - 8, Glatt.Schrift.FETT), kx + kw / 2f, by + bild + 6, an ? TEXT : 0xFFD9D4E8, Glatt.Schrift.FETT);
+            if (an) {
+                Glatt.rahmen(g, kx, ky, kw, kh, 8, 1, AKZENT);
+                Glatt.kreis(g, kx + kw - 9, ky + 9, 12, AKZENT);
+                Glatt.symbol(g, Symbole.Symbol.HAKEN, kx + kw - 14, ky + 4, 10, 0xFFFFFFFF);
+            }
+            if (ky >= ly && ky + kh <= ly + lh) flaechen.add(new Flaeche(kx, ky, kw, kh, () -> waehle(k.id())));
+        }
+        g.disableScissor();
+    }
+
+    /** Bild fuer die Karte: Bandana = Band vorne, Aura = erstes Sprite, sonst das groesste Teil. */
+    private static int[][] vorschauBild(Zubehoer.Design d) {
+        if (d.ring() != null && d.teile().isEmpty()) {
+            int[][] r = d.ring().farben();
+            int[][] o = new int[r.length * 2][];
+            for (int y = 0; y < r.length; y++) {
+                o[y * 2] = java.util.Arrays.copyOfRange(r[y], 0, Math.min(16, r[y].length));
+                o[y * 2 + 1] = o[y * 2];
+            }
+            return o;
+        }
+        if (d.aura() != null && !d.aura().sprites().isEmpty()) return d.aura().sprites().get(0).farben();
+        int[][] best = new int[0][];
+        int groesse = -1;
+        for (Zubehoer.Teil t : d.teile()) {
+            int n = 0;
+            for (int[] z : t.farben()) n += z.length;
+            if (n > groesse) { groesse = n; best = t.farben(); }
+        }
+        return best;
+    }
+
+    private static void pixelBild(GuiGraphicsExtractor g, int[][] bild, int x, int y, int w, int h) {
+        int bh = bild.length, bw = 0;
+        for (int[] z : bild) bw = Math.max(bw, z.length);
+        if (bh == 0 || bw == 0) return;
+        float s = Math.min(w / (float) bw, h / (float) bh);
+        float ox = x + (w - bw * s) / 2f, oy = y + (h - bh * s) / 2f;
+        for (int yy = 0; yy < bh; yy++) {
+            for (int xx = 0; xx < bild[yy].length; xx++) {
+                int f = bild[yy][xx];
+                if ((f >>> 24) == 0) continue;
+                int x0 = Math.round(ox + xx * s), y0 = Math.round(oy + yy * s), x1 = Math.round(ox + (xx + 1) * s), y1 = Math.round(oy + (yy + 1) * s);
+                if (x1 > x0 && y1 > y0) g.fill(x0, y0, x1, y1, f);
+            }
+        }
     }
 
     private void knopf(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, int mouseX, int mouseY, Runnable aktion, boolean an) {
@@ -371,6 +471,12 @@ public class CosmeticsScreen extends Screen {
     public void vorschauDrehen(float grad, float neigen) {
         drehung = grad;
         neigung = neigen;
+    }
+
+    /** Reiter waehlen (0 = Capes ... 7 = Emotes). Auch fuer den Cosmetics-Test. */
+    public void zeigeReiter(int i) {
+        reiter = Reiter.values()[Math.max(0, Math.min(Reiter.values().length - 1, i))];
+        scroll = 0;
     }
 
     @Override

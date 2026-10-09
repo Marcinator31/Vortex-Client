@@ -1,0 +1,974 @@
+# Erzeugt von tools/cosmetics/art.py -- nicht von Hand aendern.
+
+== face pixel_shades
+name: Pixel Shades
+colors: k=15151C w=F4F4FF
+arms: k
+part: at=0,4.0,-4.85 px=0.5 depth=1 rot=0,0,0
+  kkkkkkkkkkkkkkkkkk
+  kkwkkkkkkkkkwkkkkk
+  .kkwkkkk..kkkwkkk.
+  ..kkkkkk...kkkkkk.
+end
+
+== face heart_glasses
+name: Heart Glasses
+colors: p=FF3E8E l=FF8CC0 w=FFFFFF f=FFD1E6
+arms: f
+part: at=0,3.7,-4.85 px=0.5 depth=1 rot=0,0,0
+  ..pp.pp....pp.pp..
+  .pwpppppffpwppppp.
+  .plppppp..plppppp.
+  ..ppppp....ppppp..
+  ...ppp......ppp...
+  ....p........p....
+end
+
+== face neon_visor
+name: Neon Visor
+colors: d=20163A C=38E1FF P=B26BFF
+arms: d
+part: at=0,4.0,-4.85 px=0.5 depth=1 rot=0,0,0 glow=CP
+  dddddddddddddddddd
+  dCCCPCCCPCCCPCCCPd
+  dPPPCPPPCPPPCPPPCd
+  dddddddddddddddddd
+end
+
+== face star_glasses
+name: Star Glasses
+colors: y=FFD23F o=FF8A1F
+arms: y
+part: at=0,3.7,-4.85 px=0.5 depth=1 rot=0,0,0
+  ....y........y....
+  ...yyy......yyy...
+  .yyyoyyyyyyyyoyyy.
+  ..yoooy....yoooy..
+  ...yyy......yyy...
+  ..yy.yy....yy.yy..
+  .y.....y..y.....y.
+end
+
+== face retro_3d
+name: 3D Glasses
+colors: w=F2F2F2 r=E3343A c=29C6E8
+arms: w
+part: at=0,3.9,-4.85 px=0.5 depth=1 rot=0,0,0
+  wwwwwwwwwwwwwwwwww
+  wrrrrrrrwwcccccccw
+  wrrrrrrrwwcccccccw
+  wrrrrrrr..cccccccw
+  wwwwwwww..wwwwwwww
+end
+
+== face monocle
+name: Monocle
+colors: g=E8B53A h=A8761A l=BFE7FF w=FFFFFF
+part: at=-2,4.2,-4.85 px=0.5 depth=1 rot=0,0,0
+  ...gg...
+  .gggggg.
+  .gwlllg.
+  ggllllgg
+  ggllllgg
+  .gllllg.
+  .gggggg.
+  ...gg...
+end
+part: at=-0.2,0.9,-4.85 px=0.5 depth=1 rot=0,0,-20
+  g
+  h
+  g
+  h
+  g
+  h
+  g
+  h
+  g
+end
+
+== face skull_mask
+name: Skull Mask
+colors: b=E9E4D4 k=1A1714 w=FFFFFF r=E33B3B
+part: at=0,4.0,-4.85 px=0.5 depth=1 rot=0,0,0 glow=r
+  ..bbbbbbbbbbbb..
+  .bbbbbbbbbbbbbb.
+  bbbbbbbbbbbbbbbb
+  bbbbbbbbbbbbbbbb
+  bbkkkkbbbbkkkkbb
+  bkkkkkkbbkkkkkkb
+  bkkrkkkbbkkkrkkb
+  bkkkkkkbbkkkkkkb
+  bbkkkkbbbbkkkkbb
+  bbbbbbbkkbbbbbbb
+  bbbbbbkkkkbbbbbb
+  .bbbbbbbbbbbbbb.
+  .bwbwbwbwbwbwbb.
+  .bkbkbkbkbkbkbb.
+  ..bwbwbwbwbwbb..
+  ...bbbbbbbbbb...
+end
+
+== face ninja_mask
+name: Ninja Mask
+colors: k=22222B r=C8243A
+ring: y0=0.2 px=0.5 knot=k tails=kr
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+end
+
+== face fox_mask
+name: Fox Mask
+colors: e=F7F3EC R=D9283A k=18141C
+part: at=0,4.6,-4.85 px=0.5 depth=1 rot=0,0,0
+  ..e..........e..
+  .eee........eee.
+  .eRe........eRe.
+  eeRee......eeRee
+  eeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeee
+  eRReeeeeeeeeeRRe
+  eekRRe.eeeeRRkee
+  eekkkReeeeRkkkee
+  eeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeee
+  .eeeeeeRReeeeee.
+  .eeeeeekkeeeeee.
+  ..eeeeeeeeeeee..
+  ...eeRRRRRRee...
+  ....eeeeeeee....
+  ......eeee......
+end
+
+== face bow
+name: Bow
+colors: p=FF5FA8 P=FF9BCB k=D93A86
+part: at=2.6,8.4,-1.5 px=0.5 depth=2 rot=0,-20,18
+  pp......pp
+  pPp....pPp
+  pPPp..pPPp
+  pPPPkkPPPp
+  pPPPkkPPPp
+  pPPp..pPPp
+  pPp....pPp
+  pp......pp
+end
+
+== bandana lightning
+name: Lightning Bandana
+colors: k=17171E w=F2F6FF
+ring: y0=4.2 px=1 knot=k tails=kw
+  wkkkwkwkkkwkwkkkwkwkkkwkwkkkwkwk
+  kwkwkwkwkwkwkwkwkwkwkwkwkwkwkwkw
+  kkwkkkkkwkkkkkwkkkkkwkkkkkwkkkkk
+end
+
+== bandana flame
+name: Flame Bandana
+colors: r=7A0F12 o=F05A16 y=FFC23A
+ring: y0=4.2 px=1 knot=r tails=ro
+  rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+  rroroorrrroroorrrroroorrrroroorr
+  royoyyorroyoyyorroyoyyorroyoyyor
+end
+
+== bandana rainbow
+name: Rainbow Bandana
+colors: r=E8434B o=F59A2C y=F7D43C g=4CC25B b=3D8BE6 v=8E5BE3
+ring: y0=4.2 px=1 knot=r tails=rb
+  rrooyyggbbvvrrooyyggbbvvrrooyygg
+  ooyyggbbvvrrooyyggbbvvrrooyyggbb
+  yyggbbvvrrooyyggbbvvrrooyyggbbvv
+end
+
+== bandana camo
+name: Camo Bandana
+colors: g=4B5E2E d=2F3B1E b=7A6A45
+ring: y0=4.2 px=1 knot=g tails=gd
+  bbdddggggbbbggbbddgggggddggdddbb
+  ddbgggddbbbbbbbbbddddddggddgggdd
+  bbddggggdddddddbbbggggbbbgggdddb
+end
+
+== bandana galaxy
+name: Galaxy Bandana
+colors: n=1A1446 p=4A2A8C S=FFFFFF
+ring: y0=4.2 px=1 knot=n tails=np
+  pppnSnnSppSnnnpppSnnnpppSnnnpSpn
+  nnnnpSpnSnnSpSnnnSSpSSnnnppSnnnn
+  SpppnnnSpppnSnnppSnnnnpppSnnnppp
+end
+
+== bandana vortex
+name: Vortex Bandana
+colors: v=7C3AED b=3B5BDB w=D3A6FF
+ring: y0=4.2 px=1 knot=v tails=vb
+  vvwvvvwvbbwbbbwbvvwvvvwvbbwbbbwb
+  vvvwvwvvbbbwbwbbvvvwvwvvbbbwbwbb
+  vvvvwvvvbbbbwbbbvvvvwvvvbbbbwbbb
+end
+
+== bandana racing
+name: Racing Bandana
+colors: k=141418 w=F4F4F4
+ring: y0=4.2 px=1 knot=k tails=kw
+  wkwkwkwkwkwkwkwkwkwkwkwkwkwkwkwk
+  kwkwkwkwkwkwkwkwkwkwkwkwkwkwkwkw
+  wkwkwkwkwkwkwkwkwkwkwkwkwkwkwkwk
+end
+
+== bandana sakura
+name: Sakura Bandana
+colors: l=FFE3EE p=FF8FBF P=E8417E
+ring: y0=4.2 px=1 knot=l tails=lp
+  llplllPlllplllPlllplllPlllplllPl
+  lpPplllllpPplllllpPplllllpPpllll
+  llplllPlllplllPlllplllPlllplllPl
+end
+
+== bandana ice
+name: Ice Bandana
+colors: c=A8E6FF b=6CC6F0 w=FFFFFF
+ring: y0=4.2 px=1 knot=c tails=cb
+  wccbbbcccbbwcccbbbcccbwbcccbbbcc
+  bbwcccbbbcccbwbcccbbbcccwbbcccbb
+  cccbwbcccbbbcccwbbcccbbbccwbbbcc
+end
+
+== bandana toxic
+name: Toxic Bandana
+colors: k=162016 l=3E8F2A L=9BFF3A
+glow: L
+ring: y0=4.2 px=1 knot=k tails=kL
+  kklkkkklkkkklkkkklkkkklkkkklkkkk
+  kkLkkkkLkkkkLkkkkLkkkkLkkkkLkkkk
+  kkLkkkkLkkkkLkkkkLkkkkLkkkkLkkkk
+end
+
+== back teddy_backpack
+name: Teddy Backpack
+colors: b=8A5A35 B=C49067 k=1D1410 w=FFFFFF n=3A241A
+part: at=0,-5.6,3.1 px=0.5 depth=3 rot=0,0,0 anim=bob
+  ..bb........bb..
+  .bBBb......bBBb.
+  .bBkbbbbbbbbkBb.
+  ..bbbbbbbbbbbb..
+  ..bbbbbbbbbbbb..
+  .bbbkkbbbbkkbbb.
+  .bbbkwbbbbkwbbb.
+  .bbbbbBBBBbbbbb.
+  .bbbbBBnnBBbbbb.
+  ..bbbBBBBBBbbb..
+  ...bbbBkkBbbb...
+  ....bbbbbbbb....
+  ..bbbbbbbbbbbb..
+  .bbbbBBBBBBbbbb.
+  bbbbBBBBBBBBbbbb
+  bbbbBBBBBBBBbbbb
+  bbbbBBBBBBBBbbbb
+  .bbbBBBBBBBBbbb.
+  .bbbbBBBBBBbbbb.
+  ..bbbbbbbbbbbb..
+  ..BBB......BBB..
+  ..bbb......bbb..
+end
+
+== back explorer_pack
+name: Explorer Backpack
+colors: l=6B4423 L=845530 d=3E2614 g=D9A93A s=2F1D10 r=2F6B4F R=24543E
+part: at=0,-6.2,3.35 px=0.5 depth=4 rot=0,0,0 anim=bob
+  ................
+  ................
+  .LsLLLLLLLLLLsL.
+  .LsLLLLLLLLLLsL.
+  .LsLLLLLLLLLLsL.
+  .LsLLLLLLLLLLsL.
+  .LsLLLLLLLLLLsL.
+  .LsLLLggggLLLsL.
+  .dsdddgddgdddsd.
+  .lslllgddglllsl.
+  .lslllgggglllsl.
+  .lsllllllllllsl.
+  .lsddddddddddsl.
+  .lsLLLLLLLLLLsl.
+  .lsLLLLLLLLLLsl.
+  .lsLLLLLLLLLLsl.
+  .lsLLLLLLLLLLsl.
+  .lsLLLLLLLLLLsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+end
+part: at=0,-1.6,3.35 px=0.5 depth=4 rot=0,0,0 anim=bob
+  RRRRRRRRRRRRRRRRRR
+  rrrsrrrrrrrrrrsrrr
+  rrrsrrrrrrrrrrsrrr
+  rrrsrrrrrrrrrrsrrr
+  RRRRRRRRRRRRRRRRRR
+end
+
+== back greatsword
+name: Greatsword
+colors: p=D9A93A h=3B2416 H=5A3A24 g=C8962E G=F2D46B m=B9C1CC M=E9EEF4
+part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,38 anim=bob
+  ...ppp...
+  ...ppp...
+  ....H....
+  ....h....
+  ....H....
+  ....h....
+  ....H....
+  ....h....
+  ....H....
+  ggggGgggg
+  ggggGgggg
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ...mMm...
+  ....m....
+  ....m....
+  ....m....
+end
+
+== back crystal_scythe
+name: Crystal Scythe
+colors: w=4A3A6B W=6A568F b=C9D3E6 C=6FF3FF c=2BB8E6 d=1C5E86
+part: at=0,-5.2,2.6 px=0.5 depth=1 rot=0,0,-28 glow=C anim=bob
+  ......dddcccdcd...........
+  ....ddcccccCcCd...........
+  ...dccccCCCCCCd...........
+  ..dcccCCCCdddd............
+  .dcccCCCdd...bbbb.........
+  .dccCCCd.....bbbb.........
+  dccCCCd......bbbb.........
+  dccCCCd......bbbb.........
+  .ddddd........wW..........
+  ..............wW..........
+  ..............bb..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............bb..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............bb..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............bb..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............bb..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+  ..............wW..........
+end
+
+== back guitar
+name: Guitar
+colors: w=B5672F W=D8914E k=1E140E n=5A3A24 N=7A5236 f=C9C9C9 h=3A2416 s=EDEDED
+part: at=0,-6.0,2.85 px=0.5 depth=2 rot=0,0,-32 anim=bob
+  ...fhhhhhhf...
+  ....hhhhhh....
+  ...fhhhhhhf...
+  ....hhsshh....
+  .....fssf.....
+  .....nssn.....
+  .....nssn.....
+  .....fssf.....
+  .....nssn.....
+  .....nssn.....
+  .....fssf.....
+  .....nssn.....
+  .....nssn.....
+  .....fssf.....
+  .....nssn.....
+  .....nssn.....
+  .....fssf.....
+  .....nssn.....
+  .....nssn.....
+  .....fssf.....
+  ....wnssnw....
+  ...wWWssWWw...
+  ..wWWWssWWWw..
+  ..wWWWssWWWw..
+  ..wWWWssWWWw..
+  ..wWWWssWWWw..
+  ..wWWWssWWWw..
+  ...wWksskWw...
+  ...wWksskWw...
+  ..wWWksskWWw..
+  .wWWWWssWWWWw.
+  .wWWWWssWWWWw.
+  wWWWWWssWWWWWw
+  wWWWWWssWWWWWw
+  wWWWWWssWWWWWw
+  .wWWWWssWWWWw.
+  .wWWWWssWWWWw.
+  ..wWkksskkWw..
+  ...wWWWWWWw...
+  ....wwwwww....
+  ..............
+  ..............
+end
+
+== back katana
+name: Katana
+colors: h=1C1C24 H=E8E1D0 g=D9A93A s=7E1620 S=A82432
+part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,40 anim=bob
+  .HHH.
+  .hhh.
+  .HHH.
+  .hhh.
+  .HHH.
+  .hhh.
+  .HHH.
+  .hhh.
+  .HHH.
+  .hhh.
+  ggggg
+  ggggg
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .ggg.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .ggg.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sSs.
+  .sss.
+end
+
+== back surfboard
+name: Surfboard
+colors: w=F7F1E1 b=2B8FE6 y=FFC93C B=1F6FB8
+part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,-14 anim=bob
+  ....BbbB....
+  ...BwbbwB...
+  ...BwbbwB...
+  ..BwwbbwwB..
+  ..BwwbbwwB..
+  ..BwwbbwwB..
+  .BwwwbbwwwB.
+  .BwwwbbwwwB.
+  .BwwwbbwwwB.
+  .BwwwbbwwwB.
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  ByyyybbyyyyB
+  ByyyybbyyyyB
+  yyyyybbyyyyy
+  yyyyybbyyyyy
+  yyyyybbyyyyy
+  wwwwwbbwwwww
+  wwwwwbbwwwww
+  wwwwwbbwwwww
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  BwwwwbbwwwwB
+  .BwwwbbwwwB.
+  .BwwwbbwwwB.
+  .BwwwbbwwwB.
+  ..BwwbbwwB..
+  ..BwwbbwwB..
+  ..BwwbbwwB..
+  ...BwbbwB...
+  ...BwbbwB...
+  ....BbbB....
+  .....BB.....
+  ............
+  ............
+  ............
+end
+
+== back rocket_pack
+name: Rocket Pack
+colors: m=B8BEC9 M=E6EAF0 r=D92E3A d=3A4150 L=5EF2FF Y=FFF36A O=FF9A2E R=FF4A2E
+part: at=0,-6.0,3.1 px=0.5 depth=3 rot=0,0,0 glow=L anim=bob
+  ..rrr......rrr..
+  ..rrr......rrr..
+  ..rrr......rrr..
+  .mMmmm....mMmmm.
+  .mMmmm....mMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmdLLdmMmmm.
+  .mMmmmdLLdmMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmddddmMmmm.
+  .mMmmmddddmMmmm.
+  .ddddd....ddddd.
+  rrdddd....ddddrr
+  rrdddd....ddddrr
+  rr............rr
+  rr............rr
+end
+part: at=0,-12.6,3.1 px=0.5 depth=1 rot=0,0,0 glow=YOR anim=flicker
+  ...YY.......YY..
+  ...YY.......YY..
+  ...OO.......OO..
+  ...OO.......OO..
+  ...OO.......OO..
+  ...RR.......RR..
+  ...RR.......RR..
+  ................
+end
+
+== back quiver
+name: Quiver
+colors: l=7A4A26 L=9A6236 d=3E2614 s=C9B28A f=F2F2F2 F=D9283A
+part: at=1.5,-4.5,2.85 px=0.5 depth=2 rot=0,0,-22 anim=bob
+  ..fff.....
+  ..ffFFF...
+  ..ffFFfff.
+  ...sFFfff.
+  ...s.sfff.
+  ...s.s.s..
+  ...s.s.s..
+  ...s.s.s..
+  ..lslsls..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..dddddd..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..dddddd..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+end
+
+== aura sakura
+name: Sakura Aura
+colors: p=FFB3D1 P=FF7FB0 y=FFE58A
+motion: fall
+count: 10
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: cherry
+sprite:
+  .p.
+  pyp
+  .p.
+end
+sprite:
+  ..p
+  .pP
+  pP.
+end
+sprite:
+  .pp
+  pPp
+  pp.
+end
+
+== aura snow
+name: Snow Aura
+colors: w=FFFFFF c=BFEAFF C=8FD8FF
+glow: C
+motion: fall
+count: 12
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: snow
+sprite:
+  w.w.w
+  .wcw.
+  wcCcw
+  .wcw.
+  w.w.w
+end
+sprite:
+  .w.
+  wcw
+  .w.
+end
+
+== aura autumn
+name: Autumn Aura
+colors: o=F07D1E r=D2381F R=A8221A y=F5C036 b=6B3A1E
+motion: fall
+count: 9
+px: 0.7
+spin: 1.0
+size: 1.0
+sprite:
+  ..o.
+  .ooo
+  oooo
+  .rr.
+  ..b.
+end
+sprite:
+  ..y
+  .yo
+  yo.
+  b..
+end
+sprite:
+  .r.
+  rRr
+  .b.
+end
+
+== aura butterfly
+name: Butterfly Aura
+colors: c=45E0C8 C=C9FFF5 p=FF6FA8 P=FFD0E3 k=1D1D24 K=3A3A44
+motion: flutter
+count: 6
+px: 0.7
+spin: 1.0
+size: 1.0
+sprite:
+  cc...cc
+  cCc.cCc
+  ccckccc
+  .ccKcc.
+  .cc.cc.
+end
+sprite:
+  pp...pp
+  pPp.pPp
+  pppkppp
+  .ppKpp.
+  .pp.pp.
+end
+
+== aura flame
+name: Flame Aura
+colors: Y=FFF6A0 y=FFD23A o=FF8A1F r=E8401C
+glow: Yyor
+motion: rise
+count: 10
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: flames
+sprite:
+  .Y.
+  YyY
+  yoy
+  oro
+  .r.
+end
+sprite:
+  Y.
+  yY
+  oy
+  ro
+end
+
+== aura soul
+name: Soul Aura
+colors: W=E8FFFF c=7FF3FF b=2BC4E8 B=1A7FAF
+glow: WcbB
+motion: rise
+count: 10
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: soul_flames
+sprite:
+  .W.
+  WcW
+  cbc
+  bBb
+  .B.
+end
+sprite:
+  W.
+  cW
+  bc
+  Bb
+end
+
+== aura yin_yang
+name: Yin-Yang Aura
+colors: w=F6F6F6 k=18181E
+motion: twin
+count: 2
+px: 0.7
+spin: 0
+size: 1.0
+sprite:
+  ....wwwww...
+  ..ww.....ww.
+  .w.........w
+  w...........
+end
+sprite:
+  ....kkkkk...
+  ..kk.....kk.
+  .k.........k
+  k...........
+end
+
+== aura neon_rings
+name: Neon Rings
+colors: p=C06BFF
+glow: p
+motion: rings
+count: 3
+px: 1.6
+spin: 0
+size: 1.0
+legacy: magic
+sprite:
+  .pppppp.
+  p......p
+  p......p
+  p......p
+  p......p
+  .pppppp.
+end
+
+== aura hearts
+name: Heart Aura
+colors: r=F2385F R=FFB0C2
+motion: orbit
+count: 6
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: hearts
+sprite:
+  .r.r.
+  rRrrr
+  rrrrr
+  .rrr.
+  ..r..
+end
+
+== aura stars
+name: Star Aura
+colors: y=FFC93A Y=FFE58A W=FFFFFF
+glow: yYW
+motion: twinkle
+count: 9
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: sparkles,totem,glow
+sprite:
+  ..y..
+  .yYy.
+  yYWYy
+  .yYy.
+  ..y..
+end
+sprite:
+  .y.
+  yWy
+  .y.
+end
+
+== aura music
+name: Music Aura
+colors: k=B26BFF K=E2C6FF
+glow: kK
+motion: orbit
+count: 5
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: notes
+sprite:
+  ..kk
+  ..kK
+  ..k.
+  ..k.
+  kkk.
+  kk..
+end
+sprite:
+  .kkkk
+  .k..k
+  .k..k
+  kk.kk
+  kk.kk
+end
+
+== aura lightning
+name: Lightning Aura
+colors: y=FFF36A
+glow: y
+motion: flicker
+count: 5
+px: 0.6
+spin: 1.0
+size: 1.0
+legacy: electric
+sprite:
+  ..yy
+  .yy.
+  yyyy
+  .yy.
+  yy..
+  y...
+end
+
+== aura bubbles
+name: Bubble Aura
+colors: b=7FD4FF c=CDEFFF W=FFFFFF
+motion: rise
+count: 10
+px: 0.7
+spin: 0
+size: 1.0
+sprite:
+  .bb.
+  bWcb
+  bccb
+  .bb.
+end
+sprite:
+  .b.
+  bWb
+  .b.
+end
+
+== aura emerald
+name: Emerald Aura
+colors: g=2FD06A G=8BFFB4 W=FFFFFF
+glow: gGW
+motion: orbit
+count: 7
+px: 0.7
+spin: 1.0
+size: 1.0
+legacy: emerald,enchant
+sprite:
+  .g.
+  gGg
+  .g.
+end
+sprite:
+  ..g..
+  .gGg.
+  gGWGg
+  .gGg.
+  ..g..
+end
+
+== shield obsidian
+name: Obsidian Shield
+
+== shield ender
+name: Ender Shield
+
+== shield nether_portal
+name: Portal Shield
+
+== shield frost
+name: Frost Shield
+
+== shield sunflower
+name: Sunflower Shield
+
+== shield sakura
+name: Sakura Shield
+
+== shield vortex
+name: Vortex Shield
+
+== shield lava
+name: Lava Shield
+
+== shield prism
+name: Prism Shield
+
+== shield royal
+name: Royal Shield

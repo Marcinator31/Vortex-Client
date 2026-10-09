@@ -96,6 +96,55 @@ public final class Netz {
     }
 
     // ------------------------------------------------------------------
+    // Pixel-Formen (Bandanas, Brillen, Rucksaecke, Auren -- seit 4.29)
+    // ------------------------------------------------------------------
+
+    private static final float[] NX = { 1, 0, 0 }, NXM = { -1, 0, 0 }, NY = { 0, 1, 0 }, NYM = { 0, -1, 0 }, NZ = { 0, 0, 1 }, NZM = { 0, 0, -1 };
+
+    /** Achsenparalleler Quader; 'seiten' = Bitmaske, welche Flaechen (x+,x-,y+,y-,z+,z-; 0x3F = alle). */
+    public void quader(float x0, float y0, float z0, float x1, float y1, float z1, int farbe, int seiten) {
+        if ((seiten & 1) != 0) viereck(new float[]{ x1, y0, z0 }, new float[]{ x1, y1, z0 }, new float[]{ x1, y1, z1 }, new float[]{ x1, y0, z1 }, NX, NX, NX, NX, farbe, farbe, farbe, farbe);
+        if ((seiten & 2) != 0) viereck(new float[]{ x0, y0, z0 }, new float[]{ x0, y0, z1 }, new float[]{ x0, y1, z1 }, new float[]{ x0, y1, z0 }, NXM, NXM, NXM, NXM, farbe, farbe, farbe, farbe);
+        if ((seiten & 4) != 0) viereck(new float[]{ x0, y1, z0 }, new float[]{ x0, y1, z1 }, new float[]{ x1, y1, z1 }, new float[]{ x1, y1, z0 }, NY, NY, NY, NY, farbe, farbe, farbe, farbe);
+        if ((seiten & 8) != 0) viereck(new float[]{ x0, y0, z0 }, new float[]{ x1, y0, z0 }, new float[]{ x1, y0, z1 }, new float[]{ x0, y0, z1 }, NYM, NYM, NYM, NYM, farbe, farbe, farbe, farbe);
+        if ((seiten & 16) != 0) viereck(new float[]{ x0, y0, z1 }, new float[]{ x1, y0, z1 }, new float[]{ x1, y1, z1 }, new float[]{ x0, y1, z1 }, NZ, NZ, NZ, NZ, farbe, farbe, farbe, farbe);
+        if ((seiten & 32) != 0) viereck(new float[]{ x0, y0, z0 }, new float[]{ x0, y1, z0 }, new float[]{ x1, y1, z0 }, new float[]{ x1, y0, z0 }, NZM, NZM, NZM, NZM, farbe, farbe, farbe, farbe);
+    }
+
+    /**
+     * Pixelbild als flaches 3D-Teil (wie Minecraft-Items in der Hand):
+     * c[y][x] = ARGB (Alpha 0 = leer), Zeile 0 oben. Die Mitte des Bilds liegt
+     * im Ursprung, ein Bildpixel ist 1 gross, 'tiefe' in Bildpixeln entlang z.
+     * Seitenflaechen nur, wo der Nachbar leer ist; leuchtende Pixel (glow)
+     * bekommen Leuchten 1.
+     */
+    public void pixelbild(int[][] c, boolean[][] glow, float tiefe) {
+        int h = c.length, w = 0;
+        for (int[] r : c) w = Math.max(w, r.length);
+        float ox = w / 2f, oy = h / 2f, z0 = -tiefe / 2f, z1 = tiefe / 2f;
+        float alt = leuchten;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < c[y].length; x++) {
+                int f = c[y][x];
+                if ((f >>> 24) == 0) continue;
+                leuchten = glow != null && glow[y][x] ? 1f : alt;
+                int seiten = 16 | 32;
+                if (leer(c, x + 1, y)) seiten |= 1;
+                if (leer(c, x - 1, y)) seiten |= 2;
+                if (leer(c, x, y - 1)) seiten |= 4;
+                if (leer(c, x, y + 1)) seiten |= 8;
+                float px0 = x - ox, py1 = oy - y;
+                quader(px0, py1 - 1, z0, px0 + 1, py1, z1, f, seiten);
+            }
+        }
+        leuchten = alt;
+    }
+
+    private static boolean leer(int[][] c, int x, int y) {
+        return y < 0 || y >= c.length || x < 0 || x >= c[y].length || (c[y][x] >>> 24) == 0;
+    }
+
+    // ------------------------------------------------------------------
     // Formen
     // ------------------------------------------------------------------
 

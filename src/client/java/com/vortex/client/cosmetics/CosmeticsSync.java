@@ -105,8 +105,9 @@ public final class CosmeticsSync {
                 JsonElement e = spieler == null ? null : spieler.get(u.toString().replace("-", ""));
                 if (e == null || !e.isJsonObject()) { Cosmetics.setzeFremde(u, null); BILD.remove(u); continue; }
                 JsonObject o = e.getAsJsonObject();
-                Cosmetics.setzeFremde(u, new Cosmetics.Auswahl(text(o, "cape"), text(o, "hat"), text(o, "particles"),
-                        o.has("density") ? o.get("density").getAsInt() : 2));
+                Cosmetics.setzeFremde(u, new Cosmetics.Auswahl(text(o, "cape"), text(o, "hat"), Zubehoer.auraFuer(text(o, "particles")),
+                        o.has("density") ? o.get("density").getAsInt() : 2,
+                        text(o, "bandana"), text(o, "face"), text(o, "back"), text(o, "shield")));
                 if (o.has("image") && o.get("image").isJsonPrimitive()) BILD.put(u, o.get("image").getAsString());
                 else BILD.remove(u);
             }
@@ -134,7 +135,8 @@ public final class CosmeticsSync {
                         hochgeladenesBild = hash;
                     }
                 }
-                Social.request("cosmetics.set", Social.args("cape", a.cape(), "hat", a.hut(), "particles", a.partikel(), "density", a.dichte()))
+                Social.request("cosmetics.set", Social.args("cape", a.cape(), "hat", a.hut(), "particles", a.partikel(), "density", a.dichte(),
+                        "bandana", a.bandana(), "face", a.gesicht(), "back", a.ruecken(), "shield", a.schild()))
                         .get(20, TimeUnit.SECONDS);
             } catch (Throwable e) {
                 pruefeFehler(e.getCause() != null ? e.getCause() : e);
