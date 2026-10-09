@@ -311,6 +311,8 @@ public class CosmeticsScreen extends Screen {
             Glatt.rund(g, kx, ky, kw, kh, 8, hov ? KARTE_HOV : KARTE);
             int bx = kx + (kw - bild) / 2, by = ky + 6;
             Zubehoer.Design d = Zubehoer.get(kat, k.id());
+            // heller Grund, damit dunkle Teile (schwarze Brillen, Masken) sichtbar sind
+            if (d != null) Glatt.rund(g, bx - 3, by - 3, bild + 6, bild + 6, 6, hov ? 0xFF56506E : 0xFF48435E);
             if (d == null) {
                 Glatt.symbol(g, Symbole.Symbol.KREUZ, bx + bild / 2f - 8, by + bild / 2f - 8, 16, DIM);
             } else if (kat == Zubehoer.Kategorie.SHIELD) {
@@ -336,9 +338,10 @@ public class CosmeticsScreen extends Screen {
     private static int[][] vorschauBild(Zubehoer.Design d) {
         if (d.ring() != null && d.teile().isEmpty()) {
             int[][] r = d.ring().farben();
+            // vordere Seite (ein Viertel der Spalten), Zeilen doppelt, damit das Band nicht zu duenn wirkt
             int[][] o = new int[r.length * 2][];
             for (int y = 0; y < r.length; y++) {
-                o[y * 2] = java.util.Arrays.copyOfRange(r[y], 0, Math.min(16, r[y].length));
+                o[y * 2] = java.util.Arrays.copyOfRange(r[y], 0, Math.max(1, r[y].length / 4));
                 o[y * 2 + 1] = o[y * 2];
             }
             return o;

@@ -51,6 +51,8 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
                 getParentModel().body.translateAndRotate(pose);
                 pose.scale(1 / 16f, -1 / 16f, 1 / 16f);
                 float wippen = (float) Math.sin(state.walkAnimationPos * 0.6662f * 2) * Math.min(1f, state.walkAnimationSpeed) * 0.35f;
+                // Mit Cape: hinter das Cape, sonst verschwindet das Teil darunter
+                if (!a.cape().isEmpty() || state.showCape) pose.translate(0, 0, 1.25f);
                 for (Zubehoer.Teil teil : back.teile()) teil(pose, collector, licht, teil, t, wippen);
                 pose.popPose();
             }
@@ -84,14 +86,14 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
         float mitte = r.y0() + r.farben().length * r.px() / 2f;
         Netz knoten = KNOTEN.computeIfAbsent(r, k -> {
             Netz n = new Netz();
-            n.quader(-0.9f, -0.8f, 0, 0.9f, 0.8f, 0.9f, r.knoten(), 0x3F);
+            n.quader(-0.7f, -0.6f, 0, 0.7f, 0.6f, 0.6f, r.knoten(), 0x3F);
             return n;
         });
         Netz band = BAND.computeIfAbsent(r, k -> {
             Netz n = new Netz();
-            for (int i = 0; i < 4; i++) {
-                int f = r.baender()[i % r.baender().length];
-                n.quader(-0.5f, -(i + 1) * 1.0f, 0, 0.5f, -i * 1.0f, 0.4f, f, 0x3F);
+            for (int i = 0; i < 6; i++) {
+                int f = r.baender()[(i / 2) % r.baender().length];
+                n.quader(-0.35f, -(i + 1) * 0.6f, 0, 0.35f, -i * 0.6f, 0.25f, f, 0x3F);
             }
             return n;
         });
@@ -100,7 +102,7 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
         zeichne(pose, c, knoten, licht, t);
         for (int s = -1; s <= 1; s += 2) {
             pose.pushPose();
-            pose.translate(s * 0.45f, -0.3f, 0.5f);
+            pose.translate(s * 0.35f, -0.2f, 0.35f);
             float wehen = (float) Math.sin(t * 0.12f + s) * 9f + 14f;
             pose.mulPose(Axis.XP.rotationDegrees(wehen));
             pose.mulPose(Axis.ZP.rotationDegrees(s * 16f));
@@ -205,7 +207,8 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
                     float ph = ((t / 70f) + i / (float) n) % 1f;
                     x = 0; z = 0;
                     y = -25 + ph * 34;
-                    drehX = 90;
+                    drehX = 72;
+                    drehY = t * 1.5f + i * 40;
                     groesse = rampe(ph) * (0.8f + 0.25f * (float) Math.sin(ph * 3.1416f));
                 }
                 case "twinkle", "flicker" -> {
@@ -220,7 +223,7 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
                     y = -22 + q3 * 30;
                     drehY = -w * 57.3f + 90;
                     if (au.bewegung().equals("flicker")) {
-                        groesse = ph < 0.35f ? 1f : 0f;
+                        groesse = ph < 0.55f ? 1f : 0f;
                         drehZ = (q1 - 0.5f) * 40;
                     } else {
                         groesse = (float) Math.sin(ph * 3.1416f);

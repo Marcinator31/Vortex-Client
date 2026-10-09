@@ -300,17 +300,24 @@ public class CosmeticGameTest implements FabricClientGameTest {
         for (var d : com.vortex.client.cosmetics.Zubehoer.von(com.vortex.client.cosmetics.Zubehoer.Kategorie.FACE)) {
             setze.accept(d.id(), a -> a.mitGesicht(d.id()));
             ansicht(ctx, "face-" + d.id() + "-front", CameraType.THIRD_PERSON_FRONT, 0);
-            ansicht(ctx, "face-" + d.id() + "-side", CameraType.THIRD_PERSON_FRONT, 55);
+            vorschau(ctx, "face-" + d.id() + "-side", 3, 90f);
         }
         for (var d : com.vortex.client.cosmetics.Zubehoer.von(com.vortex.client.cosmetics.Zubehoer.Kategorie.BANDANA)) {
             setze.accept(d.id(), a -> a.mitBandana(d.id()));
             ansicht(ctx, "bandana-" + d.id() + "-front", CameraType.THIRD_PERSON_FRONT, 25);
             ansicht(ctx, "bandana-" + d.id() + "-back", CameraType.THIRD_PERSON_BACK, 20);
+            vorschau(ctx, "bandana-" + d.id() + "-side", 2, 90f);
         }
         for (var d : com.vortex.client.cosmetics.Zubehoer.von(com.vortex.client.cosmetics.Zubehoer.Kategorie.BACK)) {
-            setze.accept(d.id(), a -> a.mitRuecken(d.id()).mitCape("anim_vortex"));
+            setze.accept(d.id(), a -> a.mitRuecken(d.id()));
             ansicht(ctx, "back-" + d.id() + "-back", CameraType.THIRD_PERSON_BACK, 0);
-            ansicht(ctx, "back-" + d.id() + "-side", CameraType.THIRD_PERSON_BACK, 60);
+            vorschau(ctx, "back-" + d.id() + "-side", 4, 90f);
+        }
+        // Back-Item mit Cape: das Teil sitzt hinter dem Cape
+        for (String id : new String[] { "teddy_backpack", "greatsword" }) {
+            setze.accept(id, a -> a.mitRuecken(id).mitCape("anim_vortex"));
+            ansicht(ctx, "back-" + id + "-cape", CameraType.THIRD_PERSON_BACK, 0);
+            vorschau(ctx, "back-" + id + "-cape-side", 4, 90f);
         }
         for (var d : com.vortex.client.cosmetics.Zubehoer.von(com.vortex.client.cosmetics.Zubehoer.Kategorie.AURA)) {
             setze.accept(d.id(), a -> a.mitAura(d.id()));
@@ -321,11 +328,25 @@ public class CosmeticGameTest implements FabricClientGameTest {
         srv.runCommand("item replace entity @a weapon.offhand with minecraft:shield");
         for (var d : com.vortex.client.cosmetics.Zubehoer.von(com.vortex.client.cosmetics.Zubehoer.Kategorie.SHIELD)) {
             setze.accept(d.id(), a -> a.mitSchild(d.id()));
-            ansicht(ctx, "shield-" + d.id() + "-front", CameraType.THIRD_PERSON_FRONT, -35);
-            ctx.runOnClient(mc -> { mc.options.setCameraType(CameraType.FIRST_PERSON); mc.player.setYRot(0); });
-            ctx.waitTicks(6);
-            ctx.takeScreenshot("shield-" + d.id() + "-firstperson");
+            // Blocken: der Schild zeigt mit der Vorderseite nach vorne
+            ctx.getInput().holdKey(o -> o.keyUse);
+            ansicht(ctx, "shield-" + d.id() + "-block", CameraType.THIRD_PERSON_FRONT, 0);
+            ctx.getInput().releaseKey(o -> o.keyUse);
+            ctx.waitTicks(4);
+            ansicht(ctx, "shield-" + d.id() + "-hold", CameraType.THIRD_PERSON_FRONT, 0);
+            vorschau(ctx, "shield-" + d.id() + "-back", 6, 200f);
         }
+        // Ich-Perspektive (Hand nur mit sichtbarem HUD)
+        ctx.runOnClient(mc -> { if (mc.gui.hud.isHidden()) mc.gui.hud.toggle(); mc.options.fov().set(70); });
+        for (String id : new String[] { "vortex", "sakura" }) {
+            setze.accept(id, a -> a.mitSchild(id));
+            ansicht(ctx, "shield-" + id + "-firstperson", CameraType.FIRST_PERSON, 0);
+            ctx.getInput().holdKey(o -> o.keyUse);
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("shield-" + id + "-firstperson-block");
+            ctx.getInput().releaseKey(o -> o.keyUse);
+        }
+        ctx.runOnClient(mc -> { if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle(); mc.options.fov().set(30); });
         // Alles zusammen, auch nachts
         setze.accept("combo", a -> a.mitBandana("lightning").mitGesicht("pixel_shades").mitRuecken("teddy_backpack").mitAura("sakura").mitSchild("vortex").mitCape("anim_vortex"));
         ansicht(ctx, "combo-front", CameraType.THIRD_PERSON_FRONT, 25);
@@ -344,6 +365,15 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("menu-tab-" + i);
         }
         ctx.runOnClient(mc -> mc.gui.setScreen(null));
+    }
+
+    /** Menue-Vorschau mit Reiter und Drehwinkel (die Kamera im Spiel folgt der Blickrichtung, Seiten gehen nur hier). */
+    private static void vorschau(ClientGameTestContext ctx, String name, int reiter, float grad) {
+        ctx.runOnClient(mc -> { var s = new CosmeticsScreen(null); mc.gui.setScreen(s); s.zeigeReiter(reiter); s.vorschauDrehen(grad, 0f); });
+        ctx.waitTicks(10);
+        ctx.takeScreenshot(name);
+        ctx.runOnClient(mc -> mc.gui.setScreen(null));
+        ctx.waitTicks(2);
     }
 
     private static void ansicht(ClientGameTestContext ctx, String name, CameraType cam, float yaw) {

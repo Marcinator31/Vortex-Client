@@ -32,12 +32,17 @@ public abstract class SchildSkinMixin {
         }
     }
 
+    //#if 26
     @Inject(method = "submit(Lnet/minecraft/core/component/DataComponentMap;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;IIZI)V", at = @At("HEAD"), cancellable = true)
     private void vortex$zeichnen(DataComponentMap daten, PoseStack pose, SubmitNodeCollector c, int licht, int overlay, boolean glanz, int umriss, CallbackInfo ci) {
+    //#else
+    //$ @Inject(method = "submit(Lnet/minecraft/core/component/DataComponentMap;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;IIZI)V", at = @At("HEAD"), cancellable = true)
+    //$ private void vortex$zeichnen(DataComponentMap daten, net.minecraft.world.item.ItemDisplayContext kontext, PoseStack pose, SubmitNodeCollector c, int licht, int overlay, boolean glanz, int umriss, CallbackInfo ci) {
+    //#endif
         try {
             Identifier tex = SchildSkins.textur(daten);
             if (tex == null) return;
-            c.submitModel(this.model, Unit.INSTANCE, pose, tex, licht, overlay, umriss, null);
+            c.submitModel(this.model, Unit.INSTANCE, pose, this.model.renderType(tex), licht, overlay, umriss, null);
             ci.cancel();
         } catch (Throwable t) {
             com.vortex.client.core.Errors.report("SchildSkin.zeichnen", t);

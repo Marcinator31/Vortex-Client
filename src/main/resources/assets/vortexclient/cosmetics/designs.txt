@@ -158,94 +158,105 @@ part: at=2.6,8.4,-1.5 px=0.5 depth=2 rot=0,-20,18
 end
 
 == bandana lightning
-name: Lightning Bandana
+name: Lightning
 colors: k=17171E w=F2F6FF
-ring: y0=4.2 px=1 knot=k tails=kw
-  wkkkwkwkkkwkwkkkwkwkkkwkwkkkwkwk
-  kwkwkwkwkwkwkwkwkwkwkwkwkwkwkwkw
-  kkwkkkkkwkkkkkwkkkkkwkkkkkwkkkkk
+ring: y0=5.0 px=0.5 knot=k tails=kw
+  wkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwk
+  kwkkkwwwkwkkkwwwkwkkkwwwkwkkkwwwkwkkkwwwkwkkkwwwkwkkkwwwkwkkkwww
+  kkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkkkkwkwkkk
+  kkkwkkkkkkkwkkkkkkkwkkkkkkkwkkkkkkkwkkkkkkkwkkkkkkkwkkkkkkkwkkkk
 end
 
 == bandana flame
-name: Flame Bandana
-colors: r=7A0F12 o=F05A16 y=FFC23A
-ring: y0=4.2 px=1 knot=r tails=ro
-  rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
-  rroroorrrroroorrrroroorrrroroorr
-  royoyyorroyoyyorroyoyyorroyoyyor
+name: Flame
+colors: r=6E0D10 o=F05A16 y=FFC23A
+ring: y0=5.0 px=0.5 knot=r tails=ro
+  rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+  rrrorrroorrrrrrorrroorrrrrrorrroorrrrrrorrroorrrrrrorrroorrrrrro
+  rroooroooorrrroooroooorrrroooroooorrrroooroooorrrroooroooorrrroo
+  rooyoooyyoorrooyoooyyoorrooyoooyyoorrooyoooyyoorrooyoooyyoorrooy
 end
 
 == bandana rainbow
-name: Rainbow Bandana
+name: Rainbow
 colors: r=E8434B o=F59A2C y=F7D43C g=4CC25B b=3D8BE6 v=8E5BE3
-ring: y0=4.2 px=1 knot=r tails=rb
-  rrooyyggbbvvrrooyyggbbvvrrooyygg
-  ooyyggbbvvrrooyyggbbvvrrooyyggbb
-  yyggbbvvrrooyyggbbvvrrooyyggbbvv
+ring: y0=5.0 px=0.5 knot=r tails=rb
+  rrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrroo
+  rooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooy
+  ooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyy
+  oyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyggbbvvrrooyyg
 end
 
 == bandana camo
-name: Camo Bandana
+name: Camo
 colors: g=4B5E2E d=2F3B1E b=7A6A45
-ring: y0=4.2 px=1 knot=g tails=gd
-  bbdddggggbbbggbbddgggggddggdddbb
-  ddbgggddbbbbbbbbbddddddggddgggdd
-  bbddggggdddddddbbbggggbbbgggdddb
+ring: y0=5.0 px=0.5 knot=g tails=gd
+  gbbbbggggggggggggggggggggggggggggggggggggbbbbbgggggggggggggggggg
+  ggggggggggggbbbggggggggggggggbbbbbbbbggggbbbbddbbgggggggggbbbbgg
+  ggbbbbbbggbbbbbggggggggggggggbbbbbbbbggggbbbbbbbbgggggggggbbbbgg
+  gbbbbbbgggggbbgggggggggggggggbbggbbbbggggbbbbbbbbggggggggggggggg
 end
 
 == bandana galaxy
-name: Galaxy Bandana
-colors: n=1A1446 p=4A2A8C S=FFFFFF
-ring: y0=4.2 px=1 knot=n tails=np
-  pppnSnnSppSnnnpppSnnnpppSnnnpSpn
-  nnnnpSpnSnnSpSnnnSSpSSnnnppSnnnn
-  SpppnnnSpppnSnnppSnnnnpppSnnnppp
+name: Galaxy
+colors: n=140F38 m=2B1C66 p=6A3FC4 S=FFFFFF
+glow: S
+ring: y0=5.0 px=0.5 knot=n tails=nm
+  ppppppSppmmnnnnnSnnnnmmSnnnnnnnnnnnnnmmmppppmmmmnSnmmmppppppppmm
+  mmmmmmmmnnnnnnnnnnnnnSmmmmmnnnnnnnSmmSpppppppmmmnnnnnnSmmmmmmnnn
+  nnnnnnnnnnSnnnnnnnmmpppppppmmmmmmmmmmppppppmmnnnnnnnnnnnnnmSnnnn
+  nnmmmSmmmmmnnnnnmmpppSpppppmSnnnnnnnnnmmmmnSnnnnnnnnnnnnmmmppmmm
 end
 
 == bandana vortex
-name: Vortex Bandana
+name: Vortex
 colors: v=7C3AED b=3B5BDB w=D3A6FF
-ring: y0=4.2 px=1 knot=v tails=vb
-  vvwvvvwvbbwbbbwbvvwvvvwvbbwbbbwb
-  vvvwvwvvbbbwbwbbvvvwvwvvbbbwbwbb
-  vvvvwvvvbbbbwbbbvvvvwvvvbbbbwbbb
+ring: y0=5.0 px=0.5 knot=v tails=vb
+  vwvvvvvwvwvvvvvwbwbbbbbwbwbbbbbwvwvvvvvwvwvvvvvwbwbbbbbwbwbbbbbw
+  vvwvvvwvvvwvvvwvbbwbbbwbbbwbbbwbvvwvvvwvvvwvvvwvbbwbbbwbbbwbbbwb
+  vvvwvwvvvvvwvwvvbbbwbwbbbbbwbwbbvvvwvwvvvvvwvwvvbbbwbwbbbbbwbwbb
+  vvvvwvvvvvvvwvvvbbbbwbbbbbbbwbbbvvvvwvvvvvvvwvvvbbbbwbbbbbbbwbbb
 end
 
 == bandana racing
-name: Racing Bandana
+name: Racing
 colors: k=141418 w=F4F4F4
-ring: y0=4.2 px=1 knot=k tails=kw
-  wkwkwkwkwkwkwkwkwkwkwkwkwkwkwkwk
-  kwkwkwkwkwkwkwkwkwkwkwkwkwkwkwkw
-  wkwkwkwkwkwkwkwkwkwkwkwkwkwkwkwk
+ring: y0=5.0 px=0.5 knot=k tails=kw
+  wwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkk
+  wwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkk
+  kkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkww
+  kkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkwwkkww
 end
 
 == bandana sakura
-name: Sakura Bandana
-colors: l=FFE3EE p=FF8FBF P=E8417E
-ring: y0=4.2 px=1 knot=l tails=lp
-  llplllPlllplllPlllplllPlllplllPl
-  lpPplllllpPplllllpPplllllpPpllll
-  llplllPlllplllPlllplllPlllplllPl
+name: Sakura
+colors: l=FFE3EE p=FF7FB0 Y=FFD94A
+ring: y0=5.0 px=0.5 knot=l tails=lp
+  llllplllllllllllllllllllplllllllllllllllllllplllllllllllllllllll
+  lllpYpllllllllpllllllllpYpllllllllpllllllllpYpllllllllpllllllllp
+  llllpllllllllpYpllllllllpllllllllpYpllllllllpllllllllpYpllllllll
+  llllllllllllllplllllllllllllllllllplllllllllllllllllllplllllllll
 end
 
 == bandana ice
-name: Ice Bandana
+name: Ice
 colors: c=A8E6FF b=6CC6F0 w=FFFFFF
-ring: y0=4.2 px=1 knot=c tails=cb
-  wccbbbcccbbwcccbbbcccbwbcccbbbcc
-  bbwcccbbbcccbwbcccbbbcccwbbcccbb
-  cccbwbcccbbbcccwbbcccbbbccwbbbcc
+ring: y0=5.0 px=0.5 knot=c tails=cb
+  bbbcwccccbbbcwccccbbbcwccccbbbcwccccbbbcwccccbbbcwccccbbbcwccccb
+  cccwwwbbbcccwwwbbbcccwwwbbbcccwwwbbbcccwwwbbbcccwwwbbbcccwwwbbbc
+  cccwwwccccccwwwccccccwwwccccccwwwccccccwwwccccccwwwccccccwwwcccc
+  bbbcwccccbbbcwccccbbbcwccccbbbcwccccbbbcwccccbbbcwccccbbbcwccccb
 end
 
 == bandana toxic
-name: Toxic Bandana
+name: Toxic
 colors: k=162016 l=3E8F2A L=9BFF3A
 glow: L
-ring: y0=4.2 px=1 knot=k tails=kL
-  kklkkkklkkkklkkkklkkkklkkkklkkkk
-  kkLkkkkLkkkkLkkkkLkkkkLkkkkLkkkk
-  kkLkkkkLkkkkLkkkkLkkkkLkkkkLkkkk
+ring: y0=5.0 px=0.5 knot=k tails=kL
+  kkklkkkkkklkkkkkklkkkkkklkkkkkklkkkkkklkkkkkklkkkkkklkkkkkklkkkk
+  kkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkk
+  kkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkkkkLkkkk
+  kkLLLkkkkLLLkkkkLLLkkkkLLLkkkkLLLkkkkLLLkkkkLLLkkkkLLLkkkkLLLkkk
 end
 
 == back teddy_backpack
@@ -780,20 +791,22 @@ name: Yin-Yang Aura
 colors: w=F6F6F6 k=18181E
 motion: twin
 count: 2
-px: 0.7
+px: 0.8
 spin: 0
 size: 1.0
 sprite:
-  ....wwwww...
-  ..ww.....ww.
-  .w.........w
-  w...........
+  ....wwwwww....
+  ..wwwwwwwwww..
+  .www......www.
+  ww..........ww
+  w............w
 end
 sprite:
-  ....kkkkk...
-  ..kk.....kk.
-  .k.........k
-  k...........
+  ....kkkkkk....
+  ..kkkkkkkkkk..
+  .kkk......kkk.
+  kk..........kk
+  k............k
 end
 
 == aura neon_rings
@@ -889,7 +902,7 @@ motion: flicker
 count: 5
 px: 0.6
 spin: 1.0
-size: 1.0
+size: 1.2
 legacy: electric
 sprite:
   ..yy

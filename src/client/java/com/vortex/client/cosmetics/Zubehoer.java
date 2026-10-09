@@ -218,11 +218,11 @@ public final class Zubehoer {
     }
 
     /** Abstand des Bands vom Kopfmittelpunkt (ausserhalb der zweiten Hautschicht bei 4,5). */
-    public static final float BAND_AUSSEN = 4.6f, BAND_DICKE = 0.55f;
+    public static final float BAND_AUSSEN = 4.56f, BAND_DICKE = 0.34f;
 
     /**
      * Band rund um den Kopf (Kopf-Koordinaten: x/z -4..4, y 0..8 nach oben).
-     * 32 Spalten: vorne (z = -4), links (x = +4), hinten (z = +4), rechts (x = -4).
+     * Spalten (durch 4 teilbar) rundherum: vorne, rechts, hinten, links -- je ein Viertel.
      */
     public static synchronized Netz ringNetz(Ring r) {
         return NETZE.computeIfAbsent(r, k -> {
@@ -231,12 +231,13 @@ public final class Zubehoer {
             int zeilen = r.farben().length;
             for (int y = 0; y < zeilen; y++) {
                 float y1 = r.y0() + (zeilen - y) * r.px(), y0 = y1 - r.px();
-                for (int s = 0; s < 32; s++) {
+                int spalten = Math.max(4, r.farben()[y].length / 4 * 4), jeSeite = spalten / 4;
+                for (int s = 0; s < spalten; s++) {
                     int f = s < r.farben()[y].length ? r.farben()[y][s] : 0;
                     if ((f >>> 24) == 0) continue;
                     n.leuchten(r.glow()[y].length > s && r.glow()[y][s] ? 1f : 0f);
-                    int seite = s / 8, j = s % 8;
-                    float br = 2 * a / 8f, v0 = -a + j * br, v1 = v0 + br;
+                    int seite = s / jeSeite, j = s % jeSeite;
+                    float br = 2 * a / jeSeite, v0 = -a + j * br, v1 = v0 + br;
                     // Umlauf: vorne x +a..-a, rechts z -a..+a, hinten x -a..+a, links z +a..-a
                     switch (seite) {
                         case 0 -> n.quader(-v1, y0, -a - d, -v0, y1, -a, f, 0x3F);
@@ -244,7 +245,7 @@ public final class Zubehoer {
                         case 2 -> n.quader(v0, y0, a, v1, y1, a + d, f, 0x3F);
                         default -> n.quader(a, y0, -v1, a + d, y1, -v0, f, 0x3F);
                     }
-                    if (j == 7) {
+                    if (j == jeSeite - 1) {
                         switch (seite) {
                             case 0 -> n.quader(-a - d, y0, -a - d, -a, y1, -a, f, 0x3F);
                             case 1 -> n.quader(-a - d, y0, a, -a, y1, a + d, f, 0x3F);

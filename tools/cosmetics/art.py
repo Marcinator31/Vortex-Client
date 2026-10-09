@@ -213,66 +213,74 @@ def face():
 # ======================================================================
 # BANDANAS -- Band (32 Spalten rund um den Kopf: vorne 8 | links 8 | hinten 8 | rechts 8)
 # ======================================================================
-def bandana(id_, name, colors, rows, tails):
-    design('bandana', id_, name, colors=colors, ring=dict(rows=rows, y0=4.2, px=1, knot=tails[0], tails=tails))
+def bandana(id_, name, colors, rows, tails, glow=''):
+    design('bandana', id_, name, colors=colors, ring=dict(rows=rows, y0=5.0, px=0.5, knot=tails[0], tails=tails), glow=glow)
 
-def band(fn, n=3):
-    return [''.join(fn(x, y) for x in range(32)) for y in range(n)]
+N = 64   # Spalten rund um den Kopf (je Seite 16, ein halber Pixel breit)
+
+def band(fn, n=4):
+    return [''.join(fn(x, y) for x in range(N)) for y in range(n)]
 
 def bandanas():
-    # Lightning: weisser Zickzack auf schwarz
+    # Lightning: weisser Zickzack-Blitz auf schwarz
     def blitz(x, y):
-        k = x % 6
-        z = [0, 1, 2, 1, 0, 1][k]
-        return 'w' if y == z else 'k'
-    bandana('lightning', 'Lightning Bandana', {'k': '17171E', 'w': 'F2F6FF'}, band(blitz), 'kw')
-    # Flame
-    def flamme(x, y):
-        h = [0, 1, 2, 1, 2, 2, 1, 0][x % 8]
-        if y >= 3 - h: return 'y' if y == 2 and h == 2 else 'o'
-        return 'r'
-    bandana('flame', 'Flame Bandana', {'r': '7A0F12', 'o': 'F05A16', 'y': 'FFC23A'}, band(flamme), 'ro')
-    # Rainbow
-    bandana('rainbow', 'Rainbow Bandana', {'r': 'E8434B', 'o': 'F59A2C', 'y': 'F7D43C', 'g': '4CC25B', 'b': '3D8BE6', 'v': '8E5BE3'},
-            band(lambda x, y: 'roygbv'[(x // 2 + y) % 6]), 'rb')
-    # Camo
-    rnd = random.Random(4)
-    cam = [[rnd.choice('ggddb') for _ in range(32)] for _ in range(3)]
-    for _ in range(3):
-        cam = [[max(set([cam[y][x], cam[y][(x + 1) % 32], cam[y][x - 1]]), key=[cam[y][x], cam[y][(x + 1) % 32], cam[y][x - 1]].count) for x in range(32)] for y in range(3)]
-    bandana('camo', 'Camo Bandana', {'g': '4B5E2E', 'd': '2F3B1E', 'b': '7A6A45'}, [''.join(r) for r in cam], 'gd')
-    # Galaxy: dunkelblau-lila mit Sternen
-    rnd = random.Random(9)
-    def galaxy(x, y):
-        if rnd.random() < 0.13: return 'S'
-        return 'p' if (x + y * 3) % 7 < 3 else 'n'
-    bandana('galaxy', 'Galaxy Bandana', {'n': '1A1446', 'p': '4A2A8C', 'S': 'FFFFFF'}, band(galaxy), 'np')
-    # Vortex: Verlauf lila -> blau mit hellen V
-    def vortex(x, y):
-        if (x % 8 in (2, 6) and y == 0) or (x % 8 in (3, 5) and y == 1) or (x % 8 == 4 and y == 2): return 'w'
-        return 'v' if x % 16 < 8 else 'b'
-    bandana('vortex', 'Vortex Bandana', {'v': '7C3AED', 'b': '3B5BDB', 'w': 'D3A6FF'}, band(vortex), 'vb')
-    # Racing: Schachbrett
-    bandana('racing', 'Racing Bandana', {'k': '141418', 'w': 'F4F4F4'}, band(lambda x, y: 'k' if (x + y) % 2 else 'w'), 'kw')
-    # Sakura: hellrosa mit Blueten
-    def sakura(x, y):
         k = x % 8
-        if (k == 2 and y == 1) or (k == 6 and y in (0, 2)): return 'P'
-        if (k in (1, 3) and y == 1) or (k == 2 and y in (0, 2)): return 'p'
+        z = [0, 1, 2, 3, 2, 1, 0, 1][k]
+        return 'w' if y == z or (y == z + 1 and k in (3, 6)) else 'k'
+    bandana('lightning', 'Lightning', {'k': '17171E', 'w': 'F2F6FF'}, band(blitz), 'kw')
+    # Flame: rot mit Flammenzungen
+    def flamme(x, y):
+        h = [0, 1, 2, 3, 2, 1, 2, 3, 3, 2, 1, 0][x % 12]
+        if y >= 4 - h: return 'y' if y >= 4 - h + 2 else 'o'
+        return 'r'
+    bandana('flame', 'Flame', {'r': '6E0D10', 'o': 'F05A16', 'y': 'FFC23A'}, band(flamme), 'ro')
+    # Rainbow: schraege Streifen
+    bandana('rainbow', 'Rainbow', {'r': 'E8434B', 'o': 'F59A2C', 'y': 'F7D43C', 'g': '4CC25B', 'b': '3D8BE6', 'v': '8E5BE3'},
+            band(lambda x, y: 'roygbv'[((x + y) // 2) % 6]), 'rb')
+    # Camo: Flecken
+    rnd = random.Random(4)
+    cam = [[rnd.choice('ggdb') for _ in range(N)] for _ in range(4)]
+    for _ in range(4):
+        cam = [[max(set(w := [cam[y][x], cam[y][(x + 1) % N], cam[y][x - 1], cam[(y + 1) % 4][x]]), key=w.count) for x in range(N)] for y in range(4)]
+    bandana('camo', 'Camo', {'g': '4B5E2E', 'd': '2F3B1E', 'b': '7A6A45'}, [''.join(r) for r in cam], 'gd')
+    # Galaxy: dunkel mit Nebel und kleinen Sternen
+    rnd = random.Random(9)
+    sterne = {(rnd.randrange(N), rnd.randrange(4)) for _ in range(14)}
+    def galaxy(x, y):
+        if (x, y) in sterne: return 'S'
+        v = math.sin(x * 0.35) + math.cos(y * 1.3 + x * 0.12)
+        return 'p' if v > 0.9 else ('m' if v > 0 else 'n')
+    bandana('galaxy', 'Galaxy', {'n': '140F38', 'm': '2B1C66', 'p': '6A3FC4', 'S': 'FFFFFF'}, band(galaxy), 'nm', glow='S')
+    # Vortex: lila/blau mit hellem V-Muster
+    def vortex(x, y):
+        k = x % 8
+        if (k, y) in ((1, 0), (7, 0), (2, 1), (6, 1), (3, 2), (5, 2), (4, 3)): return 'w'
+        return 'v' if (x // 16) % 2 == 0 else 'b'
+    bandana('vortex', 'Vortex', {'v': '7C3AED', 'b': '3B5BDB', 'w': 'D3A6FF'}, band(vortex), 'vb')
+    # Racing: Schachbrett
+    bandana('racing', 'Racing', {'k': '141418', 'w': 'F4F4F4'}, band(lambda x, y: 'k' if (x // 2 + y // 2) % 2 else 'w'), 'kw')
+    # Sakura: hell mit kleinen Blueten
+    def sakura(x, y):
+        k, m = x % 10, (x // 10) % 2
+        cy = 1 if m == 0 else 2
+        if (k, y) == (4, cy): return 'Y'
+        if (k in (3, 5) and y == cy) or (k == 4 and y in (cy - 1, cy + 1)): return 'p'
         return 'l'
-    bandana('sakura', 'Sakura Bandana', {'l': 'FFE3EE', 'p': 'FF8FBF', 'P': 'E8417E'}, band(sakura), 'lp')
-    # Ice: hellblau mit Kristallen
+    bandana('sakura', 'Sakura', {'l': 'FFE3EE', 'p': 'FF7FB0', 'Y': 'FFD94A'}, band(sakura), 'lp')
+    # Ice: Eiskristalle
     def eis(x, y):
-        return 'w' if (x * 3 + y * 5) % 11 == 0 else ('b' if (x // 3 + y) % 2 else 'c')
-    bandana('ice', 'Ice Bandana', {'c': 'A8E6FF', 'b': '6CC6F0', 'w': 'FFFFFF'}, band(eis), 'cb')
-    # Toxic: dunkelgruen mit leuchtenden Tropfen
+        k = x % 9
+        if (k == 4 and y in (0, 1, 2, 3)) or (y in (1, 2) and k in (3, 5)): return 'w'
+        return 'b' if (x // 3 + y) % 3 == 0 else 'c'
+    bandana('ice', 'Ice', {'c': 'A8E6FF', 'b': '6CC6F0', 'w': 'FFFFFF'}, band(eis), 'cb')
+    # Toxic: dunkel mit leuchtenden Tropfen
     def toxic(x, y):
-        k = x % 5
-        if k == 2 and y >= 1: return 'L'
-        if k == 2 and y == 0: return 'l'
+        k = x % 7
+        if k == 3 and y >= 1: return 'L'
+        if k in (2, 4) and y == 3: return 'L'
+        if k == 3 and y == 0: return 'l'
         return 'k'
-    design('bandana', 'toxic', 'Toxic Bandana', colors={'k': '162016', 'l': '3E8F2A', 'L': '9BFF3A'},
-           ring=dict(rows=band(toxic), y0=4.2, px=1, knot='k', tails='kL'), glow='L')
+    bandana('toxic', 'Toxic', {'k': '162016', 'l': '3E8F2A', 'L': '9BFF3A'}, band(toxic), 'kL', glow='L')
 
 # ======================================================================
 # BACK -- von hinten gesehen; Ruecken bei z = +2, Koerper y 0..-12
@@ -445,9 +453,9 @@ def auras():
          [[".W.", "WcW", "cbc", "bBb", ".B."], ["W.", "cW", "bc", "Bb"]],
          {'W': 'E8FFFF', 'c': '7FF3FF', 'b': '2BC4E8', 'B': '1A7FAF'}, glow='WcbB', legacy='soul_flames')
     aura('yin_yang', 'Yin-Yang Aura', 'twin', 2,
-         [["....wwwww...", "..ww.....ww.", ".w.........w", "w..........."],
-          ["....kkkkk...", "..kk.....kk.", ".k.........k", "k..........."]],
-         {'w': 'F6F6F6', 'k': '18181E'}, px=0.7, spin=0)
+         [["....wwwwww....", "..wwwwwwwwww..", ".www......www.", "ww..........ww", "w............w"],
+          ["....kkkkkk....", "..kkkkkkkkkk..", ".kkk......kkk.", "kk..........kk", "k............k"]],
+         {'w': 'F6F6F6', 'k': '18181E'}, px=0.8, spin=0)
     aura('neon_rings', 'Neon Rings', 'rings', 3,
          [[".pppppp.", "p......p", "p......p", "p......p", "p......p", ".pppppp."]],
          {'p': 'C06BFF'}, px=1.6, glow='p', spin=0, legacy='magic')
@@ -462,7 +470,7 @@ def auras():
          {'k': 'B26BFF', 'K': 'E2C6FF'}, glow='kK', legacy='notes')
     aura('lightning', 'Lightning Aura', 'flicker', 5,
          [["..yy", ".yy.", "yyyy", ".yy.", "yy..", "y..."]],
-         {'y': 'FFF36A'}, glow='y', px=0.6, legacy='electric')
+         {'y': 'FFF36A'}, glow='y', px=0.6, legacy='electric', size=1.2)
     aura('bubbles', 'Bubble Aura', 'rise', 10,
          [[".bb.", "bWcb", "bccb", ".bb."], [".b.", "bWb", ".b."]],
          {'b': '7FD4FF', 'c': 'CDEFFF', 'W': 'FFFFFF'}, spin=0)
