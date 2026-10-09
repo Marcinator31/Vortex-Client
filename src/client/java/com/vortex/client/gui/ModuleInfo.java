@@ -31,7 +31,7 @@ public final class ModuleInfo {
         put("Session Stats", "Playtime, deaths, totems used and your best click rate.");
         put("HUD Color", "Sets one shared colour for every HUD element at once.");
         put("Hitboxes", "Draws the collision box around entities.");
-        put("Shield Status", "Shows whether an opponent's shield is raised.");
+        put("Shield Status", "Colors shields by state: green = blocking, yellow = raising, red = broken by an axe.");
         put("Toggle Sprint", "Keeps sprinting without holding the key.");
         put("Health Indicator", "Shows an opponent's health above their head.");
         put("Target Info", "Shows an opponent's gear and whether they are in attack range.");

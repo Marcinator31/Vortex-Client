@@ -312,6 +312,7 @@ public class CosmeticGameTest implements FabricClientGameTest {
             setze.accept(d.id(), a -> a.mitRuecken(d.id()));
             ansicht(ctx, "back-" + d.id() + "-back", CameraType.THIRD_PERSON_BACK, 0);
             vorschau(ctx, "back-" + d.id() + "-side", 4, 90f);
+            vorschau(ctx, "back-" + d.id() + "-angled", 4, 35f);
         }
         // Back-Item mit Cape: das Teil sitzt hinter dem Cape
         for (String id : new String[] { "teddy_backpack", "greatsword" }) {
@@ -335,6 +336,22 @@ public class CosmeticGameTest implements FabricClientGameTest {
             ctx.waitTicks(4);
             ansicht(ctx, "shield-" + d.id() + "-hold", CameraType.THIRD_PERSON_FRONT, 0);
             vorschau(ctx, "shield-" + d.id() + "-back", 6, 200f);
+        }
+        // Shield Status: gelb beim Hochnehmen, gruen beim Blocken, rot wenn gebrochen -- mit Skin und Vanilla
+        for (String id : new String[] { "vortex", "" }) {
+            String n = id.isEmpty() ? "vanilla" : id;
+            setze.accept(id, a -> a.mitSchild(id));
+            ansicht(ctx, "status-" + n + "-normal", CameraType.THIRD_PERSON_FRONT, -35);
+            ctx.getInput().holdKey(o -> o.keyUse);
+            ctx.waitTicks(1);
+            ctx.takeScreenshot("status-" + n + "-raising");
+            ctx.waitTicks(10);
+            ctx.takeScreenshot("status-" + n + "-blocking");
+            ctx.getInput().releaseKey(o -> o.keyUse);
+            ctx.runOnClient(mc -> mc.player.getCooldowns().addCooldown(mc.player.getOffhandItem(), 100));
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("status-" + n + "-broken");
+            ctx.waitTicks(100);
         }
         // Ich-Perspektive (Hand nur mit sichtbarem HUD)
         ctx.runOnClient(mc -> { if (mc.gui.hud.isHidden()) mc.gui.hud.toggle(); mc.options.fov().set(70); });

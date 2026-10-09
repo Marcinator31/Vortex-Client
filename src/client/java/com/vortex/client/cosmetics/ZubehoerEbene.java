@@ -52,8 +52,14 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
                 pose.scale(1 / 16f, -1 / 16f, 1 / 16f);
                 float wippen = (float) Math.sin(state.walkAnimationPos * 0.6662f * 2) * Math.min(1f, state.walkAnimationSpeed) * 0.35f;
                 // Mit Cape: hinter das Cape, sonst verschwindet das Teil darunter
-                if (!a.cape().isEmpty() || state.showCape) pose.translate(0, 0, 1.25f);
-                for (Zubehoer.Teil teil : back.teile()) teil(pose, collector, licht, teil, t, wippen);
+                // (Schultergurte bleiben am Koerper)
+                boolean cape = !a.cape().isEmpty() || state.showCape;
+                for (Zubehoer.Teil teil : back.teile()) {
+                    boolean gurt = teil.anim().equals("strap");
+                    if (cape && !gurt) { pose.pushPose(); pose.translate(0, 0, 1.25f); }
+                    teil(pose, collector, licht, teil, t, wippen);
+                    if (cape && !gurt) pose.popPose();
+                }
                 pose.popPose();
             }
             Zubehoer.Design aura = Zubehoer.get(Zubehoer.Kategorie.AURA, a.partikel());
@@ -126,8 +132,8 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
             Netz b = BUEGEL.computeIfAbsent(d, k -> {
                 Netz n = new Netz();
                 float a = 4.55f;
-                n.quader(a, -0.25f, -4.8f, a + 0.45f, 0.25f, 1.5f, d.buegel(), 0x3F);
-                n.quader(-a - 0.45f, -0.25f, -4.8f, -a, 0.25f, 1.5f, d.buegel(), 0x3F);
+                n.quader(a, -0.15f, -4.8f, a + 0.3f, 0.15f, 1.5f, d.buegel(), 0x3F);
+                n.quader(-a - 0.3f, -0.15f, -4.8f, -a, 0.15f, 1.5f, d.buegel(), 0x3F);
                 return n;
             });
             pose.pushPose();
@@ -138,22 +144,74 @@ public class ZubehoerEbene extends RenderLayer<AvatarRenderState, PlayerModel> {
     }
 
     /** Ein Pixelteil an seine Stelle setzen (at, Drehung, Groesse) und zeichnen. */
+    /**
+     * Ein Pixelteil an seine Stelle setzen (at, Drehung, Groesse) und zeichnen.
+     * Animationen (anim=name[:wert]):
+     *   bob        wippt beim Laufen            flicker   flackert (Flammen)
+     *   pulse[:a]  pocht wie ein Herzschlag     twinkle[:phase] funkelt auf und ab
+     *   glint:w    Glanz huscht ueber w Pixel (alle paar Sekunden)
+     *   scan:w     Lauflicht hin und her ueber +-w Pixel
+     *   swing:g    pendelt um den oberen Rand   sway:g    wiegt sich um die Mitte
+     *   spin[:g]   dreht sich (g Grad je Tick)  hover[:h] schwebt auf und ab
+     */
     private void teil(PoseStack pose, SubmitNodeCollector c, int licht, Zubehoer.Teil teil, float t, float wippen) {
+        String anim = teil.anim();
+        float wert = Float.NaN;
+        int dp = anim.indexOf(':');
+        if (dp >= 0) {
+            try { wert = Float.parseFloat(anim.substring(dp + 1)); } catch (NumberFormatException ignored) {}
+            anim = anim.substring(0, dp);
+        }
+        float s = teil.px();
+        float hoehe = teil.farben().length * s;
+        float dx = 0, dy = 0, drehZ = 0, gross = 1f, hochY = 1f;
+        switch (anim) {
+            case "bob" -> dy = wippen;
+            case "flicker" -> hochY = 0.75f + 0.25f * (float) Math.abs(Math.sin(t * 1.7f) * Math.cos(t * 0.9f));
+            case "pulse" -> {
+                float a = Float.isNaN(wert) ? 0.09f : wert;
+                float ph = (t % 24f) / 24f;   // zwei Schlaege, dann Pause
+                float schlag = (float) (Math.exp(-Math.pow((ph - 0.08) * 22, 2)) + 0.6 * Math.exp(-Math.pow((ph - 0.26) * 22, 2)));
+                gross = 1 + a * schlag;
+            }
+            case "twinkle" -> {
+                float ph = (t / 40f + (Float.isNaN(wert) ? 0 : wert)) % 1f;
+                gross = (float) Math.max(0, Math.sin(ph * Math.PI * 2)) ;
+                gross = gross * gross;
+                drehZ = t * 4f;
+            }
+            case "glint" -> {
+                float w = Float.isNaN(wert) ? 3f : wert;
+                float ph = (t % 70f) / 14f;   // 14 Ticks Glanz, dann Pause
+                if (ph > 1f) gross = 0;
+                else dx = -w + 2 * w * ph;
+            }
+            case "scan" -> dx = (float) Math.sin(t * 0.09f) * (Float.isNaN(wert) ? 3f : wert);
+            case "swing" -> drehZ = (float) Math.sin(t * 0.11f) * (Float.isNaN(wert) ? 8f : wert);
+            case "sway" -> drehZ = (float) Math.sin(t * 0.07f) * (Float.isNaN(wert) ? 6f : wert);
+            case "spin" -> drehZ = t * (Float.isNaN(wert) ? 3f : wert);
+            case "hover" -> dy = (float) Math.sin(t * 0.08f) * (Float.isNaN(wert) ? 0.3f : wert);
+            default -> {}
+        }
+        if (gross <= 0.01f) return;
         pose.pushPose();
         float[] at = teil.at(), rot = teil.rot();
-        float dy = teil.anim().equals("bob") ? wippen : 0;
         pose.translate(at[0], at[1] + dy, at[2]);
         if (rot[1] != 0) pose.mulPose(Axis.YP.rotationDegrees(rot[1]));
         if (rot[0] != 0) pose.mulPose(Axis.XP.rotationDegrees(rot[0]));
         if (rot[2] != 0) pose.mulPose(Axis.ZP.rotationDegrees(rot[2]));
-        float s = teil.px();
-        if (teil.anim().equals("flicker")) {
-            float f = 0.75f + 0.25f * (float) Math.abs(Math.sin(t * 1.7f) * Math.cos(t * 0.9f));
-            pose.translate(0, (1 - f) * teil.farben().length * s / 2f, 0);
-            pose.scale(s, s * f, s);
-        } else {
-            pose.scale(s, s, s);
+        if (dx != 0) pose.translate(dx, 0, 0);
+        if (drehZ != 0) {
+            if (anim.equals("swing")) {   // Drehpunkt oberer Rand
+                pose.translate(0, hoehe / 2f, 0);
+                pose.mulPose(Axis.ZP.rotationDegrees(drehZ));
+                pose.translate(0, -hoehe / 2f, 0);
+            } else {
+                pose.mulPose(Axis.ZP.rotationDegrees(drehZ));
+            }
         }
+        if (hochY != 1f) pose.translate(0, (1 - hochY) * hoehe / 2f, 0);
+        pose.scale(s * gross, s * gross * hochY, s * gross);
         zeichne(pose, c, Zubehoer.netz(teil), licht, t);
         pose.popPose();
     }

@@ -37,7 +37,7 @@ public final class Zubehoer {
     public record Aura(String bewegung, int anzahl, float px, float drehen, float groesse, List<Teil> sprites) {}
 
     public record Design(Kategorie kat, String id, String name, List<Teil> teile, Ring ring, int buegel, Aura aura,
-                         Map<Character, Integer> farben) {}
+                         Map<Character, Integer> farben, Map<String, String> werte) {}
 
     private static Map<String, Design> alle;
     private static final Map<String, String> ALTE_PARTIKEL = new HashMap<>();
@@ -167,7 +167,7 @@ public final class Zubehoer {
                         zahl(werte.get("spin"), 1f), zahl(werte.get("size"), 1f), sprites);
                 for (String alt : werte.getOrDefault("legacy", "").split(",")) if (!alt.isBlank()) ALTE_PARTIKEL.put(alt.trim(), id);
             }
-            m.put(kat.name() + ":" + id, new Design(kat, id, name, teile, ring, buegel, aura, farben));
+            m.put(kat.name() + ":" + id, new Design(kat, id, name, teile, ring, buegel, aura, farben, werte));
         }
     }
 
