@@ -317,9 +317,9 @@ public class CosmeticsScreen extends Screen {
                 Glatt.symbol(g, Symbole.Symbol.KREUZ, bx + bild / 2f - 8, by + bild / 2f - 8, 16, DIM);
             } else if (kat == Zubehoer.Kategorie.SHIELD) {
                 int sh = bild, sw = Math.round(sh * 24f / 44f);
-                g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                        net.minecraft.resources.Identifier.fromNamespaceAndPath("vortexclient", "textures/cosmetics/shield/" + d.id() + ".png"),
-                        bx + (bild - sw) / 2, by, 2, 2, sw, sh, 24, 44, 128, 128, 0xFFFFFFFF);
+                var tex = SchildSkins.texturFuer(d.id());
+                if (tex != null) g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex,
+                        bx + (bild - sw) / 2, by, 4, 4, sw, sh, 48, 88, 256, 256, 0xFFFFFFFF);
             } else {
                 pixelBild(g, vorschauBild(d), bx, by, bild, bild);
             }
@@ -347,14 +347,54 @@ public class CosmeticsScreen extends Screen {
             return o;
         }
         if (d.aura() != null && !d.aura().sprites().isEmpty()) return d.aura().sprites().get(0).farben();
-        int[][] best = new int[0][];
+        Zubehoer.Teil best = null;
         int groesse = -1;
         for (Zubehoer.Teil t : d.teile()) {
             int n = 0;
             for (int[] z : t.farben()) n += z.length;
-            if (n > groesse) { groesse = n; best = t.farben(); }
+            if (n > groesse) { groesse = n; best = t; }
         }
-        return best;
+        if (best == null) return new int[0][];
+        return zusammensetzen(d, best);
+    }
+
+    /** Ungedrehte Teile gleicher Groesse wie das Hauptteil zu einem Bild zusammenlegen (z. B. Teddy: Kopf + Koerper). */
+    private static int[][] zusammensetzen(Zubehoer.Design d, Zubehoer.Teil haupt) {
+        if (haupt.rot()[0] != 0 || haupt.rot()[1] != 0 || haupt.rot()[2] != 0) return haupt.farben();
+        java.util.List<Zubehoer.Teil> teile = new java.util.ArrayList<>();
+        for (Zubehoer.Teil t : d.teile()) {
+            String an = t.anim();
+            if (t.px() != haupt.px() || t.rot()[0] != 0 || t.rot()[1] != 0 || t.rot()[2] != 0) continue;
+            if (an.startsWith("strap") || an.startsWith("glint") || an.startsWith("scan") || an.startsWith("twinkle")) continue;
+            teile.add(t);
+        }
+        if (teile.size() < 2) return haupt.farben();
+        teile.sort((a, b) -> Float.compare(a.at()[2], b.at()[2]));
+        if (d.kat() == Zubehoer.Kategorie.FACE) java.util.Collections.reverse(teile);   // vorne = kleineres z
+        float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+        float px = haupt.px();
+        for (Zubehoer.Teil t : teile) {
+            int w = 0;
+            for (int[] z : t.farben()) w = Math.max(w, z.length);
+            float cx = t.at()[0] / px, cy = -t.at()[1] / px;
+            minX = Math.min(minX, cx - w / 2f); maxX = Math.max(maxX, cx + w / 2f);
+            minY = Math.min(minY, cy - t.farben().length / 2f); maxY = Math.max(maxY, cy + t.farben().length / 2f);
+        }
+        int bw = Math.round(maxX - minX), bh = Math.round(maxY - minY);
+        if (bw <= 0 || bh <= 0 || bw > 128 || bh > 128) return haupt.farben();
+        int[][] o = new int[bh][bw];
+        for (Zubehoer.Teil t : teile) {
+            int w = 0;
+            for (int[] z : t.farben()) w = Math.max(w, z.length);
+            int ox = Math.round(t.at()[0] / px - w / 2f - minX), oy = Math.round(-t.at()[1] / px - t.farben().length / 2f - minY);
+            for (int y = 0; y < t.farben().length; y++)
+                for (int x = 0; x < t.farben()[y].length; x++) {
+                    int f = t.farben()[y][x];
+                    int yy = oy + y, xx = ox + x;
+                    if ((f >>> 24) != 0 && yy >= 0 && yy < bh && xx >= 0 && xx < bw) o[yy][xx] = f;
+                }
+        }
+        return o;
     }
 
     private static void pixelBild(GuiGraphicsExtractor g, int[][] bild, int x, int y, int w, int h) {

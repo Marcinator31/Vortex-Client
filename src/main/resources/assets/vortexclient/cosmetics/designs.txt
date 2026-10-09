@@ -2,85 +2,175 @@
 
 == face pixel_shades
 name: Pixel Shades
-colors: k=15151C w=F4F4FF
+colors: k=101016 K=24242E w=E6E8FF
 arms: k
-part: at=0,4.0,-4.85 px=0.5 depth=1 rot=0,0,0
-  kkkkkkkkkkkkkkkkkk
-  kkwkkkkkkkkkwkkkkk
-  .kkwkkkk..kkkwkkk.
-  ..kkkkkk...kkkkkk.
+part: at=0,4.0,-4.85 px=0.25 depth=1 rot=0,0,0
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  .kwwkwkkkkkkkkkkkkkkkwwkwkkkkkkkkkk.
+  .kkwwkwkkkkkkkkk...kkkwwkwkkkkkkkkk.
+  .kkkwwkwkkkkkkk....kkkkwwkwkkkkkkk..
+  .kkkkwwkkkkkkk......kkkkwwkkkkkkk...
+  ..KKKKKKKKKKK........KKKKKKKKKK.....
+  ...KKKKKKKKK..........KKKKKKKK......
+end
+part: at=0,4.2,-5.0 px=0.35 depth=0.3 rot=0,0,-20 glow=W anim=glint:3.6
+colors: W=FFFFFF
+  W.
+  WW
+  .W
 end
 
 == face heart_glasses
 name: Heart Glasses
-colors: p=FF3E8E l=FF8CC0 w=FFFFFF f=FFD1E6
-arms: f
-part: at=0,3.7,-4.85 px=0.5 depth=1 rot=0,0,0
-  ..pp.pp....pp.pp..
-  .pwpppppffpwppppp.
-  .plppppp..plppppp.
-  ..ppppp....ppppp..
-  ...ppp......ppp...
-  ....p........p....
+colors: p=FF3E8E l=FF86BC w=FFFFFF r=C2185B
+arms: r
+part: at=0,3.7,-4.85 px=0.25 depth=1 rot=0,0,0 anim=pulse
+  ....................................
+  ....................................
+  ....................................
+  ......r...rr............rr...r......
+  ....rrlrrrprr..........rrlrrrprr....
+  ...rwwlllpppprrrrrrrrrrwlllpppppr...
+  ...rpppppppppr........rpppppppppr...
+  ...rpppppppppr........rpppppppppr...
+  ....rpppppppr..........rpppppppr....
+  .....rpppppr............rpppppr.....
+  ......rpppr..............rpppr......
+  .......rpr................rpr.......
+  ........r..................r........
+  ....................................
+  ....................................
+  ....................................
+  ....................................
 end
 
 == face neon_visor
 name: Neon Visor
-colors: d=20163A C=38E1FF P=B26BFF
+colors: d=1A1230 s=2A1F55 C=38E1FF B=7C8CFF P=B26BFF
 arms: d
-part: at=0,4.0,-4.85 px=0.5 depth=1 rot=0,0,0 glow=CP
-  dddddddddddddddddd
-  dCCCPCCCPCCCPCCCPd
-  dPPPCPPPCPPPCPPPCd
-  dddddddddddddddddd
+part: at=0,4.0,-4.85 px=0.25 depth=1 rot=0,0,0 glow=CBP
+  ....................................
+  .dddddddddddddddddddddddddddddddddd.
+  dCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCd
+  dCCssssssssssssssssssssssssssssssCCd
+  dBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBd
+  dBBssssssssssssssssssssssssssssssBBd
+  dBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBd
+  dPPssssssssssssssddssssssssssssssPPd
+  dPPPPPPPPPPPPPPdd..ddPPPPPPPPPPPPPPd
+  .dddddddddddddd......dddddddddddddd.
+  ....................................
+end
+part: at=0,4.0,-4.97 px=0.25 depth=0.5 rot=0,0,0 glow=W anim=scan:3.6
+colors: W=F2FDFF
+  W
+  W
+  W
+  W
+  W
+  W
 end
 
 == face star_glasses
 name: Star Glasses
-colors: y=FFD23F o=FF8A1F
-arms: y
-part: at=0,3.7,-4.85 px=0.5 depth=1 rot=0,0,0
-  ....y........y....
-  ...yyy......yyy...
-  .yyyoyyyyyyyyoyyy.
-  ..yoooy....yoooy..
-  ...yyy......yyy...
-  ..yy.yy....yy.yy..
-  .y.....y..y.....y.
+colors: Y=FFE680 y=FFD23F o=FF8A1F b=C77A12
+arms: b
+part: at=0,3.7,-4.85 px=0.25 depth=1 rot=0,0,0
+  ........b..................b........
+  ........Y..................Y........
+  .......bYb................bYb.......
+  .......byy................yyb.......
+  .......yyy................yyy.......
+  ...bb.byyyb.bb........bb.byyyb.bb...
+  .bYYyyyyooyyyYYb....bYYyyyooyyyyYYb.
+  ..bYyyyooooyyyb..bb..byyyooooyyyYb..
+  ...byyoooooyyb........byyoooooyyb...
+  .....booooob............booooob.....
+  .....yyoooyy............yyoooyy.....
+  ....byyybyyyb..........byyybyyyb....
+  ....byyb.byyY..........Yyyb.byyb....
+  ....YYb...bYY..........YYb...bYY....
+  ....bb......b..........b......bb....
+  ....................................
+  ....................................
+end
+part: at=3.9,5.6,-5.0 px=0.18 depth=0.4 rot=0,0,0 glow=W anim=twinkle
+colors: W=FFFDE8
+  ..W..
+  .WWW.
+  WWWWW
+  .WWW.
+  ..W..
+end
+part: at=-3.3,2.4,-5.0 px=0.14 depth=0.4 rot=0,0,0 glow=W anim=twinkle:0.5
+colors: W=FFFDE8
+  ..W..
+  .WWW.
+  WWWWW
+  .WWW.
+  ..W..
 end
 
 == face retro_3d
 name: 3D Glasses
-colors: w=F2F2F2 r=E3343A c=29C6E8
+colors: w=F2F2F2 r=E3343A R=FF8A8E c=29C6E8 C=9BEFFF
 arms: w
-part: at=0,3.9,-4.85 px=0.5 depth=1 rot=0,0,0
-  wwwwwwwwwwwwwwwwww
-  wrrrrrrrwwcccccccw
-  wrrrrrrrwwcccccccw
-  wrrrrrrr..cccccccw
-  wwwwwwww..wwwwwwww
+part: at=0,3.9,-4.85 px=0.25 depth=1 rot=0,0,0
+  ...............wwwwww...............
+  ..wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww..
+  ..wrRRrrrrrrrrrwwwwwwcCCcccccccccw..
+  ..wRRrrrrrrrrrrw....wCCccccccccccw..
+  ..wRrrrrrrrrrrrw....wCcccccccccccw..
+  ..wrrrrrrrrrrrrw....wccccccccccccw..
+  ..wrrrrrrrrrrrrw....wccccccccccccw..
+  ..wrrrrrrrrrrrrw....wccccccccccccw..
+  ..wwwwwwwwwwwwww....wwwwwwwwwwwwww..
+  ....................................
+  ....................................
 end
 
 == face monocle
 name: Monocle
-colors: g=E8B53A h=A8761A l=BFE7FF w=FFFFFF
-part: at=-2,4.2,-4.85 px=0.5 depth=1 rot=0,0,0
-  ...gg...
-  .gggggg.
-  .gwlllg.
-  ggllllgg
-  ggllllgg
-  .gllllg.
-  .gggggg.
-  ...gg...
+colors: g=E8B53A G=FFE08A h=A8761A l=BFE7FF L=E6F7FF w=FFFFFF
+part: at=-2,4.2,-4.85 px=0.25 depth=1 rot=0,0,0
+  .......GG.......
+  ....GGGGGGGG....
+  ...GGLLLLLlgg...
+  ..GGLLLLLlllgg..
+  .GGLLwwLlllllgg.
+  .GLLwwwlllllllg.
+  .GLLLwllllllllg.
+  GGLLLlllllllllgg
+  GGLLllllllllllgg
+  .GLlllllllllllg.
+  .Gllllllllllllg.
+  .Ggllllllllllgg.
+  ..ggllllllllgg..
+  ...ggllllllgg...
+  ....gggggggg....
+  .......gg.......
 end
-part: at=-0.2,0.9,-4.85 px=0.5 depth=1 rot=0,0,-20
+part: at=-0.4,0.95,-4.85 px=0.25 depth=1 rot=0,0,-18 anim=swing:7
+  g
   g
   h
   g
-  h
   g
   h
+  g
+  g
+  h
+  g
+  g
+  h
+  g
+  g
+  h
+  g
+  g
+  h
+  g
   g
   h
   g
@@ -88,24 +178,50 @@ end
 
 == face skull_mask
 name: Skull Mask
-colors: b=E9E4D4 k=1A1714 w=FFFFFF r=E33B3B
-part: at=0,4.0,-4.85 px=0.5 depth=1 rot=0,0,0 glow=r
-  ..bbbbbbbbbbbb..
-  .bbbbbbbbbbbbbb.
-  bbbbbbbbbbbbbbbb
-  bbbbbbbbbbbbbbbb
-  bbkkkkbbbbkkkkbb
-  bkkkkkkbbkkkkkkb
-  bkkrkkkbbkkkrkkb
-  bkkkkkkbbkkkkkkb
-  bbkkkkbbbbkkkkbb
-  bbbbbbbkkbbbbbbb
-  bbbbbbkkkkbbbbbb
-  .bbbbbbbbbbbbbb.
-  .bwbwbwbwbwbwbb.
-  .bkbkbkbkbkbkbb.
-  ..bwbwbwbwbwbb..
-  ...bbbbbbbbbb...
+colors: b=E9E4D4 B=CFC8B4 k=1A1714 w=FFFFFF r=E33B3B
+part: at=0,4.0,-4.85 px=0.25 depth=1 rot=0,0,0 glow=r
+  .....BBBBBBBBBBBBBBBBBBBBBB.....
+  ...BBBBBBBBBBBBBBBBBBBBBBBBBB...
+  ...bbbbbbbbbbbbbbbbbbbbbbbbbb...
+  .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+  .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  bbbbbkkkkkkbbbbbbbbbbkkkkkkbbbbb
+  bbbkkkkkkkkkkbbbbbbkkkkkkkkkkbbb
+  bbbkkkkkkkkkkbbbbbbkkkkkkkkkkbbb
+  bbkkkkkkkkkkkkbbbbkkkkkkkkkkkkbb
+  bbkkkkrrkkkkkkbbbbkkkkkkrrkkkkbb
+  bbkkkkrrkkkkkkbbbbkkkkkkrrkkkkbb
+  bbkkkkkkkkkkkkbbbbkkkkkkkkkkkkbb
+  bbbkkkkkkkkkkbbbbbbkkkkkkkkkkbbb
+  bbbkkkkkkkkkkbbbbbbkkkkkkkkkkbbb
+  bbbbbkkkkkkbbbbbbbbbbkkkkkkbbbbb
+  bbbbbbbbbbbbbbbkkbbbbbbbbbbbbbbb
+  BBBBBbbbbbbbbkkkkkkbbbbbbbbBBBBB
+  BBBBBbbbbbbbkkkkkkkkbbbbbbbBBBBB
+  .BBBBbbbbbbbkkkkkkkkbbbbbbbBBBB.
+  .BBBBbbbbbbbbbbbbbbbbbbbbbbBBBB.
+  ..BBBbbbbbbbbbbbbbbbbbbbbbbBBB..
+  ..BBwwbbwwbbwwbbwwbbwwbbwwbBBB..
+  ..BBwwbbwwbbwwbbwwbbwwbbwwbBBB..
+  ..BBkkbbkkbbkkbbkkbbkkbbkkbBBB..
+  ...BkkbbkkbbkkbbkkbbkkbbkkbBB...
+  ...BBbwwbbwwbbwwbbwwbbwwbbbBB...
+  .....bwwbbwwbbwwbbwwbbwwbbb.....
+  .....bbbbbbbbbbbbbbbbbbbbbb.....
+  .......bbbbbbbbbbbbbbbbbb.......
+end
+part: at=-2.25,4.75,-5.03 px=0.25 depth=0.3 rot=0,0,0 glow=r anim=pulse:0.35
+colors: r=FF5A4A
+  rr
+  rr
+end
+part: at=2.25,4.75,-5.03 px=0.25 depth=0.3 rot=0,0,0 glow=r anim=pulse:0.35
+colors: r=FF5A4A
+  rr
+  rr
 end
 
 == face ninja_mask
@@ -123,38 +239,63 @@ end
 == face fox_mask
 name: Fox Mask
 colors: e=F7F3EC R=D9283A k=18141C
-part: at=0,4.6,-4.85 px=0.5 depth=1 rot=0,0,0
-  ..e..........e..
-  .eee........eee.
-  .eRe........eRe.
-  eeRee......eeRee
-  eeeeeeeeeeeeeeee
-  eeeeeeeeeeeeeeee
-  eRReeeeeeeeeeRRe
-  eekRRe.eeeeRRkee
-  eekkkReeeeRkkkee
-  eeeeeeeeeeeeeeee
-  eeeeeeeeeeeeeeee
-  .eeeeeeRReeeeee.
-  .eeeeeekkeeeeee.
-  ..eeeeeeeeeeee..
-  ...eeRRRRRRee...
-  ....eeeeeeee....
-  ......eeee......
+part: at=0,4.6,-4.85 px=0.25 depth=1 rot=0,0,0
+  ....ee....................ee....
+  ...eeee..................eeee...
+  ...eeee..................eeee...
+  ..eeeeee................eeeeee..
+  ..eeRRee................eeRRee..
+  .eeeRReee..............eeeRReee.
+  .eeeRReee..............eeeRReee.
+  eeeeRReeeee..........eeeeeRReeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  eeRRReeeeeeeeeeeeeeeeeeeeeeRRRee
+  eeRRRRReeeeeeeeeeeeeeeeeeRRRRRee
+  eeeekRRRReee..eeeeeeeeeRRRRkeeee
+  eeeekkkRRRRe..eeeeeeeRRRRkkkeeee
+  eeeekkkkkRRReeeeeeeeRRRkkkkkeeee
+  eeeeekkkkkRReeeeeeeeRRkkkkkeeeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  .eeeeeeeeeeeeeeeeeeeeeeeeeeeeee.
+  .eeeeeeeeeeeeeeRReeeeeeeeeeeeee.
+  ..eeeeeeeeeeeeRRRReeeeeeeeeeee..
+  ..eeeeeeeeeeeekkkkeeeeeeeeeeee..
+  ...eeeeeeeeeeeekkeeeeeeeeeeee...
+  ...eeeeeeeeeeeeeeeeeeeeeeeeee...
+  .....eeeeeeeeeeeeeeeeeeeeee.....
+  .....eeeeeRRRRRRRRRRRReeeee.....
+  .......eeeRRRRRRRRRRRReee.......
+  .......eeeeeeeeeeeeeeeeee.......
+  .........eeeeeeeeeeeeee.........
+  ...........eeeeeeeeee...........
+  .............eeeeee.............
 end
 
 == face bow
 name: Bow
 colors: p=FF5FA8 P=FF9BCB k=D93A86
-part: at=2.6,8.4,-1.5 px=0.5 depth=2 rot=0,-20,18
-  pp......pp
-  pPp....pPp
-  pPPp..pPPp
-  pPPPkkPPPp
-  pPPPkkPPPp
-  pPPp..pPPp
-  pPp....pPp
-  pp......pp
+part: at=2.6,8.4,-1.5 px=0.25 depth=4 rot=0,-20,18 anim=sway:6
+  .pp..............pp.
+  ppppp..........ppppp
+  ppPPp..........pPPpp
+  ppPPPpp......ppPPPpp
+  ppPPPpp......ppPPPpp
+  ppPPPPPp....pPPPPPpp
+  ppPPPPPPkkkkPPPPPPpp
+  ppPPPPPPkkkkPPPPPPpp
+  ppPPPPPPkkkkPPPPPPpp
+  ppPPPPPPkkkkPPPPPPpp
+  ppPPPPPp....pPPPPPpp
+  ppPPPpp......ppPPPpp
+  ppPPPpp......ppPPPpp
+  ppPPp..........pPPpp
+  ppppp..........ppppp
+  .pp..............pp.
 end
 
 == bandana lightning
@@ -191,10 +332,10 @@ end
 name: Camo
 colors: g=4B5E2E d=2F3B1E b=7A6A45
 ring: y0=5.0 px=0.5 knot=g tails=gd
-  ddddggggggggdddggggdddddddddddgggdddddddddddddddddgggggggggggggd
-  gggggggggggggggggggdddddddddggggggbgggdddddddddbgggggggggggggggg
-  gggggggggggggggggggddddddddddggggggggdddddbbgddbgggggggddddggggg
-  dddgggggggggbbgggggdddddddddddggggbbddddddbbgggggggggggddddggggd
+  gggggggggggggggggggggggggggggggggggggggggdbbbbgggggggggggggggggg
+  ggggggggggggggggggggggggggggggggggbggggggddddddggggggggggggggggg
+  ggggggggggggggggggggggggggggggggggggggggggbbgggggggggggggggggggg
+  ggggggggggggggggggggggggggggggggggggggggggbbgggggggggggggggggggg
 end
 
 == bandana galaxy
@@ -262,19 +403,7 @@ end
 == back teddy_backpack
 name: Teddy Backpack
 colors: b=8A5A35 B=C49067 k=1D1410 w=FFFFFF n=3A241A
-part: at=0,-5.6,3.1 px=0.5 depth=3 rot=0,0,0 anim=bob
-  ..bb........bb..
-  .bBBb......bBBb.
-  .bBkbbbbbbbbkBb.
-  ..bbbbbbbbbbbb..
-  ..bbbbbbbbbbbb..
-  .bbbkkbbbbkkbbb.
-  .bbbkwbbbbkwbbb.
-  .bbbbbBBBBbbbbb.
-  .bbbbBBnnBBbbbb.
-  ..bbbBBBBBBbbb..
-  ...bbbBkkBbbb...
-  ....bbbbbbbb....
+part: at=0,-8.6,3.62 px=0.5 depth=6 rot=0,0,0 anim=bob
   ..bbbbbbbbbbbb..
   .bbbbBBBBBBbbbb.
   bbbbBBBBBBBBbbbb
@@ -286,55 +415,216 @@ part: at=0,-5.6,3.1 px=0.5 depth=3 rot=0,0,0 anim=bob
   ..BBB......BBB..
   ..bbb......bbb..
 end
+part: at=0,-3.1,3.37 px=0.5 depth=5 rot=0,0,0 anim=bob
+  ..bb........bb..
+  .bBBb......bBBb.
+  .bBkbbbbbbbbkBb.
+  ..bbbbbbbbbbbb..
+  ..bbbbbbbbbbbb..
+  .bbbkkbbbbkkbbb.
+  .bbbkwbbbbkwbbb.
+  .bbbbbbbbbbbbbb.
+  .bbbbbbbbbbbbbb.
+  ..bbbbbbbbbbbb..
+  ...bbbbbbbbbb...
+  ....bbbbbbbb....
+end
+part: at=0,-4.3,5.0200000000000005 px=0.5 depth=1.6 rot=0,0,0 anim=bob
+  BBBB
+  BnnB
+  BBBB
+  .kk.
+end
+part: at=-3.3,-8.0,4.62 px=0.5 depth=3 rot=0,0,-25 anim=bob
+  .b
+  bb
+  bb
+  bb
+  BB
+end
+part: at=3.3,-8.0,4.62 px=0.5 depth=3 rot=0,0,25 anim=bob
+  b.
+  bb
+  bb
+  bb
+  BB
+end
+part: at=-2.2,-3.1,-2.18 px=0.5 depth=0.5 rot=0,0,0 anim=strap
+colors: g=6B3F22 s=6B3F22
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=-2.2,0.13,0.0 px=0.5 depth=0.5 rot=90,0,0 anim=strap
+colors: g=6B3F22
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=2.2,-3.1,-2.18 px=0.5 depth=0.5 rot=0,0,0 anim=strap
+colors: g=6B3F22 s=6B3F22
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=2.2,0.13,0.0 px=0.5 depth=0.5 rot=90,0,0 anim=strap
+colors: g=6B3F22
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
 
 == back explorer_pack
 name: Explorer Backpack
 colors: l=6B4423 L=845530 d=3E2614 g=D9A93A s=2F1D10 r=2F6B4F R=24543E
-part: at=0,-6.2,3.35 px=0.5 depth=4 rot=0,0,0 anim=bob
-  ................
-  ................
-  .LsLLLLLLLLLLsL.
-  .LsLLLLLLLLLLsL.
-  .LsLLLLLLLLLLsL.
-  .LsLLLLLLLLLLsL.
-  .LsLLLLLLLLLLsL.
-  .LsLLLggggLLLsL.
-  .dsdddgddgdddsd.
-  .lslllgddglllsl.
-  .lslllgggglllsl.
+part: at=0,-6.6,3.87 px=0.5 depth=7 rot=0,0,0 anim=bob
   .lsllllllllllsl.
-  .lsddddddddddsl.
-  .lsLLLLLLLLLLsl.
-  .lsLLLLLLLLLLsl.
-  .lsLLLLLLLLLLsl.
-  .lsLLLLLLLLLLsl.
-  .lsLLLLLLLLLLsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
+  .lsllllllllllsl.
   .lsllllllllllsl.
   .lsllllllllllsl.
 end
-part: at=0,-1.6,3.35 px=0.5 depth=4 rot=0,0,0 anim=bob
+part: at=0,-3.4,4.12 px=0.5 depth=8 rot=0,0,0 anim=bob
+  .LLLLLLLLLLLLLL.
+  .LLLLLLLLLLLLLL.
+  .LLLLLLLLLLLLLL.
+  .LLLLLLLLLLLLLL.
+  .LLLLLggggLLLLL.
+  .LLLLLgddgLLLLL.
+  .dddddggggddddd.
+end
+part: at=0,-8.6,6.22 px=0.5 depth=2.4 rot=0,0,0 anim=bob
+  dddddddddd
+  LLLLggLLLL
+  LLLLggLLLL
+  LLLLLLLLLL
+  LLLLLLLLLL
+  LLLLLLLLLL
+end
+part: at=0,-1.0,3.37 px=0.5 depth=5 rot=0,0,0 anim=bob
   RRRRRRRRRRRRRRRRRR
   rrrsrrrrrrrrrrsrrr
   rrrsrrrrrrrrrrsrrr
   rrrsrrrrrrrrrrsrrr
   RRRRRRRRRRRRRRRRRR
+end
+part: at=-2.2,-3.1,-2.18 px=0.5 depth=0.5 rot=0,0,0 anim=strap
+colors: g=2F1D10 s=D9A93A
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  s
+  g
+  g
+  g
+end
+part: at=-2.2,0.13,0.0 px=0.5 depth=0.5 rot=90,0,0 anim=strap
+colors: g=2F1D10
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=2.2,-3.1,-2.18 px=0.5 depth=0.5 rot=0,0,0 anim=strap
+colors: g=2F1D10 s=D9A93A
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  s
+  g
+  g
+  g
+end
+part: at=2.2,0.13,0.0 px=0.5 depth=0.5 rot=90,0,0 anim=strap
+colors: g=2F1D10
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
 end
 
 == back greatsword
 name: Greatsword
 colors: p=D9A93A h=3B2416 H=5A3A24 g=C8962E G=F2D46B m=B9C1CC M=E9EEF4
-part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,38 anim=bob
-  ...ppp...
-  ...ppp...
-  ....H....
-  ....h....
-  ....H....
-  ....h....
-  ....H....
-  ....h....
-  ....H....
-  ggggGgggg
-  ggggGgggg
+part: at=0,-5.5,2.495 px=0.5 depth=1.5 rot=0,0,38 anim=bob
+  .........
+  .........
+  .........
+  .........
+  .........
+  .........
+  .........
+  .........
+  .........
+  .........
+  .........
   ...mMm...
   ...mMm...
   ...mMm...
@@ -371,11 +661,31 @@ part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,38 anim=bob
   ....m....
   ....m....
 end
+part: at=-5.387,1.395,2.87 px=0.5 depth=3 rot=0,0,38 anim=bob
+  ...ppp...
+  ...ppp...
+  ....H....
+  ....h....
+  ....H....
+  ....h....
+  ....H....
+  ....h....
+  ....H....
+  ggggGgggg
+  ggggGgggg
+end
+part: at=0,-5.5,2.9450000000000003 px=0.5 depth=0.2 rot=0,0,38 glow=W anim=glint:5
+colors: W=FFFFFF
+  W
+  W
+  W
+  W
+end
 
 == back crystal_scythe
 name: Crystal Scythe
 colors: w=4A3A6B W=6A568F b=C9D3E6 C=6FF3FF c=2BB8E6 d=1C5E86
-part: at=0,-5.2,2.6 px=0.5 depth=1 rot=0,0,-28 glow=C anim=bob
+part: at=0,-5.2,2.62 px=0.5 depth=2 rot=0,0,-28 glow=C anim=bob
   ......dddcccdcd...........
   ....ddcccccCcCd...........
   ...dccccCCCCCCd...........
@@ -417,51 +727,126 @@ part: at=0,-5.2,2.6 px=0.5 depth=1 rot=0,0,-28 glow=C anim=bob
   ..............wW..........
   ..............wW..........
 end
+part: at=-3.9,-0.6,3.22 px=0.22 depth=0.4 rot=0,0,0 glow=W anim=twinkle
+colors: W=C8FBFF
+  ..W..
+  .WWW.
+  WWWWW
+  .WWW.
+  ..W..
+end
 
 == back guitar
 name: Guitar
 colors: w=B5672F W=D8914E k=1E140E n=5A3A24 N=7A5236 f=C9C9C9 h=3A2416 s=EDEDED
-part: at=0,-6.0,2.85 px=0.5 depth=2 rot=0,0,-32 anim=bob
+part: at=0,-6.0,3.37 px=0.5 depth=5 rot=0,0,-32 anim=bob
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ..............
+  ......ww......
+  ....wwWWww....
+  ...wWWWWWWw...
+  ..wWWWWWWWWw..
+  ..wWWWWWWWWw..
+  ..wWWWWWWWWw..
+  ..wWWWWWWWWw..
+  ..wWWWWWWWWw..
+  ...wWkkkkWw...
+  ...wWkkkkWw...
+  ..wWWkkkkWWw..
+  .wWWWWWWWWWWw.
+  .wWWWWWWWWWWw.
+  wWWWWWWWWWWWWw
+  wWWWWWWWWWWWWw
+  wWWWWWWWWWWWWw
+  .wWWWWWWWWWWw.
+  .wWWWWWWWWWWw.
+  ..wWkkkkkkWw..
+  ...wWWWWWWw...
+  ....wwwwww....
+  ..............
+  ..............
+end
+part: at=2.782,-1.548,2.62 px=0.5 depth=2 rot=0,0,-32 anim=bob
   ...fhhhhhhf...
   ....hhhhhh....
   ...fhhhhhhf...
-  ....hhsshh....
-  .....fssf.....
-  .....nssn.....
-  .....nssn.....
-  .....fssf.....
-  .....nssn.....
-  .....nssn.....
-  .....fssf.....
-  .....nssn.....
-  .....nssn.....
-  .....fssf.....
-  .....nssn.....
-  .....nssn.....
-  .....fssf.....
-  .....nssn.....
-  .....nssn.....
-  .....fssf.....
-  ....wnssnw....
-  ...wWWssWWw...
-  ..wWWWssWWWw..
-  ..wWWWssWWWw..
-  ..wWWWssWWWw..
-  ..wWWWssWWWw..
-  ..wWWWssWWWw..
-  ...wWksskWw...
-  ...wWksskWw...
-  ..wWWksskWWw..
-  .wWWWWssWWWWw.
-  .wWWWWssWWWWw.
-  wWWWWWssWWWWWw
-  wWWWWWssWWWWWw
-  wWWWWWssWWWWWw
-  .wWWWWssWWWWw.
-  .wWWWWssWWWWw.
-  ..wWkksskkWw..
-  ...wWWWWWWw...
-  ....wwwwww....
+  ....hhhhhh....
+  .....ffff.....
+  .....nNNn.....
+  .....nNNn.....
+  .....ffff.....
+  .....nNNn.....
+  .....nNNn.....
+  .....ffff.....
+  .....nNNn.....
+  .....nNNn.....
+  .....ffff.....
+  .....nNNn.....
+  .....nNNn.....
+  .....ffff.....
+  .....nNNn.....
+  .....nNNn.....
+  .....ffff.....
+  .....nNNn.....
+end
+part: at=0,-6.0,4.67 px=0.5 depth=0.2 rot=0,0,-32 anim=bob
+  ..............
+  ..............
+  ..............
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ......ss......
+  ..............
+  ..............
   ..............
   ..............
 end
@@ -469,7 +854,7 @@ end
 == back katana
 name: Katana
 colors: h=1C1C24 H=E8E1D0 g=D9A93A s=7E1620 S=A82432
-part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,40 anim=bob
+part: at=0,-5.5,2.87 px=0.5 depth=3 rot=0,0,40 anim=bob
   .HHH.
   .hhh.
   .HHH.
@@ -521,7 +906,7 @@ end
 == back surfboard
 name: Surfboard
 colors: w=F7F1E1 b=2B8FE6 y=FFC93C B=1F6FB8
-part: at=0,-5.5,2.6 px=0.5 depth=1 rot=0,0,-14 anim=bob
+part: at=0,-5.5,2.62 px=0.5 depth=2 rot=0,0,-14 anim=bob
   ....BbbB....
   ...BwbbwB...
   ...BwbbwB...
@@ -570,44 +955,171 @@ end
 
 == back rocket_pack
 name: Rocket Pack
-colors: m=B8BEC9 M=E6EAF0 r=D92E3A d=3A4150 L=5EF2FF Y=FFF36A O=FF9A2E R=FF4A2E
-part: at=0,-6.0,3.1 px=0.5 depth=3 rot=0,0,0 glow=L anim=bob
-  ..rrr......rrr..
-  ..rrr......rrr..
-  ..rrr......rrr..
-  .mMmmm....mMmmm.
-  .mMmmm....mMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmdLLdmMmmm.
-  .mMmmmdLLdmMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmddddmMmmm.
-  .mMmmmddddmMmmm.
-  .ddddd....ddddd.
-  rrdddd....ddddrr
-  rrdddd....ddddrr
-  rr............rr
-  rr............rr
+colors: m=B8BEC9 M=E6EAF0 n=8A909C r=D92E3A d=3A4150 L=5EF2FF Y=FFF36A O=FF9A2E R=FF4A2E
+part: at=-2.25,-6.0,3.37 px=0.5 depth=5 rot=0,0,0 anim=bob
+  .rrr.
+  .rrr.
+  rrrrr
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  ddddd
+  ddddd
+  ddddd
 end
-part: at=0,-12.6,3.1 px=0.5 depth=1 rot=0,0,0 glow=YOR anim=flicker
-  ...YY.......YY..
-  ...YY.......YY..
-  ...OO.......OO..
-  ...OO.......OO..
-  ...OO.......OO..
-  ...RR.......RR..
-  ...RR.......RR..
-  ................
+part: at=2.25,-6.0,3.37 px=0.5 depth=5 rot=0,0,0 anim=bob
+  .rrr.
+  .rrr.
+  rrrrr
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  mMmmn
+  ddddd
+  ddddd
+  ddddd
+end
+part: at=0,-5.6,2.87 px=0.5 depth=3 rot=0,0,0 glow=L anim=bob
+  dddddd
+  dddddd
+  ddLLdd
+  ddLLdd
+  dddddd
+  dddddd
+  dmmmmd
+  dddddd
+  dmmmmd
+  dddddd
+  dddddd
+end
+part: at=-2.25,-12.4,3.37 px=0.5 depth=3 rot=0,0,0 glow=YOR anim=flicker
+  YYY
+  YYY
+  OOO
+  OOO
+  OOO
+  .R.
+  .R.
+end
+part: at=2.25,-12.4,3.37 px=0.5 depth=3 rot=0,0,0 glow=YOR anim=flicker
+  YYY
+  YYY
+  OOO
+  OOO
+  OOO
+  .R.
+  .R.
+end
+part: at=-2.2,-3.1,-2.18 px=0.5 depth=0.5 rot=0,0,0 anim=strap
+colors: g=3A4150 s=3A4150
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=-2.2,0.13,0.0 px=0.5 depth=0.5 rot=90,0,0 anim=strap
+colors: g=3A4150
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=2.2,-3.1,-2.18 px=0.5 depth=0.5 rot=0,0,0 anim=strap
+colors: g=3A4150 s=3A4150
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+end
+part: at=2.2,0.13,0.0 px=0.5 depth=0.5 rot=90,0,0 anim=strap
+colors: g=3A4150
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
+  g
 end
 
 == back quiver
 name: Quiver
 colors: l=7A4A26 L=9A6236 d=3E2614 s=C9B28A f=F2F2F2 F=D9283A
-part: at=1.5,-4.5,2.85 px=0.5 depth=2 rot=0,0,-22 anim=bob
+part: at=1.5,-4.5,3.37 px=0.5 depth=5 rot=0,0,-22 anim=bob
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..dddddd..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..dddddd..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+  ..lLllll..
+end
+part: at=3.467,0.368,3.37 px=0.5 depth=2 rot=0,0,-22 anim=bob
   ..fff.....
   ..ffFFF...
   ..ffFFfff.
@@ -616,28 +1128,7 @@ part: at=1.5,-4.5,2.85 px=0.5 depth=2 rot=0,0,-22 anim=bob
   ...s.s.s..
   ...s.s.s..
   ...s.s.s..
-  ..lslsls..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..dddddd..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..dddddd..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
-  ..lLllll..
+  ...s.s.s..
 end
 
 == aura sakura
@@ -970,30 +1461,50 @@ end
 
 == shield obsidian
 name: Obsidian Shield
+frames: 8
+fps: 8
 
 == shield ender
 name: Ender Shield
+frames: 8
+fps: 8
 
 == shield nether_portal
 name: Portal Shield
+frames: 8
+fps: 8
 
 == shield frost
 name: Frost Shield
+frames: 8
+fps: 8
 
 == shield sunflower
 name: Sunflower Shield
+frames: 1
+fps: 8
 
 == shield sakura
 name: Sakura Shield
+frames: 8
+fps: 8
 
 == shield vortex
 name: Vortex Shield
+frames: 8
+fps: 8
 
 == shield lava
 name: Lava Shield
+frames: 8
+fps: 8
 
 == shield prism
 name: Prism Shield
+frames: 8
+fps: 8
 
 == shield royal
 name: Royal Shield
+frames: 1
+fps: 8

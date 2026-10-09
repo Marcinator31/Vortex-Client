@@ -77,7 +77,8 @@
     "WeichScrollenMixin",
     "BildschirmZeitMixin",
     "SchildBesitzerMixin",
-    "SchildSkinMixin"
+    "SchildSkinMixin",
+    "SchildBruchMixin"
   ],
   "injectors": {
     "defaultRequire": 1
