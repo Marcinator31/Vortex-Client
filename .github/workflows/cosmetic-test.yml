@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: 'anim = nur animierte Capes, Glanz und Song-Karte (schnell); leer = alles'
+        description: 'anim = nur animierte Capes, Glanz und Song-Karte (schnell); pixel = Bandanas, Face, Back, Auras, Shields; leer = alles'
         default: 'anim'
   push:
     branches: [ "cosmetic-test/**" ]
@@ -55,6 +55,15 @@ jobs:
         run: |
           OUT="$RUNNER_TEMP/cosmetic-tests"; mkdir -p "$OUT"
           for d in $(find build/run -type d -name screenshots); do cp -r "$d" "$OUT/"; done
+          # Grosse Bilder als JPG, sonst wird das Zip riesig
+          pip install --quiet --break-system-packages pillow 2>/dev/null || pip install --quiet pillow || true
+          python3 -c "
+          import glob, os
+          from PIL import Image
+          for f in glob.glob(os.path.join('$OUT', 'screenshots', '*.png')):
+              if os.path.getsize(f) > 900000:
+                  Image.open(f).convert('RGB').save(f[:-4] + '.jpg', quality=90); os.remove(f)
+          " || true
           L=$(find build/run -path '*logs/latest.log' | head -n 1); [ -n "$L" ] && cp "$L" "$OUT/latest.log"
           [ -f test.log ] && tail -c 400000 test.log > "$OUT/gradle.log"
           (cd "$RUNNER_TEMP" && zip -qr "cosmetic-tests-${{ github.run_number }}.zip" cosmetic-tests)

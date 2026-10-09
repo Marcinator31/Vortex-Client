@@ -75,7 +75,9 @@
     "ZoomFovMixin",
     "ZoomScrollMixin",
     "WeichScrollenMixin",
-    "BildschirmZeitMixin"
+    "BildschirmZeitMixin",
+    "SchildBesitzerMixin",
+    "SchildSkinMixin"
   ],
   "injectors": {
     "defaultRequire": 1
