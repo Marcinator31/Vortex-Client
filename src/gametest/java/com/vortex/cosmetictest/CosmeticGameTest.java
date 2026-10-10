@@ -32,6 +32,7 @@ public class CosmeticGameTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext ctx) {
+        if ("titel".equals(System.getenv("VORTEX_COSMETICS_ONLY"))) { titel(ctx); return; }
         try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
             TestServerContext srv = sp.getServer();
             srv.runCommand("gamemode creative @a");
@@ -183,6 +184,45 @@ public class CosmeticGameTest implements FabricClientGameTest {
         ctx.takeScreenshot("title-screen");
         ctx.waitTicks(30);
         ctx.takeScreenshot("title-screen-later");
+    }
+
+    /**
+     * Nur das Hauptmenue: gross, mit der Maus ueber einem Vortex-Knopf und
+     * einem Vanilla-Knopf, und im kleinen Standardfenster (854x480).
+     */
+    private static void titel(ClientGameTestContext ctx) {
+        ctx.getInput().resizeWindow(1280, 720);
+        ctx.waitTicks(100);
+        ctx.takeScreenshot("titel-1280");
+        maus(ctx, true);
+        ctx.waitTicks(15);
+        ctx.takeScreenshot("titel-1280-hover-vortex");
+        maus(ctx, false);
+        ctx.waitTicks(15);
+        ctx.takeScreenshot("titel-1280-hover-vanilla");
+        ctx.getInput().resizeWindow(1920, 1080);
+        ctx.waitTicks(30);
+        ctx.takeScreenshot("titel-1920");
+        ctx.getInput().resizeWindow(854, 480);
+        ctx.waitTicks(30);
+        ctx.takeScreenshot("titel-854");
+    }
+
+    /** Maus auf den ersten Vortex-Knopf bzw. den ersten Vanilla-Knopf setzen. */
+    private static void maus(ClientGameTestContext ctx, boolean vortex) {
+        double[] pos = ctx.computeOnClient(mc -> {
+            var sc = mc.gui.screen();
+            if (sc == null) return new double[]{0, 0};
+            double f = mc.getWindow().getGuiScale();
+            for (var c : sc.children()) {
+                if (!(c instanceof net.minecraft.client.gui.components.AbstractWidget w)) continue;
+                boolean istVortex = w instanceof com.vortex.client.gui.menu.MenuKnopf;
+                if (istVortex != vortex || w.getWidth() < 60) continue;
+                return new double[]{(w.getX() + w.getWidth() / 2.0) * f, (w.getY() + w.getHeight() / 2.0) * f};
+            }
+            return new double[]{0, 0};
+        });
+        ctx.getInput().setCursorPos(pos[0], pos[1]);
     }
 
     /** Animierte Capes (CapeKunst), Glanz auf Hueten, Song-Karte ueber dem Kopf, Cape-Galerie. */
