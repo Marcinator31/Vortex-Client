@@ -104,7 +104,7 @@ public final class TitelFigur {
         s.ageInTicks = t * 20f;
         s.bodyRot = 180f;
         // Kopf schaut zur Maus, Cape weht leicht
-        s.yRot = Math.max(-50f, Math.min(50f, (mx - cx) / breite * 140f));
+        s.yRot = Math.max(-50f, Math.min(50f, (cx - mx) / breite * 140f));
         s.xRot = Math.max(-30f, Math.min(30f, (my - kopfY) / hoehe * 70f));
         s.capeLean = 6f + (float) Math.sin(t * 1.3f) * 3f;
         s.capeFlap = (float) Math.sin(t * 2.1f) * 2f;
