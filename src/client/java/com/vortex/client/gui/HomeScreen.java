@@ -194,6 +194,10 @@ public class HomeScreen extends Screen {
         // Kopf und etwas nach links versetzt.
         float logoG = m.kompakt ? 30 : 38;
         float kopfH = m.kompakt ? 22 : 28;
+
+        // Avatar-Figur im Hintergrund
+        com.vortex.client.cosmetics.TitelFigur.zeichnen(ctx, this.width, this.height, this.mx, this.my);
+
         Glatt.logo(ctx, ix - logoG * 0.08f, cy + (kopfH - logoG) / 2f, logoG, a, a);
         float tx = ix + logoG * 0.86f + 6;
         if (m.kompakt) {
