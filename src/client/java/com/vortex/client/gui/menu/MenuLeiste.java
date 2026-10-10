@@ -24,14 +24,18 @@ import java.util.List;
  * es nichts zu hosten). Hostet der Launcher die Welt, steht dort stattdessen
  * "Hosting" ({@link HostingOptionsScreen}).
  *
- * Platz: rechts neben dem Vanilla-Menue. Ist Essential installiert (hat
- * rechts eine eigene Leiste), steht unsere links. Ist das Fenster zu schmal
- * fuer Text, zeigen die Knoepfe nur ihr Symbol.
+ * Platz: rechts neben dem Vanilla-Menue, alle Knoepfe zusammen in einem
+ * Glas-Dock mit Kopfzeile ({@link MenuDock}, seit 4.30.2). Ist Essential
+ * installiert (hat rechts eine eigene Leiste), steht unsere links. Ist das
+ * Fenster zu schmal fuer Text, zeigen die Knoepfe nur ihr Symbol.
  */
 public final class MenuLeiste {
     private MenuLeiste() {}
 
-    private static final int BREIT = 112, HOCH = 22, ABSTAND = 4, RAND = 8, KOMPAKT = 24;
+    /** Zeilenhoehe, Abstand, Rand zum Fenster, Abstand zum Vanilla-Menue. */
+    private static final int ZEILE = 20, ABSTAND = 2, RAND = 8, LUFT = 6;
+    /** Breite des Docks: hoechstens, mindestens (mit Text); kompakt nur Symbole. */
+    private static final int MAX_BREIT = 120, MIN_BREIT = 92, KOMPAKT = 30, KOMPAKT_ZEILE = 22;
     /** Breite des Vanilla-Menues in der Mitte (Knoepfe sind 200 breit). */
     private static final int MITTE = 204;
 
@@ -65,18 +69,28 @@ public final class MenuLeiste {
         eintraege.add(new Eintrag("Settings", MenuSymbole.SETTINGS, () -> mc.gui.setScreen(new HomeScreen())));
         eintraege.add(new Eintrag("Account", MenuSymbole.ACCOUNT, () -> mc.gui.setScreen(new AccountScreen())));
 
-        // Passt neben das Vanilla-Menue Text + Symbol, oder nur das Symbol?
-        boolean kompakt = (breite - MITTE) / 2 < BREIT + 2 * RAND;
-        int w = kompakt ? KOMPAKT : BREIT;
+        // Wie viel Platz ist neben dem Vanilla-Menue? Text + Symbol, oder nur Symbole?
+        int frei = (breite - MITTE) / 2 - RAND - LUFT;
+        boolean kompakt = frei < MIN_BREIT;
+        int w = kompakt ? KOMPAKT : Math.min(MAX_BREIT, frei);
+        int zeile = kompakt ? KOMPAKT_ZEILE : ZEILE;
+        int kopf = kompakt ? MenuDock.KOPF_KOMPAKT + 4 : MenuDock.PAD + MenuDock.KOPF + 4;
+        int innen = kompakt ? (KOMPAKT - KOMPAKT_ZEILE) / 2 : MenuDock.PAD;
+        int hDock = kopf + eintraege.size() * zeile + (eintraege.size() - 1) * ABSTAND + innen;
+
         boolean links = FabricLoader.getInstance().isModLoaded("essential");
         int x = links ? RAND : breite - w - RAND;
-        int gesamt = eintraege.size() * HOCH + (eintraege.size() - 1) * ABSTAND;
         // Links oben steht im Pausenmenue schon "Restart game" -- darunter bleiben.
-        int y = Math.max(links && pause ? 32 : RAND, (hoehe - gesamt) / 2);
+        int y = Math.max(links && pause ? 32 : RAND, (hoehe - hDock) / 2);
+        MenuDock dock = new MenuDock(x, y, w, hDock, kompakt);
 
+        int yy = y + kopf;
+        boolean erster = true;
         for (Eintrag e : eintraege) {
-            Screens.getWidgets(screen).add(new MenuKnopf(x, y, w, HOCH, e.text(), e.symbol(), kompakt, e.aktion()));
-            y += HOCH + ABSTAND;
+            Screens.getWidgets(screen).add(new MenuKnopf(x + innen, yy, w - 2 * innen, zeile, e.text(), e.symbol(),
+                    kompakt, e.aktion(), erster ? dock : null));
+            erster = false;
+            yy += zeile + ABSTAND;
         }
     }
 }

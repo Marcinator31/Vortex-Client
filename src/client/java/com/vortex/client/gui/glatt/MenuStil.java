@@ -125,6 +125,10 @@ public final class MenuStil {
         Glatt.rund(ctx, x, y, bw, bh, r, Glatt.alpha(flaeche, alpha));
         int kante = an ? Glatt.mix(0x2EFFFFFF, Glatt.alpha(hell, 0.85f), hv) : 0x14FFFFFF;
         Glatt.rahmen(ctx, x, y, bw, bh, r, 1, Glatt.alpha(kante, alpha));
+        if (an && bw > 2 * r + 4) {
+            // Glanzkante oben innen -- wirkt wie Glas statt flacher Flaeche
+            Glatt.linieW(ctx, x + r, x + bw - r, y + 1, Glatt.alpha(0x16FFFFFF, alpha * (1f - 0.5f * hv)));
+        }
         if (hv > 0.01f) {
             // feiner Lichtschein oben
             Glatt.licht(ctx, x + bw / 2f, y, Math.max(bw, 40) * 0.45f, Glatt.alpha(hell, alpha * 0.10f * hv));
@@ -143,6 +147,13 @@ public final class MenuStil {
         int farbe = an ? Glatt.mix(0xFFE9E6F2, 0xFFFFFFFF, hv) : 0xFF7A748C;
         Glatt.textMitte(ctx, text, w.getX() + w.getWidth() / 2f, w.getY() + (w.getHeight() - 9) / 2f + 0.5f,
                 Glatt.alpha(farbe, alpha), Schrift.FETT);
+        if (an && hv > 0.01f && w.getHeight() >= 18) {
+            // Feine Akzentlinie unter dem Text, waechst aus der Mitte
+            float lw = (Glatt.breite(text, Schrift.FETT) + 10) * hv;
+            float cx = w.getX() + w.getWidth() / 2f;
+            Glatt.rund(ctx, cx - lw / 2f, w.getY() + w.getHeight() - 4.5f, lw, 1.5f, 0.75f,
+                    Glatt.alpha(Glatt.mix(akzent(), 0xFFFFFFFF, 0.35f), alpha * hv));
+        }
     }
 
     /** Ausgewaehlter Eintrag einer Liste (Welten, Server). */
@@ -198,14 +209,38 @@ public final class MenuStil {
     // Hauptmenue
     // ------------------------------------------------------------------
 
-    /** Ruhiger Verlauf ueber dem Panorama, damit Logo und Knoepfe gut lesbar sind. */
+    /**
+     * Ruhiger Verlauf ueber dem Panorama, damit Logo und Knoepfe gut lesbar
+     * sind; seit 4.30.2 zusaetzlich zu den Seiten hin abgedunkelt (Vignette),
+     * damit die Mitte, die Figur und das Dock nicht im hellen Himmel stehen.
+     */
     public static void titelGrund(GuiGraphicsExtractor ctx, int breite, int hoehe) {
-        ctx.fillGradient(0, 0, breite, hoehe / 2, 0x80050309, 0x30050309);
-        ctx.fillGradient(0, hoehe / 2, breite, hoehe, 0x30050309, 0xB0050309);
+        ctx.fillGradient(0, 0, breite, hoehe / 2, 0x90050309, 0x38050309);
+        ctx.fillGradient(0, hoehe / 2, breite, hoehe, 0x38050309, 0xC0050309);
+        seitenVerlauf(ctx, breite, hoehe, 0x78);
         int akz = akzent();
         Glatt.licht(ctx, breite * 0.5f, hoehe * 0.12f, Math.max(breite, hoehe) * 0.45f,
                 Glatt.alpha(Glatt.mix(akz, VortexStyle.VIOLETT, 0.5f), 0.16f));
         titelBewegung(ctx, breite, hoehe);
+    }
+
+    /**
+     * Waagerechter Verlauf zu beiden Raendern hin (fillGradient kann nur
+     * senkrecht): schmale Streifen mit weich auslaufender Deckkraft.
+     */
+    private static void seitenVerlauf(GuiGraphicsExtractor ctx, int breite, int hoehe, int maxAlpha) {
+        int weite = Math.max(1, Math.round(breite * 0.34f));
+        int schritte = Math.min(48, weite);
+        for (int i = 0; i < schritte; i++) {
+            int x0 = weite * i / schritte, x1 = weite * (i + 1) / schritte;
+            if (x1 <= x0) continue;
+            float t = 1f - (i + 0.5f) / schritte;
+            int a = Math.round(maxAlpha * t * t);
+            if (a <= 0) continue;
+            int farbe = (a << 24) | 0x050309;
+            ctx.fill(x0, 0, x1, hoehe, farbe);
+            ctx.fill(breite - x1, 0, breite - x0, hoehe, farbe);
+        }
     }
 
     private static final long TITEL_START = System.nanoTime();
@@ -236,21 +271,55 @@ public final class MenuStil {
         }
     }
 
-    /** Vortex-Logo mit Schriftzug, mittig, Oberkante y. */
+    /**
+     * Vortex-Logo mit Schriftzug, mittig, Oberkante y. Darunter (seit 4.30.2)
+     * zwei Plaketten: Client-Version in der Akzentfarbe und die
+     * Minecraft-Version.
+     */
     public static void titelLogo(GuiGraphicsExtractor ctx, int breite, float y, float alpha) {
         if (alpha <= 0.01f) return;
         String name = "Vortex Client";
-        float lg = 50;
+        float lg = 46;
         float tw = Glatt.breite(name, Schrift.GROSS);
         float gesamt = lg + 12 + tw;
         float x = (breite - gesamt) / 2f;
-        Glatt.licht(ctx, x + lg / 2f, y + lg / 2f, lg * 1.4f, Glatt.alpha(VortexStyle.VIOLETT, alpha * 0.35f));
+        Glatt.licht(ctx, x + lg / 2f, y + lg / 2f, lg * 1.5f, Glatt.alpha(VortexStyle.VIOLETT, alpha * 0.38f));
         // Beim Einblenden des Hauptmenues falten sich die Klingen zum V
         Glatt.logo(ctx, x, y, lg, alpha, alpha);
-        float ty = y + (lg - 36) / 2f;
-        Glatt.text(ctx, name, x + lg + 10, ty, Glatt.alpha(0xFFFFFFFF, alpha), Schrift.GROSS);
-        String unter = "Minecraft " + mcVersion();
-        Glatt.text(ctx, unter, x + lg + 11, ty + 23, Glatt.alpha(0xFFB9B2D0, alpha), Schrift.NORMAL);
+        float tx = x + lg + 11;
+        float ty = y + (lg - 38) / 2f;
+        Glatt.text(ctx, name, tx, ty, Glatt.alpha(0xFFFFFFFF, alpha), Schrift.GROSS);
+
+        float py = ty + 25;
+        String client = clientVersion();
+        if (!client.isEmpty()) {
+            tx = plakette(ctx, "v" + client, tx, py, Glatt.mix(akzent(), VortexStyle.VIOLETT, 0.4f), 0xFFFFFFFF, alpha) + 4;
+        }
+        String mc = mcVersion();
+        if (!mc.isEmpty()) plakette(ctx, "Minecraft " + mc, tx, py, 0xFF2A2440, 0xFFC9C3DC, alpha);
+    }
+
+    /** Kleine runde Plakette mit Text; gibt den rechten Rand zurueck. */
+    private static float plakette(GuiGraphicsExtractor ctx, String text, float x, float y, int grund, int schrift, float alpha) {
+        float w = Glatt.breite(text, Schrift.FETT) + 12, h = 13;
+        Glatt.rund(ctx, x, y, w, h, h / 2f, Glatt.alpha(grund, 0.78f * alpha));
+        Glatt.rahmen(ctx, x, y, w, h, h / 2f, 1, Glatt.alpha(0x30FFFFFF, alpha));
+        Glatt.text(ctx, text, x + 6, y + (h - 9) / 2f + 0.5f, Glatt.alpha(schrift, alpha), Schrift.FETT);
+        return x + w;
+    }
+
+    private static String clientVersionCache;
+
+    private static String clientVersion() {
+        if (clientVersionCache == null) {
+            try {
+                clientVersionCache = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("vortexclient")
+                        .map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("").replaceAll("\\+.*$", "");
+            } catch (Throwable e) {
+                clientVersionCache = "";
+            }
+        }
+        return clientVersionCache;
     }
 
     private static String mcVersion() {
