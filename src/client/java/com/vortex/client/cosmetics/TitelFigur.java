@@ -51,7 +51,7 @@ public final class TitelFigur {
 
         // Hinter der Figur: weiches Licht, damit sie sich vom Himmel abhebt
         Glatt.licht(g, cx, fuss - groesse * 1.0f, groesse * 1.3f, Glatt.alpha(VortexStyle.BLAU, 0.12f));
-        sockel(g, cx, fuss, groesse);
+        sockel(g, cx, fuss - groesse * 0.2f, groesse);
 
         String funken = Cosmetics.eigene().partikel();
         if (!funken.isEmpty()) funken(g, cx, fuss - groesse * 0.95f, groesse, t, FARBEN.getOrDefault(funken, 0xFFB79CFF), true);
@@ -73,7 +73,7 @@ public final class TitelFigur {
         }
 
         if (!funken.isEmpty()) funken(g, cx, fuss - groesse * 0.95f, groesse, t, FARBEN.getOrDefault(funken, 0xFFB79CFF), false);
-        namensschild(g, mc.getUser().getName(), cx, fuss + 9);
+        namensschild(g, mc.getUser().getName(), cx, fuss + 4);
     }
 
     /**
@@ -89,10 +89,10 @@ public final class TitelFigur {
             p.translate(cx, fuss);
             p.scale(1f, 0.24f);
             p.translate(-cx, -fuss);
-            Glatt.licht(g, cx, fuss, groesse * 1.35f, Glatt.alpha(akz, 0.30f));
-            Glatt.kreis(g, cx, fuss, groesse * 1.7f, Glatt.alpha(Glatt.mix(0xFF0B0912, akz, 0.35f), 0.55f));
-            Glatt.kreis(g, cx, fuss + groesse * 0.06f, groesse * 1.45f, 0x8C07050C);
-            Glatt.licht(g, cx, fuss, groesse * 0.6f, 0x99000000);
+            // Kein harter Rand: nur weiche Lichter -- Akzentschein aussen, Schatten innen
+            Glatt.licht(g, cx, fuss, groesse * 1.15f, Glatt.alpha(akz, 0.38f));
+            Glatt.licht(g, cx, fuss, groesse * 0.95f, 0xB0050309);
+            Glatt.licht(g, cx, fuss, groesse * 0.55f, 0xA0000000);
         } finally {
             p.popMatrix();
         }

@@ -87,14 +87,15 @@ public class MenuKnopf extends AbstractButton {
                 Glatt.alpha(Glatt.mix(0xFFC9C3DC, 0xFFFFFFFF, hv), alpha));
 
         // Name
-        float tx = fx + fg + 7;
-        int platz = (int) (x + w - tx - 12);
+        float tx = fx + fg + 6;
+        int platz = (int) (x + w - tx - 4);
         String text = Glatt.kuerzen(getMessage().getString(), platz, Glatt.Schrift.FETT);
         Glatt.text(g, text, tx + hv, y + (h - 9) / 2f + 0.5f,
                 Glatt.alpha(Glatt.mix(0xFFE4E0EE, 0xFFFFFFFF, hv), alpha), Glatt.Schrift.FETT);
 
-        // Pfeil rechts, gleitet beim Ueberfahren herein
-        if (hv > 0.01f) {
+        // Pfeil rechts, gleitet beim Ueberfahren herein (nur wenn neben dem Namen Platz ist)
+        boolean pfeilPasst = tx + Glatt.breite(text, Glatt.Schrift.FETT) + 16 <= x + w - 6;
+        if (hv > 0.01f && pfeilPasst) {
             float pg = 8;
             Glatt.symbol(g, com.vortex.client.gui.glatt.Symbole.Symbol.PFEIL_RECHTS,
                     x + w - pg - 6 - 3 * (1 - hv), y + (h - pg) / 2f, pg, Glatt.alpha(hell, alpha * hv));

@@ -206,6 +206,21 @@ public class CosmeticGameTest implements FabricClientGameTest {
         ctx.getInput().resizeWindow(854, 480);
         ctx.waitTicks(30);
         ctx.takeScreenshot("titel-854");
+        // Schmales Fenster: Leiste nur mit Symbolen
+        ctx.getInput().resizeWindow(640, 480);
+        ctx.waitTicks(30);
+        ctx.takeScreenshot("titel-640");
+        maus(ctx, true);
+        ctx.waitTicks(15);
+        ctx.takeScreenshot("titel-640-hover-vortex");
+        // Pausenmenue (gleiche Leiste, mit "Host")
+        ctx.getInput().resizeWindow(1280, 720);
+        try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
+            ctx.waitTicks(40);
+            ctx.runOnClient(mc -> mc.gui.setScreen(new net.minecraft.client.gui.screens.PauseScreen(true)));
+            ctx.waitTicks(30);
+            ctx.takeScreenshot("pause-1280");
+        }
     }
 
     /** Maus auf den ersten Vortex-Knopf bzw. den ersten Vanilla-Knopf setzen. */
