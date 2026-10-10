@@ -217,7 +217,7 @@ public class CosmeticGameTest implements FabricClientGameTest {
             for (var c : sc.children()) {
                 if (!(c instanceof net.minecraft.client.gui.components.AbstractWidget w)) continue;
                 boolean istVortex = w instanceof com.vortex.client.gui.menu.MenuKnopf;
-                if (istVortex != vortex || w.getWidth() < 60) continue;
+                if (istVortex != vortex || (!vortex && w.getWidth() < 60)) continue;
                 return new double[]{(w.getX() + w.getWidth() / 2.0) * f, (w.getY() + w.getHeight() / 2.0) * f};
             }
             return new double[]{0, 0};

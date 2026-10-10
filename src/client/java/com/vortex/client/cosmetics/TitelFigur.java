@@ -49,9 +49,9 @@ public final class TitelFigur {
         float groesse = Math.min(Math.min(hoehe * 0.21f, seite * 0.42f), 78f);
         float cx = seite / 2f + 4, fuss = hoehe * 0.80f;
 
-        // Sockel: weicher Lichtkreis
-        Glatt.licht(g, cx, fuss, groesse * 1.25f, Glatt.alpha(VortexStyle.VIOLETT, 0.22f));
-        Glatt.licht(g, cx, fuss - groesse * 1.0f, groesse * 1.2f, Glatt.alpha(VortexStyle.BLAU, 0.10f));
+        // Hinter der Figur: weiches Licht, damit sie sich vom Himmel abhebt
+        Glatt.licht(g, cx, fuss - groesse * 1.0f, groesse * 1.3f, Glatt.alpha(VortexStyle.BLAU, 0.12f));
+        sockel(g, cx, fuss, groesse);
 
         String funken = Cosmetics.eigene().partikel();
         if (!funken.isEmpty()) funken(g, cx, fuss - groesse * 0.95f, groesse, t, FARBEN.getOrDefault(funken, 0xFFB79CFF), true);
@@ -73,8 +73,51 @@ public final class TitelFigur {
         }
 
         if (!funken.isEmpty()) funken(g, cx, fuss - groesse * 0.95f, groesse, t, FARBEN.getOrDefault(funken, 0xFFB79CFF), false);
-        String name = mc.getUser().getName();
-        Glatt.textMitte(g, name, cx, fuss + 8, 0xFFF2F0F8, Glatt.Schrift.FETT);
+        namensschild(g, mc.getUser().getName(), cx, fuss + 9);
+    }
+
+    /**
+     * Boden unter der Figur (seit 4.30.2): flache Scheibe in der Akzentfarbe
+     * mit Schatten -- vorher schwebte die Figur frei im Bild. Ellipse = Kreis,
+     * senkrecht gestaucht.
+     */
+    private static void sockel(GuiGraphicsExtractor g, float cx, float fuss, float groesse) {
+        int akz = akzent();
+        var p = g.pose();
+        p.pushMatrix();
+        try {
+            p.translate(cx, fuss);
+            p.scale(1f, 0.24f);
+            p.translate(-cx, -fuss);
+            Glatt.licht(g, cx, fuss, groesse * 1.35f, Glatt.alpha(akz, 0.30f));
+            Glatt.kreis(g, cx, fuss, groesse * 1.7f, Glatt.alpha(Glatt.mix(0xFF0B0912, akz, 0.35f), 0.55f));
+            Glatt.kreis(g, cx, fuss + groesse * 0.06f, groesse * 1.45f, 0x8C07050C);
+            Glatt.licht(g, cx, fuss, groesse * 0.6f, 0x99000000);
+        } finally {
+            p.popMatrix();
+        }
+    }
+
+    /** Spielername als Plakette unter dem Sockel, mit Punkt in der Akzentfarbe. */
+    private static void namensschild(GuiGraphicsExtractor g, String name, float cx, float y) {
+        if (name == null || name.isEmpty()) return;
+        int akz = akzent();
+        float tw = Glatt.breite(name, Glatt.Schrift.FETT);
+        float w = tw + 24, h = 15, x = cx - w / 2f;
+        Glatt.schatten(g, x, y + 1, w, h, h / 2f, 5, 0x50000000);
+        Glatt.rund(g, x, y, w, h, h / 2f, 0xC80B0912);
+        Glatt.rahmen(g, x, y, w, h, h / 2f, 1, 0x2CFFFFFF);
+        Glatt.kreis(g, x + 9, y + h / 2f, 5f, Glatt.mix(akz, 0xFFFFFFFF, 0.2f));
+        Glatt.licht(g, x + 9, y + h / 2f, 6f, Glatt.alpha(akz, 0.5f));
+        Glatt.text(g, name, x + 16, y + (h - 9) / 2f + 0.5f, 0xFFF2F0F8, Glatt.Schrift.FETT);
+    }
+
+    private static int akzent() {
+        try {
+            return com.vortex.client.gui.Theme.INSTANCE.accent.get() | 0xFF000000;
+        } catch (Throwable e) {
+            return VortexStyle.VIOLETT;
+        }
     }
 
     private static AvatarRenderState zustand(Minecraft mc, float t, float cx, float kopfY, int mx, int my, int breite, int hoehe) {
